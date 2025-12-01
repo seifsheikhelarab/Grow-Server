@@ -12,3 +12,5 @@ export const SCommission = z.object({
   amount: z.number(),
   timestamp: z.date().default(() => new Date()),
 })
+
+export type ICommission = z.infer<typeof SCommission>

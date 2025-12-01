@@ -13,3 +13,5 @@ export const SRedemption = z.object({
   fee: z.number().default(5),
   timestamp: z.date().default(() => new Date()),
 })
+
+export type IRedemption = z.infer<typeof SRedemption>

@@ -12,3 +12,5 @@ export const SDue = z.object({
   }, "Transaction is should be a valid transaction"),
   timestamp: z.date().default(() => new Date()),
 })
+
+export type IDue = z.infer<typeof SDue>
