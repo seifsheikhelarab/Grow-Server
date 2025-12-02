@@ -1,31 +1,93 @@
-import cors from "cors";
-import express from "express";
+import express, { Express, Request, Response } from 'express';
+import cors from 'cors';
+import 'dotenv/config'
+import { config } from './config/env.config';
+import logger from './utils/logger';
+import prisma from './prisma';
+import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { globalLimiter } from './middlewares/ratelimit.middleware';
+import { ResponseHandler } from './utils/response';
+import apiRoutes from './api';
 
-import loggerSetup, { logger } from "./config/logger.config.js";
-import mongoSetup from "./config/mongodb.config.js";
-import router from "./routes/main.routes.js";
-import { notFound } from "./controllers/misc.controller.js";
+const app: Express = express();
 
-const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// CORS
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || [],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: process.env.CORS_ORIGIN || '*',
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
 
-loggerSetup(app);
-mongoSetup();
-app.use("/api/v1", router);
-app.use(notFound);
+// Global rate limiting
+app.use(globalLimiter);
 
-const port = process.env.PORT || 4650;
+app.get('/health', (req: Request, res: Response) => {
+  ResponseHandler.success(res, 'Server is healthy', {
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    env: config.NODE_ENV,
+  });
+});
 
-app.listen(port, () =>
-  logger.info(`Server running on http://localhost:${port}`)
-);
+
+app.use('/api/v1', apiRoutes);
+
+
+/**
+ * Error Handling
+ */
+
+// 404 handler
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
+
+/**
+ * Database Connection & Server Startup
+ */
+export async function startServer() {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    logger.info('Database connected successfully');
+
+    const port = config.PORT;
+    const server = app.listen(port, () => {
+      logger.info(`Server running on port ${port} in ${config.NODE_ENV} mode`);
+      logger.info(`Health check: http://localhost:${port}/health`);
+    });
+
+    /**
+     * Graceful Shutdown
+     */
+    process.on('SIGTERM', async () => {
+      logger.info('SIGTERM received, shutting down gracefully...');
+      server.close(async () => {
+        await prisma.$disconnect();
+        logger.info('Server closed');
+        process.exit(0);
+      });
+    });
+
+    process.on('SIGINT', async () => {
+      logger.info('SIGINT received, shutting down gracefully...');
+      server.close(async () => {
+        await prisma.$disconnect();
+        logger.info('Server closed');
+        process.exit(0);
+      });
+    });
+  } catch (err) {
+    logger.error(`Failed to start server: ${err}`);
+    process.exit(1);
+  }
+}
+
+export default app;

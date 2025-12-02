@@ -1,0 +1,154 @@
+// schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------- ENUMS ----------------
+enum Role {
+  CUSTOMER
+  WORKER
+  OWNER
+  ADMIN
+}
+
+enum TxType {
+  DEPOSIT       // Worker sends points to Customer
+  WITHDRAWAL    // Customer/Worker cashes out
+  COMMISSION    // System adds points to Worker
+}
+
+enum TxStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REJECTED
+}
+
+// ---------------- CORE MODELS ----------------
+
+model User {
+  id            String    @id @default(uuid())
+  phone         String    @unique // +201xxxxxxxxx
+  password_hash String?   // Nullable for users invited but not fully signed up
+  role          Role
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+
+  // Relations
+  wallet        Wallet?
+  owned_kiosks  Kiosk[]   @relation("OwnerRelation")
+  worker_profile WorkerProfile?
+  goals         Goal[]
+  redemptions   RedemptionRequest[]
+}
+
+// ---------------- FINANCIAL MODELS ----------------
+
+model Wallet {
+  id             String   @id @default(uuid())
+  user_id        String   @unique
+  balance        Decimal  @default(0.00) @db.Decimal(15, 2)
+  
+  user           User     @relation(fields: [user_id], references: [id])
+}
+
+// For customers who receive points but haven't downloaded the app yet
+model ShadowWallet {
+  phone          String   @id // Primary key is phone number
+  balance        Decimal  @default(0.00) @db.Decimal(15, 2)
+  last_updated   DateTime @default(now())
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  sender_id       String   // Worker/Owner ID
+  receiver_phone  String   // Stored for history
+  receiver_id     String?  // Null if sent to Shadow Wallet
+  kiosk_id        String
+  
+  amount_gross    Decimal  @db.Decimal(10, 2) // e.g., 100.00 (Input)
+  amount_net      Decimal  @db.Decimal(10, 2) // e.g., 95.00 (User gets)
+  commission      Decimal  @db.Decimal(10, 2) // e.g., 5.00 (Worker gets)
+  
+  type            TxType
+  status          TxStatus @default(COMPLETED)
+  created_at      DateTime @default(now())
+
+  kiosk           Kiosk    @relation(fields: [kiosk_id], references: [id])
+}
+
+model RedemptionRequest {
+  id             String   @id @default(uuid())
+  user_id        String
+  amount         Decimal  @db.Decimal(10, 2)
+  method         String   // "Vodafone Cash", "Instapay"
+  details        String   // Phone number or address
+  status         TxStatus @default(PENDING)
+  admin_note     String?
+  created_at     DateTime @default(now())
+
+  user           User     @relation(fields: [user_id], references: [id])
+}
+
+model KioskDue {
+  id             String   @id @default(uuid())
+  kiosk_id       String
+  amount         Decimal  @db.Decimal(10, 2) // Amount owner owes Grow
+  is_paid        Boolean  @default(false)
+  collected_by   String?  // Admin ID
+  created_at     DateTime @default(now())
+
+  kiosk          Kiosk    @relation(fields: [kiosk_id], references: [id])
+}
+
+// ---------------- KIOSK LOGIC ----------------
+
+model Kiosk {
+  id             String   @id @default(uuid())
+  owner_id       String
+  name           String
+  gov            String
+  area           String
+  is_approved    Boolean  @default(false)
+  
+  owner          User     @relation("OwnerRelation", fields: [owner_id], references: [id])
+  workers        WorkerProfile[]
+  transactions   Transaction[]
+  dues           KioskDue[]
+}
+
+model WorkerProfile {
+  id             String   @id @default(uuid())
+  user_id        String   @unique
+  kiosk_id       String
+  status         String   // PENDING_INVITE, ACTIVE
+  
+  user           User     @relation(fields: [user_id], references: [id])
+  kiosk          Kiosk    @relation(fields: [kiosk_id], references: [id])
+}
+
+// ---------------- GOALS ----------------
+
+model Goal {
+  id             String   @id @default(uuid())
+  user_id        String
+  title          String
+  target_amount  Decimal  @db.Decimal(10, 2)
+  current_amount Decimal  @default(0) @db.Decimal(10, 2)
+  type           String   // SAVING, WORKER_TARGET
+  deadline       DateTime?
+  
+  user           User     @relation(fields: [user_id], references: [id])
+}
+
+model Otp {
+  phone     String   @id
+  code      String
+  expiresAt DateTime
+}
