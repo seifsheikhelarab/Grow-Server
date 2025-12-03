@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as authService from './auth.service';
-import { ResponseHandler } from '../../utils/response';
-import { asyncHandler } from '../../middlewares/error.middleware';
+import { AuthenticationError, ErrorCode, ResponseHandler } from '../../utils/response';
+import { asyncHandler, errorHandler } from '../../middlewares/error.middleware';
 
 // Send OTP to phone number
 export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
@@ -20,10 +20,16 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await authService.verifyOtp(phone, code);
 
+  if(!result.userExists || !result.token){
+    errorHandler(new AuthenticationError('User does not exist', ErrorCode.INVALID_TOKEN), req, res);
+    return;
+  }
+
+  
   ResponseHandler.success(res, 'OTP verified successfully', {
     token: result.token,
-    userExists: result.userExists,
   });
+
 });
 
 // Register new user

@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import { globalLimiter } from './middlewares/ratelimit.middleware';
 import { ResponseHandler } from './utils/response';
 import apiRoutes from './api';
+import swaggerSetup from './utils/swagger';
 
 const app: Express = express();
 
@@ -35,7 +36,7 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-
+swaggerSetup(app);
 app.use('/api/v1', apiRoutes);
 
 

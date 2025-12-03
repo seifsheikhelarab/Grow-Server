@@ -1,0 +1,177 @@
+{
+  "info": {
+    "_postman_id": "62701577-2e4c-4e79-a713-7939b4d292d4",
+    "name": "Grow-App",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "id": "2566de43-b8fd-471c-8f1c-cc482bd59343",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "phone",
+                  "value": "{{owner_number}}",
+                  "type": "text",
+                  "uuid": "7ea91c63-3521-42fe-b5f4-79fd3b9b9e6f"
+                },
+                {
+                  "key": "password",
+                  "value": "{{owner_pass}}",
+                  "type": "text",
+                  "uuid": "6a452a2b-0a18-4f73-8494-8efe0258875f"
+                },
+                {
+                  "key": "role",
+                  "value": "OWNER",
+                  "type": "text",
+                  "uuid": "9fa1542b-bc7f-428d-afa2-6be5317e5c9a"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/auth/register",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "id": "3f9ca323-b1c9-4bf0-9bb4-55659a200022",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "phone",
+                  "value": "{{owner_number}}",
+                  "type": "text",
+                  "uuid": "9fe2147b-4b79-4b00-8486-e5ec3bce2e32"
+                },
+                {
+                  "key": "password",
+                  "value": "{{owner_pass}}",
+                  "type": "text",
+                  "uuid": "726dda04-85ff-43b3-b1ec-ec487bc7c5ad"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/auth/login",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send OTP",
+          "id": "d0f3ca78-5c3e-449f-9474-46232578c922",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "phone",
+                  "value": "{{owner_number}}",
+                  "type": "text",
+                  "uuid": "c86f1614-b567-49b0-a12a-de544a42fdd9"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/auth/send-otp",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "id": "ad88f2e9-364d-41fd-8f88-8b01c531aeb6",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "phone",
+                  "value": "{{owner_number}}",
+                  "type": "text",
+                  "uuid": "08098a43-aaac-42f1-b6ce-83aad13d3d60"
+                },
+                {
+                  "key": "code",
+                  "value": "477245",
+                  "type": "text",
+                  "uuid": "4557e5ab-f21a-4699-8184-54b5dca40486"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/auth/verify-otp",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            }
+          }
+        }
+      ],
+      "id": "085ff858-2492-4b3f-b7ff-e40b0faaf58a"
+    }
+  ],
+  "variable": [
+    {
+      "id": "be0a1c72-974e-4aaf-9008-843018ddba53",
+      "key": "appurl",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "3ed8473a-d351-4091-901f-ce2528c8ff67",
+      "key": "owner_number",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "dedab86d-1565-4b2d-807f-5cfe628b256e",
+      "key": "owner_pass",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "bb9a778a-973a-469a-a751-e9b92a8b2141",
+      "key": "owner_token",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}

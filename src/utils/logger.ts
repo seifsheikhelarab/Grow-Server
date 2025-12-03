@@ -12,7 +12,6 @@ const logger = pino({
       colorize: true,
       singleLine: false,
       ignore: 'pid,hostname',
-      messageFormat: '{levelLabel} - {msg}',
     },
   },
   timestamp: pino.stdTimeFunctions.isoTime,

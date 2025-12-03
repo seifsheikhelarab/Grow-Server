@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
-import { ValidationError } from '../utils/response';
+import { ErrorCode, HttpStatus, ResponseHandler, ValidationError } from '../utils/response';
+import { errorHandler } from './error.middleware';
 
 /**
  * Validation Middleware Factory
@@ -19,8 +20,8 @@ export const validateRequest = (schema: ZodSchema, source: 'body' | 'query' | 'p
           acc[path] = err.message;
           return acc;
         }, {} as Record<string, string>);
-
-        throw new ValidationError('Validation failed', errors);
+        errorHandler(result.error, req, res);
+        return;
       }
 
       // Replace the data with validated and parsed data
@@ -34,7 +35,8 @@ export const validateRequest = (schema: ZodSchema, source: 'body' | 'query' | 'p
 
       next();
     } catch (err) {
-      next(err);
+      errorHandler(err, req, res);
+      return;
     }
   };
 };

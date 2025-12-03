@@ -81,6 +81,11 @@ export async function verifyOtp(phone: string, code: string): Promise<{ userExis
       throw new AuthenticationError('User account is inactive');
     }
 
+    await prisma.user.update({
+      where: { phone },
+      data: { is_verified: true },
+    });
+
     // Generate auth token for existing user
     const opts: SignOptions = { expiresIn: config.JWT_EXPIRY as any };
     const token = jwt.sign(

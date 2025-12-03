@@ -14,13 +14,13 @@ export const verifyOtpSchema = z.object({
 
 export const registerSchema = z.object({
   phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().regex(/^[a-zA-Z0-9]{8,}$/, 'Password must be at least 8 characters'),
   role: z.enum(['CUSTOMER', 'WORKER', 'OWNER']),
 });
 
 export const loginSchema = z.object({
   phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().regex(/^[a-zA-Z0-9]{8,}$/, 'Password must be at least 8 characters'),
 });
 
 /**
@@ -28,7 +28,7 @@ export const loginSchema = z.object({
  */
 export const sendPointsSchema = z.object({
   phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
-  amount: z.number().int().min(1, 'Amount must be at least 1').max(100, 'Amount cannot exceed 100'),
+  amount: z.number().int().min(5, 'Amount must be at least 5').max(100, 'Amount cannot exceed 100'),
 });
 
 /**
@@ -56,8 +56,8 @@ export const updateGoalSchema = z.object({
  */
 export const createKioskSchema = z.object({
   name: z.string().min(3, 'Kiosk name must be at least 3 characters'),
-  gov: z.string().min(3, 'Governorate required'),
-  area: z.string().min(3, 'Area required'),
+  type: z.string().min(3, 'type required'),
+  location: z.string().min(3).optional(),
 });
 
 export const inviteWorkerSchema = z.object({
