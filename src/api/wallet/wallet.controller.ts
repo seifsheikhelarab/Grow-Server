@@ -10,7 +10,7 @@ import logger from '../../utils/logger';
 export const getBalance = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
 
-  const balance = await walletService.getBalance(userId);
+  const balance = await walletService.getBalance(userId, req, res);
 
   ResponseHandler.success(res, 'Balance retrieved successfully', {
     balance: balance.toString(),
@@ -23,7 +23,7 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
 export const getWalletDetails = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
 
-  const wallet = await walletService.getWalletDetails(userId);
+  const wallet = await walletService.getWalletDetails(userId, req, res);
 
   ResponseHandler.success(res, 'Wallet details retrieved successfully', wallet);
 });
@@ -39,7 +39,9 @@ export const redeem = asyncHandler(async (req: Request, res: Response) => {
     userId,
     amount,
     method,
-    details
+    details,
+    req,
+    res
   );
 
   ResponseHandler.created(res, 'Redemption request created successfully', {
@@ -104,7 +106,7 @@ export const updateGoalProgress = asyncHandler(async (req: Request, res: Respons
   const { id } = req.params;
   const { amount } = req.body;
 
-  const updated = await walletService.updateGoalProgress(id, amount);
+  const updated = await walletService.updateGoalProgress(id, amount, req, res);
 
   ResponseHandler.success(res, 'Goal progress updated successfully', {
     id: updated.id,

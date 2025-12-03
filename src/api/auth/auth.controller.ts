@@ -18,7 +18,7 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const { phone, code } = req.body;
 
-  const result = await authService.verifyOtp(phone, code);
+  const result = await authService.verifyOtp(phone, code, req, res);
 
   if(!result.userExists || !result.token){
     errorHandler(new AuthenticationError('User does not exist', ErrorCode.INVALID_TOKEN), req, res);
@@ -36,7 +36,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { phone, password, role } = req.body;
 
-  const result = await authService.register(phone, password, role);
+  const result = await authService.register(phone, password, role, req, res);
 
   ResponseHandler.created(res, 'User registered successfully', {
     id: result.id,
@@ -50,7 +50,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const { phone, password } = req.body;
 
-  const result = await authService.login(phone, password);
+  const result = await authService.login(phone, password, req, res);
 
   ResponseHandler.success(res, 'Login successful', {
     id: result.id,

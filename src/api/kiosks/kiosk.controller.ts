@@ -9,15 +9,15 @@ import logger from '../../utils/logger';
  */
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const ownerId = req.user!.id;
-  const { name, gov, area } = req.body;
+  const { name, kiosk_type, location } = req.body;
 
-  const kiosk = await kioskService.createKiosk(ownerId, name, gov, area);
+  const kiosk = await kioskService.createKiosk(ownerId, name, kiosk_type, location);
 
   ResponseHandler.created(res, 'Kiosk created successfully', {
     id: kiosk.id,
     name: kiosk.name,
-    gov: kiosk.gov,
-    area: kiosk.area,
+    kiosk_type: kiosk.kiosk_type,
+    location: kiosk.location,
     is_approved: kiosk.is_approved,
   });
 });
@@ -29,7 +29,7 @@ export const inviteWorker = asyncHandler(async (req: Request, res: Response) => 
   const ownerId = req.user!.id;
   const { kioskId, workerPhone } = req.body;
 
-  const profile = await kioskService.inviteWorker(ownerId, kioskId, workerPhone);
+  const profile = await kioskService.inviteWorker(ownerId, kioskId, workerPhone, req, res);
 
   ResponseHandler.created(res, 'Worker invited successfully', {
     id: profile.id,
@@ -39,13 +39,28 @@ export const inviteWorker = asyncHandler(async (req: Request, res: Response) => 
   });
 });
 
+
+/**
+ * Get worker invitations
+ */
+export const getWorkerInvitations = asyncHandler(async (req: Request, res: Response) => {
+  const workerId = req.user!.id;
+
+  const invitations = await kioskService.getWorkerInvitations(workerId);
+
+  ResponseHandler.success(res, 'Invitations retrieved successfully', {
+    invitations,
+  });
+});
+
+
 /**
  * Accept worker invitation
  */
 export const acceptInvitation = asyncHandler(async (req: Request, res: Response) => {
   const workerId = req.user!.id;
 
-  const profile = await kioskService.acceptInvitation(workerId);
+  const profile = await kioskService.acceptInvitation(workerId, req, res);
 
   ResponseHandler.success(res, 'Invitation accepted successfully', {
     id: profile.id,
@@ -61,7 +76,7 @@ export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
   const ownerId = req.user!.id;
   const { kioskId } = req.params;
 
-  const workers = await kioskService.getKioskWorkers(kioskId, ownerId);
+  const workers = await kioskService.getKioskWorkers(kioskId, ownerId, req, res);
 
   ResponseHandler.success(res, 'Workers retrieved successfully', {
     workers,
@@ -75,7 +90,7 @@ export const getDues = asyncHandler(async (req: Request, res: Response) => {
   const ownerId = req.user!.id;
   const { kioskId } = req.params;
 
-  const result = await kioskService.getKioskDues(kioskId, ownerId);
+  const result = await kioskService.getKioskDues(kioskId, ownerId, req, res);
 
   ResponseHandler.success(res, 'Kiosk dues retrieved successfully', result);
 });

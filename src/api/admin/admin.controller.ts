@@ -10,7 +10,7 @@ import logger from '../../utils/logger';
 export const getDashboard = asyncHandler(async (req: Request, res: Response) => {
   const filter = (req.query.filter as '1d' | '7d' | '30d') || '7d';
 
-  const stats = await adminService.getDashboardStats(filter);
+  const stats = await adminService.getDashboardStats(filter, req, res);
 
   ResponseHandler.success(res, 'Dashboard stats retrieved successfully', stats);
 });
@@ -32,7 +32,7 @@ export const getPendingKiosks = asyncHandler(async (req: Request, res: Response)
 export const approveKiosk = asyncHandler(async (req: Request, res: Response) => {
   const { kioskId } = req.body;
 
-  const kiosk = await adminService.approveKiosk(kioskId);
+  const kiosk = await adminService.approveKiosk(kioskId, req, res);
 
   ResponseHandler.success(res, 'Kiosk approved successfully', {
     id: kiosk.id,
@@ -58,7 +58,7 @@ export const getPendingRedemptions = asyncHandler(async (req: Request, res: Resp
 export const processRedemption = asyncHandler(async (req: Request, res: Response) => {
   const { reqId, action, note } = req.body;
 
-  const redemption = await adminService.processRedemption(reqId, action, note);
+  const redemption = await adminService.processRedemption(reqId, action, req, res, note);
 
   ResponseHandler.success(res, `Redemption ${action.toLowerCase()}ed successfully`, {
     id: redemption.id,
@@ -74,7 +74,7 @@ export const processRedemption = asyncHandler(async (req: Request, res: Response
 export const collectDue = asyncHandler(async (req: Request, res: Response) => {
   const { dueId } = req.body;
 
-  const due = await adminService.collectDue(dueId);
+  const due = await adminService.collectDue(dueId, req, res);
 
   ResponseHandler.success(res, 'Due collected successfully', {
     id: due.id,

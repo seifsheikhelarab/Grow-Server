@@ -5,11 +5,13 @@ import {
   ErrorCode,
 } from '../../utils/response';
 import logger from '../../utils/logger';
+import { errorHandler } from '../../middlewares/error.middleware';
+import { Request, Response } from 'express';
 
 /**
  * Get admin dashboard stats
  */
-export async function getDashboardStats(filter: '1d' | '7d' | '30d' = '7d') {
+export async function getDashboardStats(filter: '1d' | '7d' | '30d' = '7d', req: Request, res: Response) {
   try {
     const now = new Date();
     let startDate = new Date();
@@ -74,7 +76,7 @@ export async function getDashboardStats(filter: '1d' | '7d' | '30d' = '7d') {
         total_users: totalUsers,
         total_wallets_balance: walletBalance._sum.balance ? (walletBalance._sum.balance.toNumber ? walletBalance._sum.balance.toNumber() : Number(walletBalance._sum.balance)) : 0,
         total_shadow_balance: shadowBalance._sum.balance ? (shadowBalance._sum.balance.toNumber ? shadowBalance._sum.balance.toNumber() : Number(shadowBalance._sum.balance)) : 0,
-        total_circulation: ((walletBalance._sum.balance || 0) + (shadowBalance._sum.balance || 0)),
+        total_circulation: (Number(walletBalance._sum.balance || 0) + (Number(shadowBalance._sum.balance || 0))),
       },
       transactions: {
         count: transactions._count,
@@ -104,18 +106,18 @@ export async function getDashboardStats(filter: '1d' | '7d' | '30d' = '7d') {
 /**
  * Approve kiosk
  */
-export async function approveKiosk(kioskId: string) {
+export async function approveKiosk(kioskId: string, req: Request, res: Response) {
   try {
     const kiosk = await prisma.kiosk.findUnique({
       where: { id: kioskId },
     });
 
     if (!kiosk) {
-      throw new NotFoundError('Kiosk not found');
+      errorHandler(new NotFoundError('Kiosk not found'), req, res);
     }
 
     if (kiosk.is_approved) {
-      throw new BusinessLogicError('Kiosk is already approved', ErrorCode.RESOURCE_ALREADY_EXISTS);
+      errorHandler(new BusinessLogicError('Kiosk is already approved', ErrorCode.RESOURCE_ALREADY_EXISTS), req, res);
     }
 
     const updated = await prisma.kiosk.update({
@@ -151,8 +153,8 @@ export async function getPendingKiosks() {
     return kiosks.map((k) => ({
       id: k.id,
       name: k.name,
-      gov: k.gov,
-      area: k.area,
+      kiosk_type: k.kiosk_type,
+      location: k.location,
       owner_phone: k.owner.phone,
       workers_count: k._count.workers,
       transactions_count: k._count.transactions,
@@ -199,7 +201,9 @@ export async function getPendingRedemptions() {
 export async function processRedemption(
   redemptionId: string,
   action: 'APPROVE' | 'REJECT',
-  note?: string
+  req: Request,
+  res: Response,
+  note?: string,
 ) {
   try {
     const redemption = await prisma.redemptionRequest.findUnique({
@@ -207,14 +211,14 @@ export async function processRedemption(
     });
 
     if (!redemption) {
-      throw new NotFoundError('Redemption request not found');
+      errorHandler(new NotFoundError('Redemption request not found'), req, res);
     }
 
     if (redemption.status !== 'PENDING') {
-      throw new BusinessLogicError(
+      errorHandler(new BusinessLogicError(
         `Redemption is already ${redemption.status.toLowerCase()}`,
         ErrorCode.RESOURCE_CONFLICT
-      );
+      ), req, res);
     }
 
     const status = action === 'APPROVE' ? 'COMPLETED' : 'REJECTED';
@@ -248,18 +252,18 @@ export async function processRedemption(
 /**
  * Collect due
  */
-export async function collectDue(dueId: string) {
+export async function collectDue(dueId: string, req: Request, res: Response) {
   try {
     const due = await prisma.kioskDue.findUnique({
       where: { id: dueId },
     });
 
     if (!due) {
-      throw new NotFoundError('Due not found');
+      errorHandler(new NotFoundError('Due not found'), req, res);
     }
 
     if (due.is_paid) {
-      throw new BusinessLogicError('Due is already paid', ErrorCode.RESOURCE_CONFLICT);
+      errorHandler(new BusinessLogicError('Due is already paid', ErrorCode.RESOURCE_CONFLICT), req, res);
     }
 
     const updated = await prisma.kioskDue.update({

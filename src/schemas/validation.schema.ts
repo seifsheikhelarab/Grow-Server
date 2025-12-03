@@ -29,6 +29,7 @@ export const loginSchema = z.object({
 export const sendPointsSchema = z.object({
   phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
   amount: z.number().int().min(5, 'Amount must be at least 5').max(100, 'Amount cannot exceed 100'),
+  kioskId: z.string().uuid('Invalid kiosk ID'),
 });
 
 /**
@@ -56,12 +57,14 @@ export const updateGoalSchema = z.object({
  */
 export const createKioskSchema = z.object({
   name: z.string().min(3, 'Kiosk name must be at least 3 characters'),
-  type: z.string().min(3, 'type required'),
+  kiosk_type: z.string().min(3, 'type required'),
   location: z.string().min(3).optional(),
+  is_approved: z.boolean().default(false),
 });
 
 export const inviteWorkerSchema = z.object({
   workerPhone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
+  kioskId: z.string().uuid('Invalid kiosk ID'),
 });
 
 /**

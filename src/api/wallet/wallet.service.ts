@@ -1,18 +1,20 @@
 import prisma from '../../prisma';
 import { NotFoundError, BusinessLogicError, ErrorCode } from '../../utils/response';
 import logger from '../../utils/logger';
+import { errorHandler } from '../../middlewares/error.middleware';
+import { Request, Response } from 'express';
 
 /**
  * Get user's wallet balance
  */
-export async function getBalance(userId: string) {
+export async function getBalance(userId: string, req: Request, res: Response) {
   try {
     const wallet = await prisma.wallet.findUnique({
       where: { user_id: userId },
     });
 
     if (!wallet) {
-      throw new NotFoundError('Wallet not found');
+      errorHandler(new NotFoundError('Wallet not found'), req, res);
     }
 
     return wallet.balance.toNumber ? wallet.balance.toNumber() : Number(wallet.balance);
@@ -25,7 +27,7 @@ export async function getBalance(userId: string) {
 /**
  * Get wallet details
  */
-export async function getWalletDetails(userId: string) {
+export async function getWalletDetails(userId: string, req: Request, res: Response) {
   try {
     const wallet = await prisma.wallet.findUnique({
       where: { user_id: userId },
@@ -41,7 +43,7 @@ export async function getWalletDetails(userId: string) {
     });
 
     if (!wallet) {
-      throw new NotFoundError('Wallet not found');
+      errorHandler(new NotFoundError('Wallet not found'), req, res);
     }
 
     return {
@@ -59,22 +61,22 @@ export async function getWalletDetails(userId: string) {
 /**
  * Deduct points from wallet
  */
-export async function deductPoints(userId: string, amount: number): Promise<void> {
+export async function deductPoints(userId: string, amount: number, req: Request, res: Response): Promise<void> {
   try {
     const wallet = await prisma.wallet.findUnique({
       where: { user_id: userId },
     });
 
     if (!wallet) {
-      throw new NotFoundError('Wallet not found');
+      errorHandler(new NotFoundError('Wallet not found'), req, res);
     }
 
-    if (wallet.balance < amount) {
-      throw new BusinessLogicError(
+    if (wallet.balance.toNumber() < amount) {
+      errorHandler(new BusinessLogicError(
         `Insufficient balance. Required: ${amount}, Available: ${wallet.balance}`,
         ErrorCode.INSUFFICIENT_BALANCE,
         { required: amount, available: wallet.balance }
-      );
+      ), req, res);
     }
 
     await prisma.wallet.update({
@@ -92,14 +94,14 @@ export async function deductPoints(userId: string, amount: number): Promise<void
 /**
  * Add points to wallet
  */
-export async function addPoints(userId: string, amount: number): Promise<void> {
+export async function addPoints(userId: string, amount: number, req: Request, res: Response): Promise<void> {
   try {
     const wallet = await prisma.wallet.findUnique({
       where: { user_id: userId },
     });
 
     if (!wallet) {
-      throw new NotFoundError('Wallet not found');
+      errorHandler(new NotFoundError('Wallet not found'), req, res);
     }
 
     await prisma.wallet.update({
@@ -121,7 +123,9 @@ export async function createRedemption(
   userId: string,
   amount: number,
   method: string,
-  details: string
+  details: string,
+  req: Request,
+  res: Response
 ) {
   try {
     const wallet = await prisma.wallet.findUnique({
@@ -129,14 +133,14 @@ export async function createRedemption(
     });
 
     if (!wallet) {
-      throw new NotFoundError('Wallet not found');
+      errorHandler(new NotFoundError('Wallet not found'), req, res);
     }
 
-    if (wallet.balance < amount) {
-      throw new BusinessLogicError(
+    if (wallet.balance.toNumber() < amount) {
+      errorHandler(new BusinessLogicError(
         `Insufficient balance for redemption. Required: ${amount}, Available: ${wallet.balance}`,
         ErrorCode.INSUFFICIENT_BALANCE
-      );
+      ), req, res);
     }
 
     // Create redemption request within transaction
@@ -216,14 +220,14 @@ export async function getGoals(userId: string) {
 /**
  * Update goal progress
  */
-export async function updateGoalProgress(goalId: string, amount: number) {
+export async function updateGoalProgress(goalId: string, amount: number, req: Request, res: Response) {
   try {
     const goal = await prisma.goal.findUnique({
       where: { id: goalId },
     });
 
     if (!goal) {
-      throw new NotFoundError('Goal not found');
+      errorHandler(new NotFoundError('Goal not found'), req, res);
     }
 
     const updated = await prisma.goal.update({

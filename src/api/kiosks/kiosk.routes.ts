@@ -13,39 +13,40 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * POST /api/kiosks/create
+ * POST /api/kiosks/
  * Create new kiosk (Owner only)
  */
-router.post(
-  '/create',
+/**
+ * GET /api/kiosks/
+ * Get user's kiosks
+ */
+router.route('/').post(
   roleGuard('OWNER'),
   validateRequest(createKioskSchema),
   kioskController.create
-);
-
-/**
- * GET /api/kiosks/list
- * Get user's kiosks
- */
-router.get('/list', roleGuard('OWNER'), kioskController.getUserKiosks);
+).get(roleGuard('OWNER'), kioskController.getUserKiosks);
 
 /**
  * POST /api/kiosks/invite-worker
  * Invite worker to kiosk (Owner only)
  */
-router.post(
-  '/invite-worker',
+router.route('/invite-worker').post(
   roleGuard('OWNER'),
   validateRequest(inviteWorkerSchema),
   kioskController.inviteWorker
 );
 
 /**
+ * GET /api/kiosks/worker-invitations
+ * Get kiosk invitations (Worker only)
+ */
+router.route('/worker-invitations').get(roleGuard('WORKER'), kioskController.getWorkerInvitations);
+
+/**
  * POST /api/kiosks/accept-invitation
  * Accept worker invitation (Worker only)
  */
-router.post(
-  '/accept-invitation',
+router.route('/accept-invitation').post(
   roleGuard('WORKER'),
   kioskController.acceptInvitation
 );

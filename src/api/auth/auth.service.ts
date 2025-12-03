@@ -1,3 +1,4 @@
+import { Request, Response } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import prisma from '../../prisma';
@@ -10,6 +11,7 @@ import {
   ErrorCode,
 } from '../../utils/response';
 import logger from '../../utils/logger';
+import { errorHandler } from '../../middlewares/error.middleware';
 
 /**
  * Generate and store OTP
@@ -40,22 +42,26 @@ export async function sendOtp(phone: string): Promise<void> {
 /**
  * Verify OTP and check if user exists
  */
-export async function verifyOtp(phone: string, code: string): Promise<{ userExists: boolean; token: string }> {
+export async function verifyOtp(phone: string, code: string, req: Request, res: Response)
+  : Promise<{ userExists: boolean; token: string }> {
   try {
     // Find OTP record
     const otpRecord = await prisma.otp.findUnique({ where: { phone } });
 
     if (!otpRecord) {
-      throw new NotFoundError('OTP not found or expired');
+      errorHandler(new NotFoundError('OTP not found or expired'), req, res);
+      return { userExists: false, token: '' };
     }
 
     if (otpRecord.expiresAt < new Date()) {
       await prisma.otp.delete({ where: { phone } });
-      throw new AuthenticationError('OTP expired', ErrorCode.OTP_EXPIRED);
+      errorHandler(new AuthenticationError('OTP expired', ErrorCode.OTP_EXPIRED), req, res);
+      return { userExists: false, token: '' };
     }
 
     if (otpRecord.code !== code) {
-      throw new AuthenticationError('Invalid OTP', ErrorCode.INVALID_OTP);
+      errorHandler(new AuthenticationError('Invalid OTP', ErrorCode.INVALID_OTP), req, res);
+      return { userExists: false, token: '' };
     }
 
     // Delete used OTP
@@ -78,7 +84,8 @@ export async function verifyOtp(phone: string, code: string): Promise<{ userExis
     }
 
     if (!user.is_active) {
-      throw new AuthenticationError('User account is inactive');
+      errorHandler(new AuthenticationError('User account is inactive'), req, res);
+      return { userExists: false, token: '' };
     }
 
     await prisma.user.update({
@@ -98,7 +105,8 @@ export async function verifyOtp(phone: string, code: string): Promise<{ userExis
     return { userExists: true, token };
   } catch (err) {
     logger.error(`Error verifying OTP: ${err}`);
-    throw err;
+    errorHandler(err, req, res);
+    return { userExists: false, token: '' };
   }
 }
 
@@ -108,13 +116,15 @@ export async function verifyOtp(phone: string, code: string): Promise<{ userExis
 export async function register(
   phone: string,
   password: string,
-  role: 'CUSTOMER' | 'WORKER' | 'OWNER'
+  role: 'CUSTOMER' | 'WORKER' | 'OWNER',
+  req: Request,
+  res: Response
 ): Promise<{ id: string; phone: string; role: string; token: string }> {
   try {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { phone } });
     if (existingUser) {
-      throw new ConflictError('User already exists with this phone number');
+      errorHandler(new ConflictError('User already exists with this phone number'), req, res);
     }
 
     // Hash password
@@ -180,24 +190,26 @@ export async function register(
  */
 export async function login(
   phone: string,
-  password: string
+  password: string,
+  req: Request,
+  res: Response
 ): Promise<{ id: string; phone: string; role: string; token: string }> {
   try {
     const user = await prisma.user.findUnique({ where: { phone } });
 
     if (!user || !user.password_hash) {
-      throw new AuthenticationError('Invalid phone or password');
+      errorHandler(new AuthenticationError('Invalid phone or password'), req, res);
     }
 
     if (!user.is_active) {
-      throw new AuthenticationError('User account is inactive');
+      errorHandler(new AuthenticationError('User account is inactive'), req, res);
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
-      throw new AuthenticationError('Invalid phone or password');
+      errorHandler(new AuthenticationError('Invalid phone or password'), req, res);
     }
 
     // Generate auth token
@@ -224,7 +236,7 @@ export async function login(
 /**
  * Verify JWT token
  */
-export async function verifyToken(token: string): Promise<{
+export async function verifyToken(token: string, req: Request, res: Response): Promise<{
   id: string;
   phone: string;
   role: string;
@@ -238,8 +250,10 @@ export async function verifyToken(token: string): Promise<{
     return decoded;
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
-      throw new AuthenticationError('Token expired', ErrorCode.TOKEN_EXPIRED);
+      errorHandler(new AuthenticationError('Token expired', ErrorCode.TOKEN_EXPIRED), req, res);
+      return { id: '', phone: '', role: '' };
     }
-    throw new AuthenticationError('Invalid token', ErrorCode.INVALID_TOKEN);
+    errorHandler(new AuthenticationError('Invalid token', ErrorCode.INVALID_TOKEN), req, res);
+    return { id: '', phone: '', role: '' };
   }
 }

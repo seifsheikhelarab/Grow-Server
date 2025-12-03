@@ -12,21 +12,21 @@ router.use(authMiddleware);
 router.use(roleGuard('WORKER', 'OWNER'));
 
 /**
- * POST /api/transactions/send
+ * POST /api/transactions
  * Send points to customer
  */
 router.post(
-  '/send',
+  '/',
   transactionLimiter,
   validateRequest(sendPointsSchema),
   transactionController.sendPoints
 );
 
 /**
- * GET /api/transactions/history
+ * GET /api/transactions/
  * Get transaction history
  */
-router.get('/history', transactionController.getHistory);
+router.get('/', transactionController.getHistory);
 
 /**
  * GET /api/transactions/daily-stats

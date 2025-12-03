@@ -114,7 +114,7 @@ model Kiosk {
   id          String  @id @default(uuid())
   owner_id    String
   name        String
-  type        String
+  kiosk_type  String
   location    String
   is_approved Boolean @default(false)
 

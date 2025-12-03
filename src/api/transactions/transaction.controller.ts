@@ -2,18 +2,17 @@ import { Request, Response } from 'express';
 import * as transactionService from './transaction.service';
 import { ResponseHandler, HttpStatus } from '../../utils/response';
 import { asyncHandler } from '../../middlewares/error.middleware';
-import logger from '../../utils/logger';
 
 /**
  * Send points to customer
  */
 export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
   const senderId = req.user!.id;
-  const { phone, amount } = req.body;
-  // TODO: Get kioskId from request (need to determine which kiosk)
-  const kioskId = req.body.kioskId || '';
+  const { phone, amount, kioskId } = req.body;
 
   const result = await transactionService.sendPoints(
+    req,
+    res,
     senderId,
     phone,
     kioskId,

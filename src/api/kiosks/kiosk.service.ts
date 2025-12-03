@@ -7,6 +7,8 @@ import {
   ErrorCode,
 } from '../../utils/response';
 import logger from '../../utils/logger';
+import { errorHandler } from '../../middlewares/error.middleware';
+import { Request, Response } from 'express';
 
 /**
  * Create new kiosk
@@ -14,16 +16,16 @@ import logger from '../../utils/logger';
 export async function createKiosk(
   ownerId: string,
   name: string,
-  gov: string,
-  area: string
+  kiosk_type: string,
+  location: string
 ) {
   try {
     const kiosk = await prisma.kiosk.create({
       data: {
         owner_id: ownerId,
         name,
-        gov,
-        area,
+        kiosk_type,
+        location,
         is_approved: false,
       },
     });
@@ -42,7 +44,9 @@ export async function createKiosk(
 export async function inviteWorker(
   ownerId: string,
   kioskId: string,
-  workerPhone: string
+  workerPhone: string,
+  req: Request,
+  res: Response
 ) {
   try {
     // Verify kiosk ownership
@@ -51,11 +55,11 @@ export async function inviteWorker(
     });
 
     if (!kiosk) {
-      throw new NotFoundError('Kiosk not found');
+      errorHandler(new NotFoundError('Kiosk not found'), req, res);
     }
 
     if (kiosk.owner_id !== ownerId) {
-      throw new AuthorizationError('You are not the owner of this kiosk');
+      errorHandler(new AuthorizationError('You are not the owner of this kiosk'), req, res);
     }
 
     // Check if worker user exists
@@ -83,10 +87,10 @@ export async function inviteWorker(
     }
 
     if (worker.role !== 'WORKER') {
-      throw new BusinessLogicError(
+      errorHandler(new BusinessLogicError(
         'User must be a worker',
         ErrorCode.ROLE_NOT_ALLOWED
-      );
+      ), req, res);
     }
 
     // Check if already a worker at this kiosk
@@ -95,7 +99,7 @@ export async function inviteWorker(
     });
 
     if (existingProfile && existingProfile.kiosk_id === kioskId) {
-      throw new ConflictError('Worker is already assigned to this kiosk');
+      errorHandler(new ConflictError('Worker is already assigned to this kiosk'), req, res);
     }
 
     // Create or update worker profile
@@ -121,16 +125,43 @@ export async function inviteWorker(
 }
 
 /**
+ * Get worker invitations
+ */
+export async function getWorkerInvitations(workerId: string) {
+  try {
+    const invitations = await prisma.workerProfile.findMany({
+      where: { user_id: workerId },
+      include: {
+        kiosk: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    return invitations.map((i) => ({
+      id: i.id,
+      kiosk_id: i.kiosk_id,
+      kiosk_name: i.kiosk.name,
+      worker_id: i.user_id,
+      status: i.status,
+    }));
+  } catch (err) {
+    logger.error(`Error getting worker invitations: ${err}`);
+    throw err;
+  }
+}
+
+/**
  * Accept worker invitation
  */
-export async function acceptInvitation(workerId: string) {
+export async function acceptInvitation(workerId: string, req: Request, res: Response) {
   try {
     const profile = await prisma.workerProfile.findUnique({
       where: { user_id: workerId },
     });
 
     if (!profile) {
-      throw new NotFoundError('Worker invitation not found');
+      errorHandler(new NotFoundError('Worker invitation not found'), req, res);
     }
 
     const updated = await prisma.workerProfile.update({
@@ -154,7 +185,7 @@ export async function acceptInvitation(workerId: string) {
 /**
  * Get kiosk workers
  */
-export async function getKioskWorkers(kioskId: string, ownerId: string) {
+export async function getKioskWorkers(kioskId: string, ownerId: string, req: Request, res: Response) {
   try {
     // Verify ownership
     const kiosk = await prisma.kiosk.findUnique({
@@ -162,11 +193,11 @@ export async function getKioskWorkers(kioskId: string, ownerId: string) {
     });
 
     if (!kiosk) {
-      throw new NotFoundError('Kiosk not found');
+      errorHandler(new NotFoundError('Kiosk not found'), req, res);
     }
 
     if (kiosk.owner_id !== ownerId) {
-      throw new AuthorizationError('You are not the owner of this kiosk');
+      errorHandler(new AuthorizationError('You are not the owner of this kiosk'), req, res);
     }
 
     const workers = await prisma.workerProfile.findMany({
@@ -194,7 +225,7 @@ export async function getKioskWorkers(kioskId: string, ownerId: string) {
 /**
  * Get kiosk dues
  */
-export async function getKioskDues(kioskId: string, ownerId: string) {
+export async function getKioskDues(kioskId: string, ownerId: string, req: Request, res: Response) {
   try {
     // Verify ownership
     const kiosk = await prisma.kiosk.findUnique({
@@ -202,11 +233,11 @@ export async function getKioskDues(kioskId: string, ownerId: string) {
     });
 
     if (!kiosk) {
-      throw new NotFoundError('Kiosk not found');
+      errorHandler(new NotFoundError('Kiosk not found'), req, res);
     }
 
     if (kiosk.owner_id !== ownerId) {
-      throw new AuthorizationError('You are not the owner of this kiosk');
+      errorHandler(new AuthorizationError('You are not the owner of this kiosk'), req, res);
     }
 
     const dues = await prisma.kioskDue.findMany({
@@ -254,8 +285,8 @@ export async function getUserKiosks(ownerId: string) {
     return kiosks.map((k) => ({
       id: k.id,
       name: k.name,
-      gov: k.gov,
-      area: k.area,
+      kiosk_type: k.kiosk_type,
+      location: k.location,
       is_approved: k.is_approved,
       workers_count: k._count.workers,
       transactions_count: k._count.transactions,

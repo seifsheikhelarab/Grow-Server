@@ -146,30 +146,327 @@
         }
       ],
       "id": "085ff858-2492-4b3f-b7ff-e40b0faaf58a"
+    },
+    {
+      "name": "Kiosks",
+      "item": [
+        {
+          "name": "Create new kiosk (Owner only)",
+          "id": "5d52da7b-6413-49a1-9cb5-4acb8f2f5ca6",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "name",
+                  "value": "My Kiosk",
+                  "type": "text",
+                  "uuid": "3868586e-ca93-427b-b2a7-cbdbe43e9474"
+                },
+                {
+                  "key": "kiosk_type",
+                  "value": "idkdf",
+                  "type": "text",
+                  "uuid": "8780ffe4-4ead-457b-8930-5f002aa12332"
+                },
+                {
+                  "key": "location",
+                  "value": "Meet Khamis",
+                  "type": "text",
+                  "uuid": "ec7c8431-05d7-4577-892b-5410db569b13"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/kiosks/",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get user's kiosks",
+          "id": "22596096-18b3-4025-a0c8-cb909a4d9276",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/kiosks/",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invite worker to kiosk (Owner only)",
+          "id": "ddc0a1cf-ec87-4ef9-9535-24f3bf5780c5",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "workerPhone",
+                  "value": "012034120422",
+                  "type": "text",
+                  "uuid": "04aa1489-e8de-4196-9bcd-84991af279c5"
+                },
+                {
+                  "key": "kioskId",
+                  "value": "2df3a648-78c5-45d1-b468-22c64369a317",
+                  "type": "text",
+                  "uuid": "92033715-7f34-4280-9dfa-359c51097ee5"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{appurl}}/kiosks/invite-worker",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                "invite-worker"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get kiosk invitations (Worker only)",
+          "id": "3918c9b0-7246-4a40-9e27-b61869f44494",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/kiosks/worker-invitations",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                "worker-invitations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get kiosk workers (Owner only)",
+          "id": "a77a726a-e8cb-42bc-a4c3-7155d59b0b11",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/kiosks/{{kioskId}}/workers",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                "{{kioskId}}",
+                "workers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get kiosk dues (Owner only)",
+          "id": "eb2064d7-d689-45ee-92a0-c39863b0500d",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/kiosks/{{kioskId}}/dues",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "kiosks",
+                "{{kioskId}}",
+                "dues"
+              ]
+            }
+          }
+        }
+      ],
+      "id": "b4cda22e-6cd9-419a-8efe-b98e3a80c851"
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Get transaction history",
+          "id": "79e90169-cbeb-4de6-aea8-ff739292afd5",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/transactions/",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "transactions",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send points to customer",
+          "id": "d74a4ca9-a2f9-4ce5-9517-db620621ed7b",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"phone\": \"{{customerNum}}\",\r\n    \"amount\": 100,\r\n    \"kioskId\": \"2df3a648-78c5-45d1-b468-22c64369a317\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{appurl}}/transactions/",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "transactions",
+                ""
+              ]
+            }
+          }
+        }
+      ],
+      "id": "e28bfad5-0d32-4eb0-9173-98c7abfc940d"
     }
   ],
   "variable": [
     {
-      "id": "be0a1c72-974e-4aaf-9008-843018ddba53",
+      "id": "f66199bf-fba8-4b45-b036-d9d1ff7f135a",
       "key": "appurl",
       "value": "",
       "type": "default"
     },
     {
-      "id": "3ed8473a-d351-4091-901f-ce2528c8ff67",
+      "id": "3864cfef-60e4-4d7e-a8ac-b9b68d929268",
       "key": "owner_number",
       "value": "",
       "type": "default"
     },
     {
-      "id": "dedab86d-1565-4b2d-807f-5cfe628b256e",
+      "id": "49038612-7184-494e-a92b-af02208e4a5d",
       "key": "owner_pass",
       "value": "",
       "type": "default"
     },
     {
-      "id": "bb9a778a-973a-469a-a751-e9b92a8b2141",
+      "id": "00974ce0-fdc9-4809-a56a-447465973d61",
       "key": "owner_token",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "ed039634-dffa-47c8-ace8-a5319682bda9",
+      "key": "jwt",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "e7aadf1e-4ce4-494d-8366-c5dd311df996",
+      "key": "kioskId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "efacf9f8-f4f9-4770-bf3f-3208c237d5af",
+      "key": "customerNum",
       "value": "",
       "type": "default"
     }

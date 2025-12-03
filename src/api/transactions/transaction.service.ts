@@ -1,3 +1,5 @@
+import { errorHandler } from './../../middlewares/error.middleware';
+import { Request, Response } from 'express';
 import prisma from '../../prisma';
 import {
   NotFoundError,
@@ -19,36 +21,43 @@ const MAX_DAILY_TXS_TO_CUSTOMER = 2;
 /**
  * Validate sender is active worker/owner
  */
-async function validateSender(senderId: string) {
+async function validateSender(senderId: string, req: Request, res: Response) {
   const user = await prisma.user.findUnique({
     where: { id: senderId },
     include: { worker_profile: true },
   });
 
   if (!user) {
-    throw new NotFoundError('User not found');
+    errorHandler(new NotFoundError('User not found'), req, res);
   }
 
   if (!user.is_active) {
-    throw new BusinessLogicError(
+    errorHandler(new BusinessLogicError(
       'User account is not active',
       ErrorCode.WORKER_NOT_ACTIVE
-    );
+    ), req, res);
+  }
+
+  if (!user.is_verified) {
+    errorHandler(new BusinessLogicError(
+      'User account is not verified',
+      ErrorCode.WORKER_NOT_ACTIVE
+    ), req, res);
   }
 
   if (user.role !== 'WORKER' && user.role !== 'OWNER') {
-    throw new AuthorizationError(
+    errorHandler(new AuthorizationError(
       'Only workers and owners can send points'
-    );
+    ), req, res);
   }
 
   // Check if worker profile is active
   if (user.role === 'WORKER' && user.worker_profile) {
     if (user.worker_profile.status !== 'ACTIVE') {
-      throw new BusinessLogicError(
+      errorHandler(new BusinessLogicError(
         'Worker profile is not active',
         ErrorCode.WORKER_NOT_ACTIVE
-      );
+      ), req, res);
     }
   }
 
@@ -58,20 +67,20 @@ async function validateSender(senderId: string) {
 /**
  * Validate kiosk
  */
-async function validateKiosk(kioskId: string, senderId: string) {
+async function validateKiosk(kioskId: string, senderId: string, req: Request, res: Response) {
   const kiosk = await prisma.kiosk.findUnique({
     where: { id: kioskId },
   });
 
   if (!kiosk) {
-    throw new NotFoundError('Kiosk not found');
+    errorHandler(new NotFoundError('Kiosk not found'), req, res);
   }
 
   if (!kiosk.is_approved) {
-    throw new BusinessLogicError(
+    errorHandler(new BusinessLogicError(
       'Kiosk is not approved',
       ErrorCode.KIOSK_NOT_APPROVED
-    );
+    ), req, res);
   }
 
   // Verify sender is owner or worker of this kiosk
@@ -81,15 +90,15 @@ async function validateKiosk(kioskId: string, senderId: string) {
   });
 
   if (sender?.role === 'OWNER' && kiosk.owner_id !== senderId) {
-    throw new AuthorizationError(
+    errorHandler(new AuthorizationError(
       'You are not the owner of this kiosk'
-    );
+    ), req, res);
   }
 
   if (sender?.role === 'WORKER' && sender.worker_profile?.kiosk_id !== kioskId) {
-    throw new AuthorizationError(
+    errorHandler(new AuthorizationError(
       'You are not assigned to this kiosk'
-    );
+    ), req, res);
   }
 
   return kiosk;
@@ -102,15 +111,17 @@ async function checkConstraints(
   senderId: string,
   receiverPhone: string,
   kioskId: string,
-  amount: number
+  amount: number,
+  req: Request,
+  res: Response
 ) {
   // Constraint 1: Amount <= 100
   if (amount > MAX_TRANSACTION_AMOUNT) {
-    throw new BusinessLogicError(
+    errorHandler(new BusinessLogicError(
       `Transaction amount cannot exceed ${MAX_TRANSACTION_AMOUNT}`,
       ErrorCode.INVALID_TRANSACTION_AMOUNT,
       { max: MAX_TRANSACTION_AMOUNT, requested: amount }
-    );
+    ), req, res);
   }
 
   // Constraint 2: Daily Tx count to this specific customer < 2
@@ -126,11 +137,11 @@ async function checkConstraints(
   });
 
   if (dailyTxsToCustomer >= MAX_DAILY_TXS_TO_CUSTOMER) {
-    throw new BusinessLogicError(
+    errorHandler(new BusinessLogicError(
       `Daily transaction limit to this customer (${MAX_DAILY_TXS_TO_CUSTOMER}) exceeded`,
       ErrorCode.DAILY_TX_TO_USER_LIMIT,
       { max: MAX_DAILY_TXS_TO_CUSTOMER, current: dailyTxsToCustomer }
-    );
+    ), req, res);
   }
 
   // Constraint 3: Total Daily Tx count for this worker < 150
@@ -144,11 +155,11 @@ async function checkConstraints(
   });
 
   if (totalDailyTxs >= MAX_DAILY_TXS_PER_WORKER) {
-    throw new BusinessLogicError(
+    errorHandler(new BusinessLogicError(
       `Daily transaction limit (${MAX_DAILY_TXS_PER_WORKER}) exceeded`,
       ErrorCode.DAILY_LIMIT_EXCEEDED,
       { max: MAX_DAILY_TXS_PER_WORKER, current: totalDailyTxs }
-    );
+    ), req, res);
   }
 }
 
@@ -156,6 +167,8 @@ async function checkConstraints(
  * Send points - Core Logic
  */
 export async function sendPoints(
+  req: Request,
+  res: Response,
   senderId: string,
   receiverPhone: string,
   kioskId: string,
@@ -163,13 +176,13 @@ export async function sendPoints(
 ) {
   try {
     // Validate sender
-    const sender = await validateSender(senderId);
+    const sender = await validateSender(senderId, req, res);
 
     // Validate kiosk
-    await validateKiosk(kioskId, senderId);
+    await validateKiosk(kioskId, senderId, req, res);
 
     // Check constraints
-    await checkConstraints(senderId, receiverPhone, kioskId, amount);
+    await checkConstraints(senderId, receiverPhone, kioskId, amount, req, res);
 
     // Calculate amounts
     const fee = TRANSACTION_FEE;

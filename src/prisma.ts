@@ -5,10 +5,16 @@ import logger from './utils/logger';
  * Singleton Prisma Client
  * Ensures only one connection to the database
  */
-let prisma: PrismaClient;
+let prisma: PrismaClient<{
+  log: [
+    { emit: 'event', level: 'query' },
+    { emit: 'stdout', level: 'error' },
+    { emit: 'stdout', level: 'warn' },
+  ];
+}>;
 
 declare global {
-  var prismaInstance: PrismaClient | undefined;
+  var prismaInstance: typeof prisma | undefined;
 }
 
 if (!global.prismaInstance) {
