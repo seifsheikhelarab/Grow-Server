@@ -1,4 +1,4 @@
-import 'dotenv/config';
-import { startServer } from './app';
+import "dotenv/config";
+import { startServer } from "./app";
 
 startServer();

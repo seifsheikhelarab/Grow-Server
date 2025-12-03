@@ -1,14 +1,13 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import * as authController from './auth.controller';
-import { authMiddleware, optionalAuthMiddleware } from '../../middlewares/auth.middleware';
+import { Router } from "express";
+import * as authController from "./auth.controller";
+import { optionalAuthMiddleware } from "../../middlewares/auth.middleware";
 import {
-  sendOtpSchema,
-  verifyOtpSchema,
-  registerSchema,
-  loginSchema,
-} from '../../schemas/validation.schema';
-import { validateRequest } from '../../middlewares/validate.middleware';
+    sendOtpSchema,
+    verifyOtpSchema,
+    registerSchema,
+    loginSchema
+} from "../../schemas/validation.schema";
+import { validateRequest } from "../../middlewares/validate.middleware";
 
 const router = Router();
 
@@ -17,9 +16,9 @@ const router = Router();
  * Send OTP to phone number
  */
 router.post(
-  '/send-otp',
-  validateRequest(sendOtpSchema),
-  authController.sendOtp
+    "/send-otp",
+    validateRequest(sendOtpSchema),
+    authController.sendOtp
 );
 
 /**
@@ -27,9 +26,9 @@ router.post(
  * Verify OTP and get token
  */
 router.post(
-  '/verify-otp',
-  validateRequest(verifyOtpSchema),
-  authController.verifyOtp
+    "/verify-otp",
+    validateRequest(verifyOtpSchema),
+    authController.verifyOtp
 );
 
 /**
@@ -37,29 +36,21 @@ router.post(
  * Register new user
  */
 router.post(
-  '/register',
-  validateRequest(registerSchema),
-  authController.register
+    "/register",
+    validateRequest(registerSchema),
+    authController.register
 );
 
 /**
  * POST /api/auth/login
  * Login with phone and password
  */
-router.post(
-  '/login',
-  validateRequest(loginSchema),
-  authController.login
-);
+router.post("/login", validateRequest(loginSchema), authController.login);
 
 /**
  * GET /api/auth/verify
  * Verify authentication status
  */
-router.get(
-  '/verify',
-  optionalAuthMiddleware,
-  authController.verifyAuth
-);
+router.get("/verify", optionalAuthMiddleware, authController.verifyAuth);
 
 export default router;
