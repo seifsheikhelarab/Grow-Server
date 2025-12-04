@@ -15,25 +15,25 @@ router.use(authMiddleware);
 
 /**
  * GET /api/wallet/balance
- * Get wallet balance
+ * Get wallet balance.
  */
 router.get("/balance", walletController.getBalance);
 
 /**
  * GET /api/wallet/details
- * Get wallet details
+ * Get wallet details.
  */
 router.get("/details", walletController.getWalletDetails);
 
 /**
  * POST /api/wallet/redeem
- * Create redemption request
+ * Create redemption request.
  */
 router.post("/redeem", validateRequest(redeemSchema), walletController.redeem);
 
 /**
  * POST /api/wallet/goals
- * Create goal
+ * Create goal.
  */
 router.post(
     "/goals",
@@ -43,13 +43,13 @@ router.post(
 
 /**
  * GET /api/wallet/goals
- * Get user's goals
+ * Get user's goals.
  */
 router.get("/goals", walletController.getGoals);
 
 /**
  * PUT /api/wallet/goals/:id
- * Update goal progress
+ * Update goal progress.
  */
 router.put(
     "/goals/:id",

@@ -9,7 +9,12 @@ import { errorHandler } from "../../middlewares/error.middleware";
 import { Request, Response } from "express";
 
 /**
- * Get user's wallet balance
+ * Get user's wallet balance.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<number>} The wallet balance.
  */
 export async function getBalance(userId: string, req: Request, res: Response) {
     try {
@@ -31,7 +36,12 @@ export async function getBalance(userId: string, req: Request, res: Response) {
 }
 
 /**
- * Get wallet details
+ * Get wallet details.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The wallet details.
  */
 export async function getWalletDetails(
     userId: string,
@@ -71,7 +81,13 @@ export async function getWalletDetails(
 }
 
 /**
- * Deduct points from wallet
+ * Deduct points from wallet.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {number} amount - The amount to deduct.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<void>}
  */
 export async function deductPoints(
     userId: string,
@@ -113,7 +129,13 @@ export async function deductPoints(
 }
 
 /**
- * Add points to wallet
+ * Add points to wallet.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {number} amount - The amount to add.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<void>}
  */
 export async function addPoints(
     userId: string,
@@ -143,7 +165,15 @@ export async function addPoints(
 }
 
 /**
- * Create redemption request
+ * Create redemption request.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {number} amount - The amount to redeem.
+ * @param {string} method - The redemption method.
+ * @param {string} details - The redemption details.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The redemption request.
  */
 export async function createRedemption(
     userId: string,
@@ -204,7 +234,14 @@ export async function createRedemption(
 }
 
 /**
- * Create goal
+ * Create goal.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {string} title - The title of the goal.
+ * @param {number} target_amount - The target amount of the goal.
+ * @param {string} type - The type of the goal.
+ * @param {Date} [deadline] - The deadline of the goal.
+ * @returns {Promise<object>} The created goal.
  */
 export async function createGoal(
     userId: string,
@@ -233,7 +270,10 @@ export async function createGoal(
 }
 
 /**
- * Get user's goals
+ * Get user's goals.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<object[]>} List of goals.
  */
 export async function getGoals(userId: string) {
     try {
@@ -250,7 +290,13 @@ export async function getGoals(userId: string) {
 }
 
 /**
- * Update goal progress
+ * Update goal progress.
+ * 
+ * @param {string} goalId - The ID of the goal.
+ * @param {number} amount - The amount to add to the goal.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The updated goal.
  */
 export async function updateGoalProgress(
     goalId: string,

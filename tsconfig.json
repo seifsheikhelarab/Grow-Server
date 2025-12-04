@@ -51,6 +51,7 @@
     "./prettier.config.ts",
     "./jest.config.ts",
     "./dist",
-    "./node_modules"
+    "./node_modules",
+    "./typedoc.config.ts"
   ]
 }

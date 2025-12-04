@@ -4,7 +4,11 @@ import { errorHandler } from "./error.middleware";
 
 /**
  * Validation Middleware Factory
- * Creates a middleware that validates request body, query, or params using Zod
+ * Creates a middleware that validates request body, query, or params using Zod.
+ * 
+ * @param {ZodSchema} schema - The Zod schema to validate against.
+ * @param {"body" | "query" | "params"} source - The part of the request to validate (default: "body").
+ * @returns {Function} Express middleware function.
  */
 export const validateRequest = (
     schema: ZodSchema,
@@ -16,8 +20,8 @@ export const validateRequest = (
                 source === "body"
                     ? req.body
                     : source === "query"
-                      ? req.query
-                      : req.params;
+                        ? req.query
+                        : req.params;
 
             const result = schema.safeParse(data);
 

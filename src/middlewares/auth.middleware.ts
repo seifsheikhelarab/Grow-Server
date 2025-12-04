@@ -15,6 +15,7 @@ import prisma from "../prisma";
  */
 declare module "express-serve-static-core" {
     interface Request {
+        /** Authenticated user information */
         user?: {
             id: string;
             phone: string;
@@ -25,13 +26,18 @@ declare module "express-serve-static-core" {
 
 /**
  * Authentication Middleware
- * Validates JWT token and extracts user info
+ * Validates JWT token and extracts user info.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - The Express next middleware function.
+ * @returns {Promise<void>}
  */
 export const authMiddleware = async (
     req: Request,
     res: Response,
     next: NextFunction
-) => {
+): Promise<void> => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
 
@@ -125,7 +131,10 @@ export const authMiddleware = async (
 
 /**
  * Role Guard Middleware
- * Ensures user has required role
+ * Ensures user has required role.
+ * 
+ * @param {...string[]} allowedRoles - List of roles allowed to access the route.
+ * @returns {Function} Express middleware function.
  */
 export const roleGuard = (...allowedRoles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -161,7 +170,11 @@ export const roleGuard = (...allowedRoles: string[]) => {
 
 /**
  * Optional Auth Middleware
- * Validates JWT if present, but doesn't require it
+ * Validates JWT if present, but doesn't require it.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - The Express next middleware function.
  */
 export const optionalAuthMiddleware = (
     req: Request,

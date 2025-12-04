@@ -13,7 +13,7 @@ router.use(roleGuard("WORKER", "OWNER"));
 
 /**
  * POST /api/transactions
- * Send points to customer
+ * Send points to customer.
  */
 router.post(
     "/",
@@ -24,14 +24,14 @@ router.post(
 
 /**
  * GET /api/transactions/
- * Get transaction history
+ * Get transaction history.
  */
 router.get("/", transactionController.getHistory);
 
 /**
  * GET /api/transactions/daily-stats
- * Get daily transaction statistics
+ * Get daily transaction statistics.
  */
-router.get("/daily-stats", transactionController.getDailyStats);
+router.get("/stats", transactionController.getDailyStats);
 
 export default router;

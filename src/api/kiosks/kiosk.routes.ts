@@ -14,11 +14,11 @@ router.use(authMiddleware);
 
 /**
  * POST /api/kiosks/
- * Create new kiosk (Owner only)
+ * Create new kiosk (Owner only).
  */
 /**
  * GET /api/kiosks/
- * Get user's kiosks
+ * Get user's kiosks.
  */
 router
     .route("/")
@@ -31,7 +31,7 @@ router
 
 /**
  * POST /api/kiosks/invite-worker
- * Invite worker to kiosk (Owner only)
+ * Invite worker to kiosk (Owner only).
  */
 router
     .route("/invite-worker")
@@ -43,7 +43,7 @@ router
 
 /**
  * GET /api/kiosks/worker-invitations
- * Get kiosk invitations (Worker only)
+ * Get kiosk invitations (Worker only).
  */
 router
     .route("/worker-invitations")
@@ -51,7 +51,7 @@ router
 
 /**
  * POST /api/kiosks/accept-invitation
- * Accept worker invitation (Worker only)
+ * Accept worker invitation (Worker only).
  */
 router
     .route("/accept-invitation")
@@ -59,13 +59,13 @@ router
 
 /**
  * GET /api/kiosks/:kioskId/workers
- * Get kiosk workers (Owner only)
+ * Get kiosk workers (Owner only).
  */
 router.get("/:kioskId/workers", roleGuard("OWNER"), kioskController.getWorkers);
 
 /**
  * GET /api/kiosks/:kioskId/dues
- * Get kiosk dues (Owner only)
+ * Get kiosk dues (Owner only).
  */
 router.get("/:kioskId/dues", roleGuard("OWNER"), kioskController.getDues);
 

@@ -1,16 +1,33 @@
 import logger from "../utils/logger";
 
+/**
+ * Interface representing the application configuration.
+ */
 export interface IConfig {
+    /** Database connection string */
     DATABASE_URL: string;
+    /** Secret key for signing JWTs */
     JWT_SECRET: string;
+    /** Expiration time for JWTs (e.g., "7d", "1h") */
     JWT_EXPIRY: string;
+    /** Port number the server listens on */
     PORT: number;
+    /** Node environment (development, production, test) */
     NODE_ENV: string;
+    /** Logging level (info, debug, error, etc.) */
     LOG_LEVEL: string;
+    /** Rate limiting window in milliseconds */
     RATE_LIMIT_WINDOW_MS: number;
+    /** Maximum number of requests allowed within the rate limit window */
     RATE_LIMIT_MAX_REQUESTS: number;
 }
 
+/**
+ * Loads and validates the application configuration from environment variables.
+ * 
+ * @returns {IConfig} The validated configuration object.
+ * @throws Will exit the process with code 1 if required environment variables are missing.
+ */
 export const loadConfig = (): IConfig => {
     const required = ["DATABASE_URL", "JWT_SECRET", "PORT"];
 
@@ -50,4 +67,7 @@ export const loadConfig = (): IConfig => {
     };
 };
 
+/**
+ * The loaded application configuration.
+ */
 export const config: IConfig = loadConfig();

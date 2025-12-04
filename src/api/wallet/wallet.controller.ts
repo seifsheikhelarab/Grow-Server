@@ -4,7 +4,10 @@ import { ResponseHandler } from "../../utils/response";
 import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
- * Get wallet balance
+ * Get wallet balance.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getBalance = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
@@ -17,7 +20,10 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get wallet details
+ * Get wallet details.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getWalletDetails = asyncHandler(
     async (req: Request, res: Response) => {
@@ -34,7 +40,10 @@ export const getWalletDetails = asyncHandler(
 );
 
 /**
- * Create redemption request
+ * Create redemption request.
+ * 
+ * @param {Request} req - The Express request object containing amount, method, and details in body.
+ * @param {Response} res - The Express response object.
  */
 export const redeem = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
@@ -59,7 +68,10 @@ export const redeem = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Create goal
+ * Create goal.
+ * 
+ * @param {Request} req - The Express request object containing title, target, type, and deadline in body.
+ * @param {Response} res - The Express response object.
  */
 export const createGoal = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
@@ -84,7 +96,10 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get user's goals
+ * Get user's goals.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getGoals = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
@@ -108,7 +123,10 @@ export const getGoals = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Update goal progress
+ * Update goal progress.
+ * 
+ * @param {Request} req - The Express request object containing id in params and amount in body.
+ * @param {Response} res - The Express response object.
  */
 export const updateGoalProgress = asyncHandler(
     async (req: Request, res: Response) => {
@@ -128,8 +146,7 @@ export const updateGoalProgress = asyncHandler(
             target_amount: updated.target_amount.toString(),
             progress_percentage: (
                 (Number(updated.current_amount) /
-                    Number(updated.target_amount)) *
-                100
+                    Number(updated.target_amount))
             ).toFixed(2)
         });
     }

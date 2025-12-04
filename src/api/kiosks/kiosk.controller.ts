@@ -4,7 +4,10 @@ import { ResponseHandler } from "../../utils/response";
 import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
- * Create new kiosk
+ * Create new kiosk.
+ * 
+ * @param {Request} req - The Express request object containing name, kiosk_type, and location in body.
+ * @param {Response} res - The Express response object.
  */
 export const create = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
@@ -27,7 +30,10 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Invite worker to kiosk
+ * Invite worker to kiosk.
+ * 
+ * @param {Request} req - The Express request object containing kioskId and workerPhone in body.
+ * @param {Response} res - The Express response object.
  */
 export const inviteWorker = asyncHandler(
     async (req: Request, res: Response) => {
@@ -52,7 +58,10 @@ export const inviteWorker = asyncHandler(
 );
 
 /**
- * Get worker invitations
+ * Get worker invitations.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getWorkerInvitations = asyncHandler(
     async (req: Request, res: Response) => {
@@ -67,7 +76,10 @@ export const getWorkerInvitations = asyncHandler(
 );
 
 /**
- * Accept worker invitation
+ * Accept worker invitation.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const acceptInvitation = asyncHandler(
     async (req: Request, res: Response) => {
@@ -84,7 +96,10 @@ export const acceptInvitation = asyncHandler(
 );
 
 /**
- * Get kiosk workers
+ * Get kiosk workers.
+ * 
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
  */
 export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
@@ -103,7 +118,10 @@ export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get kiosk dues
+ * Get kiosk dues.
+ * 
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
  */
 export const getDues = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
@@ -115,7 +133,10 @@ export const getDues = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get user's kiosks
+ * Get user's kiosks.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getUserKiosks = asyncHandler(
     async (req: Request, res: Response) => {

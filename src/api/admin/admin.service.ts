@@ -9,7 +9,10 @@ import { errorHandler } from "../../middlewares/error.middleware";
 import { Request, Response } from "express";
 
 /**
- * Get admin dashboard stats
+ * Get admin dashboard stats.
+ * 
+ * @param {"1d" | "7d" | "30d"} filter - Time period filter (default: "7d").
+ * @returns {Promise<object>} Dashboard statistics.
  */
 export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
     try {
@@ -129,7 +132,12 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
 }
 
 /**
- * Approve kiosk
+ * Approve kiosk.
+ * 
+ * @param {string} kioskId - The ID of the kiosk to approve.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The updated kiosk.
  */
 export async function approveKiosk(
     kioskId: string,
@@ -170,7 +178,9 @@ export async function approveKiosk(
 }
 
 /**
- * Get pending kiosks
+ * Get pending kiosks.
+ * 
+ * @returns {Promise<object[]>} List of pending kiosks.
  */
 export async function getPendingKiosks() {
     try {
@@ -202,7 +212,9 @@ export async function getPendingKiosks() {
 }
 
 /**
- * Get pending redemptions
+ * Get pending redemptions.
+ * 
+ * @returns {Promise<object[]>} List of pending redemptions.
  */
 export async function getPendingRedemptions() {
     try {
@@ -232,7 +244,14 @@ export async function getPendingRedemptions() {
 }
 
 /**
- * Process redemption request
+ * Process redemption request.
+ * 
+ * @param {string} redemptionId - The ID of the redemption request.
+ * @param {"APPROVE" | "REJECT"} action - The action to perform.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {string} [note] - Optional note from admin.
+ * @returns {Promise<object>} The updated redemption request.
  */
 export async function processRedemption(
     redemptionId: string,
@@ -294,7 +313,12 @@ export async function processRedemption(
 }
 
 /**
- * Collect due
+ * Collect due.
+ * 
+ * @param {string} dueId - The ID of the due to collect.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The updated due.
  */
 export async function collectDue(dueId: string, req: Request, res: Response) {
     try {

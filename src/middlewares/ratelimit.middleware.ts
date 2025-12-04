@@ -3,6 +3,7 @@ import { config } from "../config/env.config";
 
 /**
  * Global rate limiter
+ * Limits requests based on configuration (default: 100 requests per 15 minutes).
  */
 export const globalLimiter = rateLimit({
     windowMs: config.RATE_LIMIT_WINDOW_MS,
@@ -14,6 +15,8 @@ export const globalLimiter = rateLimit({
 
 /**
  * Auth rate limiter (stricter)
+ * Limits authentication attempts to prevent brute force attacks.
+ * 5 attempts per 15 minutes.
  */
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -26,6 +29,8 @@ export const authLimiter = rateLimit({
 
 /**
  * OTP rate limiter
+ * Limits OTP requests to prevent abuse.
+ * 3 OTP requests per hour.
  */
 export const otpLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
@@ -37,6 +42,8 @@ export const otpLimiter = rateLimit({
 
 /**
  * Transaction rate limiter
+ * Limits transaction requests.
+ * 10 transactions per minute.
  */
 export const transactionLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute

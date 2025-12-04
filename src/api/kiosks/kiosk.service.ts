@@ -11,7 +11,13 @@ import { errorHandler } from "../../middlewares/error.middleware";
 import { Request, Response } from "express";
 
 /**
- * Create new kiosk
+ * Create new kiosk.
+ * 
+ * @param {string} ownerId - The ID of the owner.
+ * @param {string} name - The name of the kiosk.
+ * @param {string} kiosk_type - The type of the kiosk.
+ * @param {string} location - The location of the kiosk.
+ * @returns {Promise<object>} The created kiosk.
  */
 export async function createKiosk(
     ownerId: string,
@@ -39,7 +45,14 @@ export async function createKiosk(
 }
 
 /**
- * Invite worker to kiosk
+ * Invite worker to kiosk.
+ * 
+ * @param {string} ownerId - The ID of the owner.
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} workerPhone - The phone number of the worker.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The created or updated worker profile.
  */
 export async function inviteWorker(
     ownerId: string,
@@ -137,7 +150,10 @@ export async function inviteWorker(
 }
 
 /**
- * Get worker invitations
+ * Get worker invitations.
+ * 
+ * @param {string} workerId - The ID of the worker.
+ * @returns {Promise<object[]>} List of invitations.
  */
 export async function getWorkerInvitations(workerId: string) {
     try {
@@ -164,7 +180,12 @@ export async function getWorkerInvitations(workerId: string) {
 }
 
 /**
- * Accept worker invitation
+ * Accept worker invitation.
+ * 
+ * @param {string} workerId - The ID of the worker.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The updated worker profile.
  */
 export async function acceptInvitation(
     workerId: string,
@@ -205,7 +226,13 @@ export async function acceptInvitation(
 }
 
 /**
- * Get kiosk workers
+ * Get kiosk workers.
+ * 
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} ownerId - The ID of the owner.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object[]>} List of workers.
  */
 export async function getKioskWorkers(
     kioskId: string,
@@ -254,7 +281,13 @@ export async function getKioskWorkers(
 }
 
 /**
- * Get kiosk dues
+ * Get kiosk dues.
+ * 
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} ownerId - The ID of the owner.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} Dues and summary.
  */
 export async function getKioskDues(
     kioskId: string,
@@ -309,7 +342,10 @@ export async function getKioskDues(
 }
 
 /**
- * Get user's kiosks
+ * Get user's kiosks.
+ * 
+ * @param {string} ownerId - The ID of the owner.
+ * @returns {Promise<object[]>} List of kiosks.
  */
 export async function getUserKiosks(ownerId: string) {
     try {

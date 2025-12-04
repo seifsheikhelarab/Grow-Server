@@ -7,6 +7,10 @@ import adminRoutes from "./admin/admin.routes";
 
 const router = Router();
 
+/**
+ * API Routes
+ * Mounts all feature-specific routes.
+ */
 router.use("/auth", authRoutes);
 router.use("/wallet", walletRoutes);
 router.use("/transactions", transactionRoutes);

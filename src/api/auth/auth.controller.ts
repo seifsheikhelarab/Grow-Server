@@ -7,7 +7,12 @@ import {
 } from "../../utils/response";
 import { asyncHandler, errorHandler } from "../../middlewares/error.middleware";
 
-// Send OTP to phone number
+/**
+ * Send OTP to phone number.
+ * 
+ * @param {Request} req - The Express request object containing phone number in body.
+ * @param {Response} res - The Express response object.
+ */
 export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
     const { phone } = req.body;
 
@@ -18,7 +23,12 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-// Verify OTP and authenticate
+/**
+ * Verify OTP and authenticate user.
+ * 
+ * @param {Request} req - The Express request object containing phone and code in body.
+ * @param {Response} res - The Express response object.
+ */
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     const { phone, code } = req.body;
 
@@ -41,7 +51,12 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-// Register new user
+/**
+ * Register new user.
+ * 
+ * @param {Request} req - The Express request object containing phone, password, and role in body.
+ * @param {Response} res - The Express response object.
+ */
 export const register = asyncHandler(async (req: Request, res: Response) => {
     const { phone, password, role } = req.body;
 
@@ -55,7 +70,12 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-// Login with phone and password
+/**
+ * Login with phone and password.
+ * 
+ * @param {Request} req - The Express request object containing phone and password in body.
+ * @param {Response} res - The Express response object.
+ */
 export const login = asyncHandler(async (req: Request, res: Response) => {
     const { phone, password } = req.body;
 
@@ -69,7 +89,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-// Verify authentication status
+/**
+ * Verify authentication status.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
 export const verifyAuth = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {
         return ResponseHandler.success(res, "Not authenticated", {

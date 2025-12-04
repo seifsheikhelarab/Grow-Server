@@ -16,19 +16,19 @@ router.use(roleGuard("ADMIN"));
 
 /**
  * GET /api/admin/dashboard
- * Get admin dashboard with stats
+ * Get admin dashboard with stats.
  */
 router.get("/dashboard", adminController.getDashboard);
 
 /**
  * GET /api/admin/kiosks/pending
- * Get pending kiosks
+ * Get pending kiosks.
  */
 router.get("/kiosks/pending", adminController.getPendingKiosks);
 
 /**
  * POST /api/admin/kiosks/approve
- * Approve a kiosk
+ * Approve a kiosk.
  */
 router.post(
     "/kiosks/approve",
@@ -38,13 +38,13 @@ router.post(
 
 /**
  * GET /api/admin/redemptions/pending
- * Get pending redemptions
+ * Get pending redemptions.
  */
 router.get("/redemptions/pending", adminController.getPendingRedemptions);
 
 /**
  * POST /api/admin/redemptions/process
- * Process redemption request
+ * Process redemption request.
  */
 router.post(
     "/redemptions/process",
@@ -54,7 +54,7 @@ router.post(
 
 /**
  * POST /api/admin/dues/collect
- * Collect a due
+ * Collect a due.
  */
 router.post(
     "/dues/collect",

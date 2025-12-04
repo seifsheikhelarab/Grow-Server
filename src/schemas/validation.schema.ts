@@ -3,10 +3,13 @@ import { z } from "zod";
 /**
  * Auth Schemas
  */
+
+/** Schema for sending OTP */
 export const sendOtpSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format")
 });
 
+/** Schema for verifying OTP */
 export const verifyOtpSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     code: z
@@ -15,6 +18,7 @@ export const verifyOtpSchema = z.object({
         .regex(/^\d+$/, "OTP must be numeric")
 });
 
+/** Schema for user registration */
 export const registerSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     password: z
@@ -23,6 +27,7 @@ export const registerSchema = z.object({
     role: z.enum(["CUSTOMER", "WORKER", "OWNER"])
 });
 
+/** Schema for user login */
 export const loginSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     password: z
@@ -33,6 +38,8 @@ export const loginSchema = z.object({
 /**
  * Transaction Schemas
  */
+
+/** Schema for sending points */
 export const sendPointsSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     amount: z
@@ -46,19 +53,23 @@ export const sendPointsSchema = z.object({
 /**
  * Wallet Schemas
  */
+
+/** Schema for redeeming points */
 export const redeemSchema = z.object({
     amount: z.number().positive("Amount must be positive"),
     method: z.string().min(3, "Redemption method required"),
     details: z.string().min(5, "Redemption details required")
 });
 
+/** Schema for creating a goal */
 export const createGoalSchema = z.object({
     title: z.string().min(3, "Goal title must be at least 3 characters"),
     target: z.number().positive("Target amount must be positive"),
-    deadline: z.date().optional(),
+    deadline: z.coerce.date().optional(),
     type: z.enum(["SAVING", "WORKER_TARGET"])
 });
 
+/** Schema for updating a goal */
 export const updateGoalSchema = z.object({
     amount: z.number().positive("Amount must be positive")
 });
@@ -66,6 +77,8 @@ export const updateGoalSchema = z.object({
 /**
  * Kiosk Schemas
  */
+
+/** Schema for creating a kiosk */
 export const createKioskSchema = z.object({
     name: z.string().min(3, "Kiosk name must be at least 3 characters"),
     kiosk_type: z.string().min(3, "type required"),
@@ -73,6 +86,7 @@ export const createKioskSchema = z.object({
     is_approved: z.boolean().default(false)
 });
 
+/** Schema for inviting a worker */
 export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
@@ -83,16 +97,20 @@ export const inviteWorkerSchema = z.object({
 /**
  * Admin Schemas
  */
+
+/** Schema for approving a kiosk */
 export const approveKioskSchema = z.object({
     kioskId: z.string().uuid("Invalid kiosk ID")
 });
 
+/** Schema for processing a redemption request */
 export const processRedemptionSchema = z.object({
     reqId: z.string().uuid("Invalid redemption request ID"),
     action: z.enum(["APPROVE", "REJECT"]),
     note: z.string().optional()
 });
 
+/** Schema for collecting due */
 export const collectDueSchema = z.object({
     dueId: z.string().uuid("Invalid due ID")
 });
@@ -110,6 +128,7 @@ export const paginationSchema = z.object({
         .default(10)
 });
 
+/** Schema for dashboard filtering */
 export const dashboardFilterSchema = z.object({
     filter: z.enum(["1d", "7d", "30d"]).default("7d")
 });

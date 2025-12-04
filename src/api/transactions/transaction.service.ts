@@ -19,7 +19,12 @@ const MAX_DAILY_TXS_PER_WORKER = 150;
 const MAX_DAILY_TXS_TO_CUSTOMER = 2;
 
 /**
- * Validate sender is active worker/owner
+ * Validate sender is active worker/owner.
+ * 
+ * @param {string} senderId - The ID of the sender.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The validated user object.
  */
 async function validateSender(senderId: string, req: Request, res: Response) {
 	const user = await prisma.user.findUnique({
@@ -79,7 +84,13 @@ async function validateSender(senderId: string, req: Request, res: Response) {
 }
 
 /**
- * Validate kiosk
+ * Validate kiosk.
+ * 
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} senderId - The ID of the sender.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The validated kiosk object.
  */
 async function validateKiosk(
 	kioskId: string,
@@ -135,7 +146,15 @@ async function validateKiosk(
 }
 
 /**
- * Check transaction constraints
+ * Check transaction constraints.
+ * 
+ * @param {string} senderId - The ID of the sender.
+ * @param {string} receiverPhone - The phone number of the receiver.
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {number} amount - The transaction amount.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<void>}
  */
 async function checkConstraints(
 	senderId: string,
@@ -206,7 +225,15 @@ async function checkConstraints(
 }
 
 /**
- * Send points - Core Logic
+ * Send points - Core Logic.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {string} senderId - The ID of the sender.
+ * @param {string} receiverPhone - The phone number of the receiver.
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {number} amount - The transaction amount.
+ * @returns {Promise<object>} The transaction result containing transaction record and due.
  */
 export async function sendPoints(
 	req: Request,
@@ -315,7 +342,12 @@ export async function sendPoints(
 }
 
 /**
- * Get user transaction history
+ * Get user transaction history.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @param {number} limit - The number of records to retrieve (default: 20).
+ * @param {number} offset - The number of records to skip (default: 0).
+ * @returns {Promise<object>} The transaction history and total count.
  */
 export async function getTransactionHistory(
 	userId: string,
@@ -375,7 +407,10 @@ export async function getTransactionHistory(
 }
 
 /**
- * Get daily transaction stats
+ * Get daily transaction stats.
+ * 
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<object>} The daily transaction statistics.
  */
 export async function getDailyStats(userId: string) {
 	try {

@@ -4,7 +4,10 @@ import { ResponseHandler } from "../../utils/response";
 import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
- * Send points to customer
+ * Send points to customer.
+ * 
+ * @param {Request} req - The Express request object containing phone, amount, and kioskId in body.
+ * @param {Response} res - The Express response object.
  */
 export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
     const senderId = req.user!.id;
@@ -37,7 +40,10 @@ export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get transaction history
+ * Get transaction history.
+ * 
+ * @param {Request} req - The Express request object containing page and limit in query.
+ * @param {Response} res - The Express response object.
  */
 export const getHistory = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
@@ -62,7 +68,10 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Get daily transaction stats
+ * Get daily transaction stats.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getDailyStats = asyncHandler(
     async (req: Request, res: Response) => {

@@ -2,8 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import logger from "./utils/logger";
 
 /**
- * Singleton Prisma Client
- * Ensures only one connection to the database
+ * Singleton Prisma Client.
+ * Ensures only one connection to the database.
+ * Configures logging for development environment.
  */
 let prisma: PrismaClient<{
     log: [

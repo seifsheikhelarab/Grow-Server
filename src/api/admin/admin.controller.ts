@@ -4,7 +4,10 @@ import { ResponseHandler } from "../../utils/response";
 import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
- * Get admin dashboard
+ * Get admin dashboard stats.
+ * 
+ * @param {Request} req - The Express request object containing filter query param.
+ * @param {Response} res - The Express response object.
  */
 export const getDashboard = asyncHandler(
     async (req: Request, res: Response) => {
@@ -21,7 +24,10 @@ export const getDashboard = asyncHandler(
 );
 
 /**
- * Get pending kiosks
+ * Get pending kiosks.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getPendingKiosks = asyncHandler(
     async (req: Request, res: Response) => {
@@ -34,7 +40,10 @@ export const getPendingKiosks = asyncHandler(
 );
 
 /**
- * Approve kiosk
+ * Approve kiosk.
+ * 
+ * @param {Request} req - The Express request object containing kioskId in body.
+ * @param {Response} res - The Express response object.
  */
 export const approveKiosk = asyncHandler(
     async (req: Request, res: Response) => {
@@ -51,7 +60,10 @@ export const approveKiosk = asyncHandler(
 );
 
 /**
- * Get pending redemptions
+ * Get pending redemptions.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
 export const getPendingRedemptions = asyncHandler(
     async (req: Request, res: Response) => {
@@ -68,7 +80,10 @@ export const getPendingRedemptions = asyncHandler(
 );
 
 /**
- * Process redemption
+ * Process redemption request.
+ * 
+ * @param {Request} req - The Express request object containing reqId, action, and note in body.
+ * @param {Response} res - The Express response object.
  */
 export const processRedemption = asyncHandler(
     async (req: Request, res: Response) => {
@@ -96,7 +111,10 @@ export const processRedemption = asyncHandler(
 );
 
 /**
- * Collect due
+ * Collect due.
+ * 
+ * @param {Request} req - The Express request object containing dueId in body.
+ * @param {Response} res - The Express response object.
  */
 export const collectDue = asyncHandler(async (req: Request, res: Response) => {
     const { dueId } = req.body;

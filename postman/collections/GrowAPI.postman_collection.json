@@ -422,51 +422,244 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get daily transaction statistics.",
+          "id": "a2bacaaa-dcd5-4905-86e7-dab41457323f",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/transactions/stats",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "transactions",
+                "stats"
+              ]
+            }
+          }
         }
       ],
       "id": "e28bfad5-0d32-4eb0-9173-98c7abfc940d"
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get wallet balance.",
+          "id": "ada1e501-4510-4b14-b4a7-f79024408346",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/wallet/balance",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "wallet",
+                "balance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get wallet details.",
+          "id": "c07e4e15-3022-4320-b6c2-b5ae867594c8",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/wallet/details",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "wallet",
+                "details"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create redemption request.",
+          "id": "9e56f0cd-0ac3-47e6-9e99-7862b3556e8f",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"phone\": \"{{customerNum}}\",\r\n    \"amount\": 100,\r\n    \"kioskId\": \"2df3a648-78c5-45d1-b468-22c64369a317\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{appurl}}/wallet/redeem",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "wallet",
+                "redeem"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get user's goals",
+          "id": "a4e7bb02-d9a6-4e2d-b155-9cb4f53f9a5a",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{appurl}}/wallet/goals",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "wallet",
+                "goals"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update goal progress",
+          "id": "7b706ae4-cb67-4efb-b599-c3662ac48cda",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"amount\": 50\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{appurl}}/wallet/goals/{{goal_id}}",
+              "host": [
+                "{{appurl}}"
+              ],
+              "path": [
+                "wallet",
+                "goals",
+                "{{goal_id}}"
+              ]
+            }
+          }
+        }
+      ],
+      "id": "bd610371-01b4-4e87-9ca5-60af48209ccd"
     }
   ],
   "variable": [
     {
-      "id": "f66199bf-fba8-4b45-b036-d9d1ff7f135a",
+      "id": "41672701-411e-4e0d-bf09-1cb99d66f28a",
       "key": "appurl",
       "value": "",
       "type": "default"
     },
     {
-      "id": "3864cfef-60e4-4d7e-a8ac-b9b68d929268",
+      "id": "11edd640-db5d-4244-a822-5faa41d18b37",
       "key": "owner_number",
       "value": "",
       "type": "default"
     },
     {
-      "id": "49038612-7184-494e-a92b-af02208e4a5d",
+      "id": "0476a3d6-6bb2-458e-93f2-08676ac2398b",
       "key": "owner_pass",
       "value": "",
       "type": "default"
     },
     {
-      "id": "00974ce0-fdc9-4809-a56a-447465973d61",
+      "id": "96ab0e39-bd98-4609-95ea-8d4742a62503",
       "key": "owner_token",
       "value": "",
       "type": "default"
     },
     {
-      "id": "ed039634-dffa-47c8-ace8-a5319682bda9",
+      "id": "581c3c67-a18c-4286-a35c-818ad504c247",
       "key": "jwt",
       "value": "",
       "type": "default"
     },
     {
-      "id": "e7aadf1e-4ce4-494d-8366-c5dd311df996",
+      "id": "873543f4-bbb0-4dd3-b6c5-dba26bcc66e3",
       "key": "kioskId",
       "value": "",
       "type": "default"
     },
     {
-      "id": "efacf9f8-f4f9-4770-bf3f-3208c237d5af",
+      "id": "a92f90ce-cfd7-4f6f-9076-00964b2dab6f",
       "key": "customerNum",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "id": "52bfdf7a-14f9-466b-8617-c3a090b36844",
+      "key": "goal_id",
       "value": "",
       "type": "default"
     }

@@ -27,6 +27,12 @@ app.use(
 // Global rate limiting
 app.use(globalLimiter);
 
+/**
+ * Health check endpoint.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
 app.get("/health", (req: Request, res: Response) => {
     ResponseHandler.success(res, "Server is healthy", {
         timestamp: new Date().toISOString(),
@@ -49,7 +55,9 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 /**
- * Database Connection & Server Startup
+ * Database Connection & Server Startup.
+ * Connects to the database and starts the Express server.
+ * Sets up graceful shutdown on SIGTERM and SIGINT.
  */
 export async function startServer() {
     try {
