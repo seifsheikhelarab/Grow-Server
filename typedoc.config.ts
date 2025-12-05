@@ -1,4 +1,4 @@
-import { TypeDocOptions } from "typedoc";
+import { type TypeDocOptions } from "typedoc";
 
 const config: Partial<TypeDocOptions & { themeColor: string }> = {
     entryPointStrategy: "expand",
