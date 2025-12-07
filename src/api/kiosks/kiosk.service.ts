@@ -64,11 +64,11 @@ export async function inviteWorker(
     try {
         // Verify kiosk ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId }
+            where: { id: kioskId, is_approved: true }
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -182,19 +182,21 @@ export async function getWorkerInvitations(workerId: string) {
 /**
  * Accept worker invitation.
  * 
+ * @param {string} invitationId - The ID of the invitation.
  * @param {string} workerId - The ID of the worker.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @returns {Promise<object>} The updated worker profile.
  */
 export async function acceptInvitation(
+    invitationId: string,
     workerId: string,
     req: Request,
     res: Response
 ) {
     try {
         const profile = await prisma.workerProfile.findUnique({
-            where: { user_id: workerId }
+            where: { id: invitationId, user_id: workerId }
         });
 
         if (!profile) {
@@ -206,7 +208,7 @@ export async function acceptInvitation(
         }
 
         const updated = await prisma.workerProfile.update({
-            where: { user_id: workerId },
+            where: { id: invitationId, user_id: workerId },
             data: { status: "ACTIVE" },
             include: {
                 kiosk: {
@@ -243,11 +245,11 @@ export async function getKioskWorkers(
     try {
         // Verify ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId }
+            where: { id: kioskId, is_approved: true }
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -298,11 +300,11 @@ export async function getKioskDues(
     try {
         // Verify ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId }
+            where: { id: kioskId, is_approved: true }
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
         }
 
         if (kiosk.owner_id !== ownerId) {

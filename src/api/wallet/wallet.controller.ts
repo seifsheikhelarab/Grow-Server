@@ -19,25 +19,25 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-/**
- * Get wallet details.
- * 
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- */
-export const getWalletDetails = asyncHandler(
-    async (req: Request, res: Response) => {
-        const userId = req.user!.id;
+// /**
+//  * Get wallet details.
+//  * 
+//  * @param {Request} req - The Express request object.
+//  * @param {Response} res - The Express response object.
+//  */
+// export const getWalletDetails = asyncHandler(
+//     async (req: Request, res: Response) => {
+//         const userId = req.user!.id;
 
-        const wallet = await walletService.getWalletDetails(userId, req, res);
+//         const wallet = await walletService.getWalletDetails(userId, req, res);
 
-        ResponseHandler.success(
-            res,
-            "Wallet details retrieved successfully",
-            wallet
-        );
-    }
-);
+//         ResponseHandler.success(
+//             res,
+//             "Wallet details retrieved successfully",
+//             wallet
+//         );
+//     }
+// );
 
 /**
  * Create redemption request.

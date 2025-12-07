@@ -31,7 +31,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Invite worker to kiosk.
- * 
+ * @async
  * @param {Request} req - The Express request object containing kioskId and workerPhone in body.
  * @param {Response} res - The Express response object.
  */
@@ -59,7 +59,7 @@ export const inviteWorker = asyncHandler(
 
 /**
  * Get worker invitations.
- * 
+ * @async
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -84,8 +84,9 @@ export const getWorkerInvitations = asyncHandler(
 export const acceptInvitation = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;
+        const { invitationId } = req.params;
 
-        const profile = await kioskService.acceptInvitation(workerId, req, res);
+        const profile = await kioskService.acceptInvitation(invitationId, workerId, req, res);
 
         ResponseHandler.success(res, "Invitation accepted successfully", {
             id: profile.id,

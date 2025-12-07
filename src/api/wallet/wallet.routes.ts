@@ -19,11 +19,11 @@ router.use(authMiddleware);
  */
 router.get("/balance", walletController.getBalance);
 
-/**
- * GET /api/wallet/details
- * Get wallet details.
- */
-router.get("/details", walletController.getWalletDetails);
+// /**
+//  * GET /api/wallet/details
+//  * Get wallet details.
+//  */
+// router.get("/details", walletController.getWalletDetails);
 
 /**
  * POST /api/wallet/redeem

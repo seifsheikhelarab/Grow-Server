@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as authController from "./auth.controller";
-import { optionalAuthMiddleware } from "../../middlewares/auth.middleware";
+import { optionalAuthMiddleware, tempAuthMiddleware } from "../../middlewares/auth.middleware";
 import {
     sendOtpSchema,
     verifyOtpSchema,
@@ -37,6 +37,7 @@ router.post(
  */
 router.post(
     "/register",
+    tempAuthMiddleware,
     validateRequest(registerSchema),
     authController.register
 );

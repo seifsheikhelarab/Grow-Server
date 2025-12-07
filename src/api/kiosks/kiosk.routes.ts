@@ -50,11 +50,11 @@ router
     .get(roleGuard("WORKER"), kioskController.getWorkerInvitations);
 
 /**
- * POST /api/kiosks/accept-invitation
+ * POST /api/kiosks/accept-invitation/:invitationId
  * Accept worker invitation (Worker only).
  */
 router
-    .route("/accept-invitation")
+    .route("/accept-invitation/:invitationId")
     .post(roleGuard("WORKER"), kioskController.acceptInvitation);
 
 /**

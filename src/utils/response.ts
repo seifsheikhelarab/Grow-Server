@@ -64,7 +64,8 @@ export enum ErrorCode {
     // Server Errors (9xxx)
     INTERNAL_ERROR = "SRV_001",
     DATABASE_ERROR = "SRV_002",
-    EXTERNAL_SERVICE_ERROR = "SRV_003"
+    EXTERNAL_SERVICE_ERROR = "SRV_003",
+
 }
 
 /**

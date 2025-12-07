@@ -24,6 +24,85 @@ declare module "express-serve-static-core" {
     }
 }
 
+export const tempAuthMiddleware = async(
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            errorHandler(
+                new AuthenticationError(
+                    "Missing authorization token",
+                    ErrorCode.UNAUTHORIZED_ACCESS
+                ),
+                req,
+                res
+            );
+            return;
+        }
+
+        const decoded = jwt.verify(token, config.JWT_SECRET as string) as {
+            phone: string;
+        };
+
+        req.user = {
+            id: null,
+            phone: decoded.phone,
+            role: null
+        };
+
+        logger.debug(`User authenticated: ${decoded.phone}`);
+        next();
+    } catch (err) {
+        if (err instanceof AuthenticationError) {
+            errorHandler(err, req, res);
+            return;
+        }
+
+        if (typeof err === "object" && err !== null && "name" in err) {
+            const errorName = (err as { name: string }).name;
+            if (errorName === "TokenExpiredError") {
+                errorHandler(
+                    new AuthenticationError(
+                        "Token expired",
+                        ErrorCode.TOKEN_EXPIRED
+                    ),
+                    req,
+                    res
+                );
+                return;
+            }
+            if (errorName === "JsonWebTokenError") {
+                errorHandler(
+                    new AuthenticationError(
+                        "Invalid token",
+                        ErrorCode.INVALID_TOKEN
+                    ),
+                    req,
+                    res
+                );
+                return;
+            }
+        }
+
+        logger.error(
+            `Auth middleware error: ${err instanceof Error ? err.message : String(err)}`
+        );
+        errorHandler(
+            new AuthenticationError(
+                "Authentication failed",
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return;
+    }
+}
+
+
 /**
  * Authentication Middleware
  * Validates JWT token and extracts user info.

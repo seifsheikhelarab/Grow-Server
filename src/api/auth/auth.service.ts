@@ -107,7 +107,7 @@ export async function verifyOtp(
             );
 
             logger.info(`OTP verified for new user: ${phone}`);
-            return { userExists: false, token: tempToken };
+            return { userExists: true, token: tempToken };
         }
 
         if (!user.is_active) {
@@ -161,9 +161,20 @@ export async function register(
     res: Response
 ): Promise<{ id: string; phone: string; role: string; token: string }> {
     try {
+        //Check if temp auth is valid
+        const tempAuth = req.user;
+        if (!tempAuth || tempAuth.phone !== phone) {
+            errorHandler(
+                new AuthenticationError("Invalid temporary token"),
+                req,
+                res
+            );
+        }
+
+
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { phone } });
-        if (existingUser) {
+        if (existingUser && existingUser.password_hash) {
             errorHandler(
                 new ConflictError("User already exists with this phone number"),
                 req,
@@ -175,8 +186,13 @@ export async function register(
         const passwordHash = await bcrypt.hash(password, 10);
 
         // Create user within transaction
-        const user = await prisma.user.create({
-            data: {
+        const user = await prisma.user.upsert({
+            where: { phone },
+            update: {
+                password_hash: passwordHash,
+                role
+            },
+            create: {
                 phone,
                 password_hash: passwordHash,
                 role
@@ -184,8 +200,12 @@ export async function register(
         });
 
         // Create wallet
-        await prisma.wallet.create({
-            data: {
+        await prisma.wallet.upsert({
+            where: { user_id: user.id },
+            update: {
+                user_id: user.id
+            },
+            create: {
                 user_id: user.id
             }
         });

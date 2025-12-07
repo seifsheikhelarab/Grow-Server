@@ -9,6 +9,13 @@ import { errorHandler } from "../../middlewares/error.middleware";
 import { Request, Response } from "express";
 
 /**
+ * Constants for transaction limits
+ */
+const REDEMPTION_FEE = 5;
+const MIN_REDEMPTION_AMOUNT = 30;
+
+
+/**
  * Get user's wallet balance.
  * 
  * @param {string} userId - The ID of the user.
@@ -35,50 +42,50 @@ export async function getBalance(userId: string, req: Request, res: Response) {
     }
 }
 
-/**
- * Get wallet details.
- * 
- * @param {string} userId - The ID of the user.
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- * @returns {Promise<object>} The wallet details.
- */
-export async function getWalletDetails(
-    userId: string,
-    req: Request,
-    res: Response
-) {
-    try {
-        const wallet = await prisma.wallet.findUnique({
-            where: { user_id: userId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        phone: true,
-                        role: true
-                    }
-                }
-            }
-        });
+// /**
+//  * Get wallet details.
+//  * 
+//  * @param {string} userId - The ID of the user.
+//  * @param {Request} req - The Express request object.
+//  * @param {Response} res - The Express response object.
+//  * @returns {Promise<object>} The wallet details.
+//  */
+// export async function getWalletDetails(
+//     userId: string,
+//     req: Request,
+//     res: Response
+// ) {
+//     try {
+//         const wallet = await prisma.wallet.findUnique({
+//             where: { user_id: userId },
+//             include: {
+//                 user: {
+//                     select: {
+//                         id: true,
+//                         phone: true,
+//                         role: true
+//                     }
+//                 }
+//             }
+//         });
 
-        if (!wallet) {
-            errorHandler(new NotFoundError("Wallet not found"), req, res);
-        }
+//         if (!wallet) {
+//             errorHandler(new NotFoundError("Wallet not found"), req, res);
+//         }
 
-        return {
-            id: wallet.id,
-            user_id: wallet.user_id,
-            balance: wallet.balance.toNumber
-                ? wallet.balance.toNumber()
-                : Number(wallet.balance),
-            user: wallet.user
-        };
-    } catch (err) {
-        logger.error(`Error getting wallet details: ${err}`);
-        throw err;
-    }
-}
+//         return {
+//             id: wallet.id,
+//             user_id: wallet.user_id,
+//             balance: wallet.balance.toNumber
+//                 ? wallet.balance.toNumber()
+//                 : Number(wallet.balance),
+//             user: wallet.user
+//         };
+//     } catch (err) {
+//         logger.error(`Error getting wallet details: ${err}`);
+//         throw err;
+//     }
+// }
 
 /**
  * Deduct points from wallet.
@@ -184,6 +191,18 @@ export async function createRedemption(
     res: Response
 ) {
     try {
+
+        if (amount < MIN_REDEMPTION_AMOUNT) {
+            errorHandler(
+                new BusinessLogicError(
+                    `Redemption amount must be at least ${MIN_REDEMPTION_AMOUNT}`,
+                    ErrorCode.INVALID_AMOUNT
+                ),
+                req,
+                res
+            );
+        }
+
         const wallet = await prisma.wallet.findUnique({
             where: { user_id: userId }
         });
@@ -208,7 +227,7 @@ export async function createRedemption(
             // Deduct points immediately
             await tx.wallet.update({
                 where: { user_id: userId },
-                data: { balance: { decrement: amount } }
+                data: { balance: { decrement: amount + REDEMPTION_FEE } }
             });
 
             // Create redemption request
