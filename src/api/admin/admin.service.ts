@@ -10,7 +10,7 @@ import { Request, Response } from "express";
 
 /**
  * Get admin dashboard stats.
- * 
+ *
  * @param {"1d" | "7d" | "30d"} filter - Time period filter (default: "7d").
  * @returns {Promise<object>} Dashboard statistics.
  */
@@ -61,7 +61,6 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
             _count: true,
             _sum: { amount: true }
         });
-
 
         // Pending redemptions
         const pendingRedemptions = await prisma.redemptionRequest.count({
@@ -126,10 +125,9 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
     }
 }
 
-
 /**
  * Get pending redemptions.
- * 
+ *
  * @returns {Promise<object[]>} List of pending redemptions.
  */
 export async function getPendingRedemptions() {
@@ -161,7 +159,7 @@ export async function getPendingRedemptions() {
 
 /**
  * Process redemption request.
- * 
+ *
  * @param {string} redemptionId - The ID of the redemption request.
  * @param {"APPROVE" | "REJECT"} action - The action to perform.
  * @param {Request} req - The Express request object.
@@ -230,7 +228,7 @@ export async function processRedemption(
 
 /**
  * Collect due.
- * 
+ *
  * @param {string} dueId - The ID of the due to collect.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.

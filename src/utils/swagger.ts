@@ -5,7 +5,7 @@ import swaggerDoc from "../../swagger.json";
 
 /**
  * Sets up Swagger UI for API documentation.
- * 
+ *
  * @param {Application} app - The Express application instance.
  */
 export default function swaggerSetup(app: Application): void {

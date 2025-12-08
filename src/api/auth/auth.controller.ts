@@ -9,7 +9,7 @@ import { asyncHandler, errorHandler } from "../../middlewares/error.middleware";
 
 /**
  * Send OTP to phone number.
- * 
+ *
  * @param {Request} req - The Express request object containing phone number in body.
  * @param {Response} res - The Express response object.
  */
@@ -25,7 +25,7 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Verify OTP and authenticate user.
- * 
+ *
  * @param {Request} req - The Express request object containing phone and code in body.
  * @param {Response} res - The Express response object.
  */
@@ -53,7 +53,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Register new user.
- * 
+ *
  * @param {Request} req - The Express request object containing phone, password, and role in body.
  * @param {Response} res - The Express response object.
  */
@@ -72,7 +72,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Login with phone and password.
- * 
+ *
  * @param {Request} req - The Express request object containing phone and password in body.
  * @param {Response} res - The Express response object.
  */
@@ -91,7 +91,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Verify authentication status.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */

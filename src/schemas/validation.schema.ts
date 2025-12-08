@@ -82,7 +82,7 @@ export const updateGoalSchema = z.object({
 export const createKioskSchema = z.object({
     name: z.string().min(3, "Kiosk name must be at least 3 characters"),
     kiosk_type: z.string().min(3, "type required"),
-    location: z.string().min(3).optional(),
+    location: z.string().min(3).optional()
 });
 
 /** Schema for inviting a worker */

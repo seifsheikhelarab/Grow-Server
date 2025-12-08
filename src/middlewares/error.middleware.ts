@@ -10,7 +10,7 @@ import logger from "../utils/logger";
 /**
  * Global Error Handler Middleware
  * Catches all errors and formats them consistently.
- * 
+ *
  * @param {Error | AppError} err - The error object.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
@@ -80,7 +80,7 @@ export const errorHandler = (
 /**
  * 404 Not Found Middleware
  * Handles requests to non-existent routes.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -99,7 +99,7 @@ export const notFoundHandler = (req: Request, res: Response) => {
 /**
  * Async handler wrapper for Express route handlers
  * Wraps async functions to catch errors and pass them to error handler.
- * 
+ *
  * @param {Function} fn - The async route handler function.
  * @returns {Function} Express middleware function.
  */

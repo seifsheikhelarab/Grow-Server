@@ -1,6 +1,9 @@
 import { Router } from "express";
 import * as authController from "./auth.controller";
-import { optionalAuthMiddleware, tempAuthMiddleware } from "../../middlewares/auth.middleware";
+import {
+    optionalAuthMiddleware,
+    tempAuthMiddleware
+} from "../../middlewares/auth.middleware";
 import {
     sendOtpSchema,
     verifyOtpSchema,

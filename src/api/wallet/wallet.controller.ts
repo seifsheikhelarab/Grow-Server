@@ -5,7 +5,7 @@ import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
  * Get wallet balance.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -21,7 +21,7 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
 
 // /**
 //  * Get wallet details.
-//  * 
+//  *
 //  * @param {Request} req - The Express request object.
 //  * @param {Response} res - The Express response object.
 //  */
@@ -41,7 +41,7 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Create redemption request.
- * 
+ *
  * @param {Request} req - The Express request object containing amount, method, and details in body.
  * @param {Response} res - The Express response object.
  */
@@ -69,7 +69,7 @@ export const redeem = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Create goal.
- * 
+ *
  * @param {Request} req - The Express request object containing title, target, type, and deadline in body.
  * @param {Response} res - The Express response object.
  */
@@ -97,7 +97,7 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get user's goals.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -124,7 +124,7 @@ export const getGoals = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Update goal progress.
- * 
+ *
  * @param {Request} req - The Express request object containing id in params and amount in body.
  * @param {Response} res - The Express response object.
  */
@@ -145,8 +145,7 @@ export const updateGoalProgress = asyncHandler(
             current_amount: updated.current_amount.toString(),
             target_amount: updated.target_amount.toString(),
             progress_percentage: (
-                (Number(updated.current_amount) /
-                    Number(updated.target_amount))
+                Number(updated.current_amount) / Number(updated.target_amount)
             ).toFixed(2)
         });
     }

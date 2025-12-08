@@ -12,7 +12,7 @@ import { Request, Response } from "express";
 
 /**
  * Create new kiosk.
- * 
+ *
  * @param {string} ownerId - The ID of the owner.
  * @param {string} name - The name of the kiosk.
  * @param {string} kiosk_type - The type of the kiosk.
@@ -31,7 +31,7 @@ export async function createKiosk(
                 owner_id: ownerId,
                 name,
                 kiosk_type,
-                location,
+                location
             }
         });
 
@@ -45,7 +45,7 @@ export async function createKiosk(
 
 /**
  * Invite worker to kiosk.
- * 
+ *
  * @param {string} ownerId - The ID of the owner.
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} workerPhone - The phone number of the worker.
@@ -67,7 +67,11 @@ export async function inviteWorker(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
+            errorHandler(
+                new NotFoundError("Kiosk not found or not approved"),
+                req,
+                res
+            );
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -150,7 +154,7 @@ export async function inviteWorker(
 
 /**
  * Get worker invitations.
- * 
+ *
  * @param {string} workerId - The ID of the worker.
  * @returns {Promise<object[]>} List of invitations.
  */
@@ -180,7 +184,7 @@ export async function getWorkerInvitations(workerId: string) {
 
 /**
  * Accept worker invitation.
- * 
+ *
  * @param {string} invitationId - The ID of the invitation.
  * @param {string} workerId - The ID of the worker.
  * @param {Request} req - The Express request object.
@@ -228,7 +232,7 @@ export async function acceptInvitation(
 
 /**
  * Get kiosk workers.
- * 
+ *
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} ownerId - The ID of the owner.
  * @param {Request} req - The Express request object.
@@ -248,7 +252,11 @@ export async function getKioskWorkers(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
+            errorHandler(
+                new NotFoundError("Kiosk not found or not approved"),
+                req,
+                res
+            );
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -283,7 +291,7 @@ export async function getKioskWorkers(
 
 /**
  * Get kiosk dues.
- * 
+ *
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} ownerId - The ID of the owner.
  * @param {Request} req - The Express request object.
@@ -303,7 +311,11 @@ export async function getKioskDues(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found or not approved"), req, res);
+            errorHandler(
+                new NotFoundError("Kiosk not found or not approved"),
+                req,
+                res
+            );
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -344,7 +356,7 @@ export async function getKioskDues(
 
 /**
  * Get user's kiosks.
- * 
+ *
  * @param {string} ownerId - The ID of the owner.
  * @returns {Promise<object[]>} List of kiosks.
  */

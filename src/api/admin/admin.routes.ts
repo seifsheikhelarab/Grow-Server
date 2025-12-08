@@ -19,7 +19,6 @@ router.use(roleGuard("ADMIN"));
  */
 router.get("/dashboard", adminController.getDashboard);
 
-
 /**
  * GET /api/admin/redemptions/pending
  * Get pending redemptions.

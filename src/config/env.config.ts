@@ -24,7 +24,7 @@ export interface IConfig {
 
 /**
  * Loads and validates the application configuration from environment variables.
- * 
+ *
  * @returns {IConfig} The validated configuration object.
  * @throws Will exit the process with code 1 if required environment variables are missing.
  */

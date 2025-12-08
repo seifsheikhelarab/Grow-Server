@@ -15,7 +15,7 @@ import jwt, { SignOptions } from "jsonwebtoken";
 
 /**
  * Generate and store OTP.
- * 
+ *
  * @param {string} phone - The phone number to send OTP to.
  * @returns {Promise<void>}
  */
@@ -46,7 +46,7 @@ export async function sendOtp(phone: string): Promise<void> {
 
 /**
  * Verify OTP and check if user exists.
- * 
+ *
  * @param {string} phone - The phone number.
  * @param {string} code - The OTP code.
  * @param {Request} req - The Express request object.
@@ -145,7 +145,7 @@ export async function verifyOtp(
 
 /**
  * Register new user and create wallet.
- * 
+ *
  * @param {string} phone - The phone number.
  * @param {string} password - The password.
  * @param {"CUSTOMER" | "WORKER" | "OWNER"} role - The user role.
@@ -170,7 +170,6 @@ export async function register(
                 res
             );
         }
-
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { phone } });
@@ -255,7 +254,7 @@ export async function register(
 
 /**
  * Login with phone and password.
- * 
+ *
  * @param {string} phone - The phone number.
  * @param {string} password - The password.
  * @param {Request} req - The Express request object.
@@ -326,7 +325,7 @@ export async function login(
 
 /**
  * Verify JWT token.
- * 
+ *
  * @param {string} token - The JWT token.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.

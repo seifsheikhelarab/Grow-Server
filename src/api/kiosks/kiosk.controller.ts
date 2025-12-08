@@ -5,7 +5,7 @@ import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
  * Create new kiosk.
- * 
+ *
  * @param {Request} req - The Express request object containing name, kiosk_type, and location in body.
  * @param {Response} res - The Express response object.
  */
@@ -24,7 +24,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
         id: kiosk.id,
         name: kiosk.name,
         kiosk_type: kiosk.kiosk_type,
-        location: kiosk.location,
+        location: kiosk.location
     });
 });
 
@@ -76,7 +76,7 @@ export const getWorkerInvitations = asyncHandler(
 
 /**
  * Accept worker invitation.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -85,7 +85,12 @@ export const acceptInvitation = asyncHandler(
         const workerId = req.user!.id;
         const { invitationId } = req.params;
 
-        const profile = await kioskService.acceptInvitation(invitationId, workerId, req, res);
+        const profile = await kioskService.acceptInvitation(
+            invitationId,
+            workerId,
+            req,
+            res
+        );
 
         ResponseHandler.success(res, "Invitation accepted successfully", {
             id: profile.id,
@@ -97,7 +102,7 @@ export const acceptInvitation = asyncHandler(
 
 /**
  * Get kiosk workers.
- * 
+ *
  * @param {Request} req - The Express request object containing kioskId in params.
  * @param {Response} res - The Express response object.
  */
@@ -119,7 +124,7 @@ export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get kiosk dues.
- * 
+ *
  * @param {Request} req - The Express request object containing kioskId in params.
  * @param {Response} res - The Express response object.
  */
@@ -134,7 +139,7 @@ export const getDues = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Get user's kiosks.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */

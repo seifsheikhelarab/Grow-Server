@@ -14,10 +14,9 @@ import { Request, Response } from "express";
 const REDEMPTION_FEE = 5;
 const MIN_REDEMPTION_AMOUNT = 30;
 
-
 /**
  * Get user's wallet balance.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
@@ -44,7 +43,7 @@ export async function getBalance(userId: string, req: Request, res: Response) {
 
 // /**
 //  * Get wallet details.
-//  * 
+//  *
 //  * @param {string} userId - The ID of the user.
 //  * @param {Request} req - The Express request object.
 //  * @param {Response} res - The Express response object.
@@ -89,7 +88,7 @@ export async function getBalance(userId: string, req: Request, res: Response) {
 
 /**
  * Deduct points from wallet.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @param {number} amount - The amount to deduct.
  * @param {Request} req - The Express request object.
@@ -137,7 +136,7 @@ export async function deductPoints(
 
 /**
  * Add points to wallet.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @param {number} amount - The amount to add.
  * @param {Request} req - The Express request object.
@@ -173,7 +172,7 @@ export async function addPoints(
 
 /**
  * Create redemption request.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @param {number} amount - The amount to redeem.
  * @param {string} method - The redemption method.
@@ -191,7 +190,6 @@ export async function createRedemption(
     res: Response
 ) {
     try {
-
         if (amount < MIN_REDEMPTION_AMOUNT) {
             errorHandler(
                 new BusinessLogicError(
@@ -254,7 +252,7 @@ export async function createRedemption(
 
 /**
  * Create goal.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @param {string} title - The title of the goal.
  * @param {number} target_amount - The target amount of the goal.
@@ -290,7 +288,7 @@ export async function createGoal(
 
 /**
  * Get user's goals.
- * 
+ *
  * @param {string} userId - The ID of the user.
  * @returns {Promise<object[]>} List of goals.
  */
@@ -310,7 +308,7 @@ export async function getGoals(userId: string) {
 
 /**
  * Update goal progress.
- * 
+ *
  * @param {string} goalId - The ID of the goal.
  * @param {number} amount - The amount to add to the goal.
  * @param {Request} req - The Express request object.

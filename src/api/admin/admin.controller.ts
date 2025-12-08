@@ -5,7 +5,7 @@ import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
  * Get admin dashboard stats.
- * 
+ *
  * @param {Request} req - The Express request object containing filter query param.
  * @param {Response} res - The Express response object.
  */
@@ -23,10 +23,9 @@ export const getDashboard = asyncHandler(
     }
 );
 
-
 /**
  * Get pending redemptions.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -46,7 +45,7 @@ export const getPendingRedemptions = asyncHandler(
 
 /**
  * Process redemption request.
- * 
+ *
  * @param {Request} req - The Express request object containing reqId, action, and note in body.
  * @param {Response} res - The Express response object.
  */
@@ -77,7 +76,7 @@ export const processRedemption = asyncHandler(
 
 /**
  * Collect due.
- * 
+ *
  * @param {Request} req - The Express request object containing dueId in body.
  * @param {Response} res - The Express response object.
  */

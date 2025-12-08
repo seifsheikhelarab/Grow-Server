@@ -24,7 +24,7 @@ declare module "express-serve-static-core" {
     }
 }
 
-export const tempAuthMiddleware = async(
+export const tempAuthMiddleware = async (
     req: Request,
     res: Response,
     next: NextFunction
@@ -100,13 +100,12 @@ export const tempAuthMiddleware = async(
         );
         return;
     }
-}
-
+};
 
 /**
  * Authentication Middleware
  * Validates JWT token and extracts user info.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The Express next middleware function.
@@ -211,7 +210,7 @@ export const authMiddleware = async (
 /**
  * Role Guard Middleware
  * Ensures user has required role.
- * 
+ *
  * @param {...string[]} allowedRoles - List of roles allowed to access the route.
  * @returns {Function} Express middleware function.
  */
@@ -250,7 +249,7 @@ export const roleGuard = (...allowedRoles: string[]) => {
 /**
  * Optional Auth Middleware
  * Validates JWT if present, but doesn't require it.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The Express next middleware function.
