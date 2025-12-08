@@ -62,10 +62,6 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
             _sum: { amount: true }
         });
 
-        // Pending kiosks
-        const pendingKiosks = await prisma.kiosk.count({
-            where: { is_approved: false }
-        });
 
         // Pending redemptions
         const pendingRedemptions = await prisma.redemptionRequest.count({
@@ -113,7 +109,6 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
                 count: r._count
             })),
             pending_items: {
-                kiosks: pendingKiosks,
                 redemptions: pendingRedemptions
             },
             dues: {
@@ -131,85 +126,6 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
     }
 }
 
-/**
- * Approve kiosk.
- * 
- * @param {string} kioskId - The ID of the kiosk to approve.
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- * @returns {Promise<object>} The updated kiosk.
- */
-export async function approveKiosk(
-    kioskId: string,
-    req: Request,
-    res: Response
-) {
-    try {
-        const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId }
-        });
-
-        if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
-        }
-
-        if (kiosk.is_approved) {
-            errorHandler(
-                new BusinessLogicError(
-                    "Kiosk is already approved",
-                    ErrorCode.RESOURCE_ALREADY_EXISTS
-                ),
-                req,
-                res
-            );
-        }
-
-        const updated = await prisma.kiosk.update({
-            where: { id: kioskId },
-            data: { is_approved: true }
-        });
-
-        logger.info(`Kiosk approved: ${kioskId}`);
-        return updated;
-    } catch (err) {
-        logger.error(`Error approving kiosk: ${err}`);
-        throw err;
-    }
-}
-
-/**
- * Get pending kiosks.
- * 
- * @returns {Promise<object[]>} List of pending kiosks.
- */
-export async function getPendingKiosks() {
-    try {
-        const kiosks = await prisma.kiosk.findMany({
-            where: { is_approved: false },
-            include: {
-                owner: {
-                    select: { phone: true }
-                },
-                _count: {
-                    select: { workers: true, transactions: true }
-                }
-            }
-        });
-
-        return kiosks.map((k) => ({
-            id: k.id,
-            name: k.name,
-            kiosk_type: k.kiosk_type,
-            location: k.location,
-            owner_phone: k.owner.phone,
-            workers_count: k._count.workers,
-            transactions_count: k._count.transactions
-        }));
-    } catch (err) {
-        logger.error(`Error getting pending kiosks: ${err}`);
-        throw err;
-    }
-}
 
 /**
  * Get pending redemptions.

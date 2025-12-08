@@ -106,17 +106,6 @@ async function validateKiosk(
 		errorHandler(new NotFoundError("Kiosk not found"), req, res);
 	}
 
-	if (!kiosk.is_approved) {
-		errorHandler(
-			new BusinessLogicError(
-				"Kiosk is not approved",
-				ErrorCode.KIOSK_NOT_APPROVED
-			),
-			req,
-			res
-		);
-	}
-
 	// Verify sender is owner or worker of this kiosk
 	const sender = await prisma.user.findUnique({
 		where: { id: senderId },

@@ -2,7 +2,6 @@ import { Router } from "express";
 import * as adminController from "./admin.controller";
 import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware";
 import {
-    approveKioskSchema,
     processRedemptionSchema,
     collectDueSchema
 } from "../../schemas/validation.schema";
@@ -20,21 +19,6 @@ router.use(roleGuard("ADMIN"));
  */
 router.get("/dashboard", adminController.getDashboard);
 
-/**
- * GET /api/admin/kiosks/pending
- * Get pending kiosks.
- */
-router.get("/kiosks/pending", adminController.getPendingKiosks);
-
-/**
- * POST /api/admin/kiosks/approve
- * Approve a kiosk.
- */
-router.post(
-    "/kiosks/approve",
-    validateRequest(approveKioskSchema),
-    adminController.approveKiosk
-);
 
 /**
  * GET /api/admin/redemptions/pending

@@ -25,7 +25,6 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
         name: kiosk.name,
         kiosk_type: kiosk.kiosk_type,
         location: kiosk.location,
-        is_approved: kiosk.is_approved
     });
 });
 

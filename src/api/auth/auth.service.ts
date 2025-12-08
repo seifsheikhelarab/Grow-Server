@@ -21,8 +21,8 @@ import jwt, { SignOptions } from "jsonwebtoken";
  */
 export async function sendOtp(phone: string): Promise<void> {
     try {
-        // Generate 6-digit OTP
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // Generate 4-digit OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
 
         // Expiry: 10 minutes
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);

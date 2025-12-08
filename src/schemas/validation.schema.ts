@@ -14,7 +14,7 @@ export const verifyOtpSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     code: z
         .string()
-        .length(6, "OTP must be 6 digits")
+        .length(4, "OTP must be 4 digits")
         .regex(/^\d+$/, "OTP must be numeric")
 });
 
@@ -96,11 +96,6 @@ export const inviteWorkerSchema = z.object({
 /**
  * Admin Schemas
  */
-
-/** Schema for approving a kiosk */
-export const approveKioskSchema = z.object({
-    kioskId: z.string().uuid("Invalid kiosk ID")
-});
 
 /** Schema for processing a redemption request */
 export const processRedemptionSchema = z.object({

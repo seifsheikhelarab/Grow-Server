@@ -23,41 +23,6 @@ export const getDashboard = asyncHandler(
     }
 );
 
-/**
- * Get pending kiosks.
- * 
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- */
-export const getPendingKiosks = asyncHandler(
-    async (req: Request, res: Response) => {
-        const kiosks = await adminService.getPendingKiosks();
-
-        ResponseHandler.success(res, "Pending kiosks retrieved successfully", {
-            kiosks
-        });
-    }
-);
-
-/**
- * Approve kiosk.
- * 
- * @param {Request} req - The Express request object containing kioskId in body.
- * @param {Response} res - The Express response object.
- */
-export const approveKiosk = asyncHandler(
-    async (req: Request, res: Response) => {
-        const { kioskId } = req.body;
-
-        const kiosk = await adminService.approveKiosk(kioskId, req, res);
-
-        ResponseHandler.success(res, "Kiosk approved successfully", {
-            id: kiosk.id,
-            name: kiosk.name,
-            is_approved: kiosk.is_approved
-        });
-    }
-);
 
 /**
  * Get pending redemptions.

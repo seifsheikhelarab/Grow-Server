@@ -32,7 +32,6 @@ export async function createKiosk(
                 name,
                 kiosk_type,
                 location,
-                is_approved: false
             }
         });
 
@@ -64,7 +63,7 @@ export async function inviteWorker(
     try {
         // Verify kiosk ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId, is_approved: true }
+            where: { id: kioskId }
         });
 
         if (!kiosk) {
@@ -245,7 +244,7 @@ export async function getKioskWorkers(
     try {
         // Verify ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId, is_approved: true }
+            where: { id: kioskId }
         });
 
         if (!kiosk) {
@@ -300,7 +299,7 @@ export async function getKioskDues(
     try {
         // Verify ownership
         const kiosk = await prisma.kiosk.findUnique({
-            where: { id: kioskId, is_approved: true }
+            where: { id: kioskId }
         });
 
         if (!kiosk) {
@@ -365,7 +364,6 @@ export async function getUserKiosks(ownerId: string) {
             name: k.name,
             kiosk_type: k.kiosk_type,
             location: k.location,
-            is_approved: k.is_approved,
             workers_count: k._count.workers,
             transactions_count: k._count.transactions
         }));

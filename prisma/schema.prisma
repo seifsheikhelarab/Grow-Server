@@ -116,7 +116,6 @@ model Kiosk {
   name        String
   kiosk_type  String
   location    String
-  is_approved Boolean @default(false)
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
   workers      WorkerProfile[]
