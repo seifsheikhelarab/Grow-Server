@@ -1,94 +1,156 @@
-import { Request, Response } from 'express';
-import * as kioskService from './kiosk.service';
-import { ResponseHandler } from '../../utils/response';
-import { asyncHandler } from '../../middlewares/error.middleware';
-import logger from '../../utils/logger';
+import { Request, Response } from "express";
+import * as kioskService from "./kiosk.service";
+import { ResponseHandler } from "../../utils/response";
+import { asyncHandler } from "../../middlewares/error.middleware";
 
 /**
- * Create new kiosk
+ * Create new kiosk.
+ *
+ * @param {Request} req - The Express request object containing name, kiosk_type, and location in body.
+ * @param {Response} res - The Express response object.
  */
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.id;
-  const { name, gov, area } = req.body;
+    const ownerId = req.user!.id;
+    const { name, kiosk_type, location } = req.body;
 
-  const kiosk = await kioskService.createKiosk(ownerId, name, gov, area);
+    const kiosk = await kioskService.createKiosk(
+        ownerId,
+        name,
+        kiosk_type,
+        location
+    );
 
-  ResponseHandler.created(res, 'Kiosk created successfully', {
-    id: kiosk.id,
-    name: kiosk.name,
-    gov: kiosk.gov,
-    area: kiosk.area,
-    is_approved: kiosk.is_approved,
-  });
+    ResponseHandler.created(res, "Kiosk created successfully", {
+        id: kiosk.id,
+        name: kiosk.name,
+        kiosk_type: kiosk.kiosk_type,
+        location: kiosk.location
+    });
 });
 
 /**
- * Invite worker to kiosk
+ * Invite worker to kiosk.
+ * @async
+ * @param {Request} req - The Express request object containing kioskId and workerPhone in body.
+ * @param {Response} res - The Express response object.
  */
-export const inviteWorker = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.id;
-  const { kioskId, workerPhone } = req.body;
+export const inviteWorker = asyncHandler(
+    async (req: Request, res: Response) => {
+        const ownerId = req.user!.id;
+        const { kioskId, workerPhone } = req.body;
 
-  const profile = await kioskService.inviteWorker(ownerId, kioskId, workerPhone);
+        const profile = await kioskService.inviteWorker(
+            ownerId,
+            kioskId,
+            workerPhone,
+            req,
+            res
+        );
 
-  ResponseHandler.created(res, 'Worker invited successfully', {
-    id: profile.id,
-    user_id: profile.user_id,
-    kiosk_id: profile.kiosk_id,
-    status: profile.status,
-  });
-});
+        ResponseHandler.created(res, "Worker invited successfully", {
+            id: profile.id,
+            user_id: profile.user_id,
+            kiosk_id: profile.kiosk_id,
+            status: profile.status
+        });
+    }
+);
 
 /**
- * Accept worker invitation
+ * Get worker invitations.
+ * @async
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
-export const acceptInvitation = asyncHandler(async (req: Request, res: Response) => {
-  const workerId = req.user!.id;
+export const getWorkerInvitations = asyncHandler(
+    async (req: Request, res: Response) => {
+        const workerId = req.user!.id;
 
-  const profile = await kioskService.acceptInvitation(workerId);
+        const invitations = await kioskService.getWorkerInvitations(workerId);
 
-  ResponseHandler.success(res, 'Invitation accepted successfully', {
-    id: profile.id,
-    kiosk: profile.kiosk,
-    status: profile.status,
-  });
-});
+        ResponseHandler.success(res, "Invitations retrieved successfully", {
+            invitations
+        });
+    }
+);
 
 /**
- * Get kiosk workers
+ * Accept worker invitation.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
+export const acceptInvitation = asyncHandler(
+    async (req: Request, res: Response) => {
+        const workerId = req.user!.id;
+        const { invitationId } = req.params;
+
+        const profile = await kioskService.acceptInvitation(
+            invitationId,
+            workerId,
+            req,
+            res
+        );
+
+        ResponseHandler.success(res, "Invitation accepted successfully", {
+            id: profile.id,
+            kiosk: profile.kiosk,
+            status: profile.status
+        });
+    }
+);
+
+/**
+ * Get kiosk workers.
+ *
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
  */
 export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.id;
-  const { kioskId } = req.params;
+    const ownerId = req.user!.id;
+    const { kioskId } = req.params;
 
-  const workers = await kioskService.getKioskWorkers(kioskId, ownerId);
+    const workers = await kioskService.getKioskWorkers(
+        kioskId,
+        ownerId,
+        req,
+        res
+    );
 
-  ResponseHandler.success(res, 'Workers retrieved successfully', {
-    workers,
-  });
+    ResponseHandler.success(res, "Workers retrieved successfully", {
+        workers
+    });
 });
 
 /**
- * Get kiosk dues
+ * Get kiosk dues.
+ *
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
  */
 export const getDues = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.id;
-  const { kioskId } = req.params;
+    const ownerId = req.user!.id;
+    const { kioskId } = req.params;
 
-  const result = await kioskService.getKioskDues(kioskId, ownerId);
+    const result = await kioskService.getKioskDues(kioskId, ownerId, req, res);
 
-  ResponseHandler.success(res, 'Kiosk dues retrieved successfully', result);
+    ResponseHandler.success(res, "Kiosk dues retrieved successfully", result);
 });
 
 /**
- * Get user's kiosks
+ * Get user's kiosks.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  */
-export const getUserKiosks = asyncHandler(async (req: Request, res: Response) => {
-  const ownerId = req.user!.id;
+export const getUserKiosks = asyncHandler(
+    async (req: Request, res: Response) => {
+        const ownerId = req.user!.id;
 
-  const kiosks = await kioskService.getUserKiosks(ownerId);
+        const kiosks = await kioskService.getUserKiosks(ownerId);
 
-  ResponseHandler.success(res, 'Kiosks retrieved successfully', {
-    kiosks,
-  });
-});
+        ResponseHandler.success(res, "Kiosks retrieved successfully", {
+            kiosks
+        });
+    }
+);

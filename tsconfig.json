@@ -39,6 +39,7 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+    "resolveJsonModule": true,
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -50,6 +51,7 @@
     "./prettier.config.ts",
     "./jest.config.ts",
     "./dist",
-    "./node_modules"
+    "./node_modules",
+    "./typedoc.config.ts"
   ]
 }

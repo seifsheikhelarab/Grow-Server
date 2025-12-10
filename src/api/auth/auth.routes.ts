@@ -1,65 +1,60 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import * as authController from './auth.controller';
-import { authMiddleware, optionalAuthMiddleware } from '../../middlewares/auth.middleware';
+import { Router } from "express";
+import * as authController from "./auth.controller";
 import {
-  sendOtpSchema,
-  verifyOtpSchema,
-  registerSchema,
-  loginSchema,
-} from '../../schemas/validation.schema';
-import { validateRequest } from '../../middlewares/validate.middleware';
+    optionalAuthMiddleware,
+    tempAuthMiddleware
+} from "../../middlewares/auth.middleware";
+import {
+    sendOtpSchema,
+    verifyOtpSchema,
+    registerSchema,
+    loginSchema
+} from "../../schemas/validation.schema";
+import { validateRequest } from "../../middlewares/validate.middleware";
 
 const router = Router();
 
 /**
  * POST /api/auth/send-otp
- * Send OTP to phone number
+ * Send OTP to phone number.
  */
 router.post(
-  '/send-otp',
-  validateRequest(sendOtpSchema),
-  authController.sendOtp
+    "/send-otp",
+    validateRequest(sendOtpSchema),
+    authController.sendOtp
 );
 
 /**
  * POST /api/auth/verify-otp
- * Verify OTP and get token
+ * Verify OTP and get token.
  */
 router.post(
-  '/verify-otp',
-  validateRequest(verifyOtpSchema),
-  authController.verifyOtp
+    "/verify-otp",
+    validateRequest(verifyOtpSchema),
+    authController.verifyOtp
 );
 
 /**
  * POST /api/auth/register
- * Register new user
+ * Register new user.
  */
 router.post(
-  '/register',
-  validateRequest(registerSchema),
-  authController.register
+    "/register",
+    tempAuthMiddleware,
+    validateRequest(registerSchema),
+    authController.register
 );
 
 /**
  * POST /api/auth/login
- * Login with phone and password
+ * Login with phone and password.
  */
-router.post(
-  '/login',
-  validateRequest(loginSchema),
-  authController.login
-);
+router.post("/login", validateRequest(loginSchema), authController.login);
 
 /**
  * GET /api/auth/verify
- * Verify authentication status
+ * Verify authentication status.
  */
-router.get(
-  '/verify',
-  optionalAuthMiddleware,
-  authController.verifyAuth
-);
+router.get("/verify", optionalAuthMiddleware, authController.verifyAuth);
 
 export default router;

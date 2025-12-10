@@ -1,240 +1,370 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import prisma from '../../prisma';
-import { config } from '../../config/env.config';
+import { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import prisma from "../../prisma";
+import { config } from "../../config/env.config";
 import {
-  AuthenticationError,
-  ConflictError,
-  NotFoundError,
-  ValidationError,
-  ErrorCode,
-} from '../../utils/response';
-import logger from '../../utils/logger';
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+    ErrorCode
+} from "../../utils/response";
+import logger from "../../utils/logger";
+import { errorHandler } from "../../middlewares/error.middleware";
+import ms from "ms";
+import jwt, { SignOptions } from "jsonwebtoken";
 
 /**
- * Generate and store OTP
+ * Generate and store OTP.
+ *
+ * @param {string} phone - The phone number to send OTP to.
+ * @returns {Promise<void>}
  */
 export async function sendOtp(phone: string): Promise<void> {
-  try {
-    // Generate 6-digit OTP
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+        // Generate 4-digit OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Expiry: 10 minutes
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        // Expiry: 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save to database
-    await prisma.otp.upsert({
-      where: { phone },
-      update: { code, expiresAt },
-      create: { phone, code, expiresAt },
-    });
+        // Save to database
+        await prisma.otp.upsert({
+            where: { phone },
+            update: { code, expiresAt },
+            create: { phone, code, expiresAt }
+        });
 
-    // TODO: Send OTP via SMS in production
-    logger.info(`OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`);
-  } catch (err) {
-    logger.error(`Error sending OTP: ${err}`);
-    throw err;
-  }
+        // TODO: Send OTP via SMS in production
+        logger.info(
+            `OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`
+        );
+    } catch (err) {
+        logger.error(`Error sending OTP: ${err}`);
+        throw err;
+    }
 }
 
 /**
- * Verify OTP and check if user exists
+ * Verify OTP and check if user exists.
+ *
+ * @param {string} phone - The phone number.
+ * @param {string} code - The OTP code.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ userExists: boolean; token: string }>} Result containing user existence status and token.
  */
-export async function verifyOtp(phone: string, code: string): Promise<{ userExists: boolean; token: string }> {
-  try {
-    // Find OTP record
-    const otpRecord = await prisma.otp.findUnique({ where: { phone } });
+export async function verifyOtp(
+    phone: string,
+    code: string,
+    req: Request,
+    res: Response
+): Promise<{ userExists: boolean; token: string }> {
+    try {
+        // Find OTP record
+        const otpRecord = await prisma.otp.findUnique({ where: { phone } });
 
-    if (!otpRecord) {
-      throw new NotFoundError('OTP not found or expired');
+        if (!otpRecord) {
+            errorHandler(
+                new NotFoundError("OTP not found or expired"),
+                req,
+                res
+            );
+            return { userExists: false, token: "" };
+        }
+
+        if (otpRecord.expiresAt < new Date()) {
+            await prisma.otp.delete({ where: { phone } });
+            errorHandler(
+                new AuthenticationError("OTP expired", ErrorCode.OTP_EXPIRED),
+                req,
+                res
+            );
+            return { userExists: false, token: "" };
+        }
+
+        if (otpRecord.code !== code) {
+            errorHandler(
+                new AuthenticationError("Invalid OTP", ErrorCode.INVALID_OTP),
+                req,
+                res
+            );
+            return { userExists: false, token: "" };
+        }
+
+        // Delete used OTP
+        await prisma.otp.delete({ where: { phone } });
+
+        // Check if user exists
+        const user = await prisma.user.findUnique({ where: { phone } });
+
+        if (!user) {
+            // Generate temporary token for registration
+            const opts: SignOptions = { expiresIn: "30m" };
+            const tempToken = jwt.sign(
+                { phone, tempAuth: true },
+                config.JWT_SECRET as string,
+                opts
+            );
+
+            logger.info(`OTP verified for new user: ${phone}`);
+            return { userExists: true, token: tempToken };
+        }
+
+        if (!user.is_active) {
+            errorHandler(
+                new AuthenticationError("User account is inactive"),
+                req,
+                res
+            );
+            return { userExists: false, token: "" };
+        }
+
+        await prisma.user.update({
+            where: { phone },
+            data: { is_verified: true }
+        });
+
+        // Generate auth token for existing user
+        const opts: SignOptions = {
+            expiresIn: config.JWT_EXPIRY as ms.StringValue
+        };
+        const token = jwt.sign(
+            { id: user.id, phone: user.phone, role: user.role },
+            config.JWT_SECRET as string,
+            opts
+        );
+
+        logger.info(`OTP verified and user authenticated: ${phone}`);
+        return { userExists: true, token };
+    } catch (err) {
+        logger.error(`Error verifying OTP: ${err}`);
+        errorHandler(err, req, res);
+        return { userExists: false, token: "" };
     }
-
-    if (otpRecord.expiresAt < new Date()) {
-      await prisma.otp.delete({ where: { phone } });
-      throw new AuthenticationError('OTP expired', ErrorCode.OTP_EXPIRED);
-    }
-
-    if (otpRecord.code !== code) {
-      throw new AuthenticationError('Invalid OTP', ErrorCode.INVALID_OTP);
-    }
-
-    // Delete used OTP
-    await prisma.otp.delete({ where: { phone } });
-
-    // Check if user exists
-    const user = await prisma.user.findUnique({ where: { phone } });
-
-    if (!user) {
-      // Generate temporary token for registration
-      const opts: SignOptions = { expiresIn: '30m' as any };
-      const tempToken = jwt.sign(
-        { phone, tempAuth: true },
-        config.JWT_SECRET as string,
-        opts
-      );
-
-      logger.info(`OTP verified for new user: ${phone}`);
-      return { userExists: false, token: tempToken };
-    }
-
-    if (!user.is_active) {
-      throw new AuthenticationError('User account is inactive');
-    }
-
-    // Generate auth token for existing user
-    const opts: SignOptions = { expiresIn: config.JWT_EXPIRY as any };
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: user.role },
-      config.JWT_SECRET as string,
-      opts
-    );
-
-    logger.info(`OTP verified and user authenticated: ${phone}`);
-    return { userExists: true, token };
-  } catch (err) {
-    logger.error(`Error verifying OTP: ${err}`);
-    throw err;
-  }
 }
 
 /**
- * Register new user and create wallet
+ * Register new user and create wallet.
+ *
+ * @param {string} phone - The phone number.
+ * @param {string} password - The password.
+ * @param {"CUSTOMER" | "WORKER" | "OWNER"} role - The user role.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ id: string; phone: string; role: string; token: string }>} The registered user details and token.
  */
 export async function register(
-  phone: string,
-  password: string,
-  role: 'CUSTOMER' | 'WORKER' | 'OWNER'
+    phone: string,
+    password: string,
+    role: "CUSTOMER" | "WORKER" | "OWNER",
+    req: Request,
+    res: Response
 ): Promise<{ id: string; phone: string; role: string; token: string }> {
-  try {
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({ where: { phone } });
-    if (existingUser) {
-      throw new ConflictError('User already exists with this phone number');
+    try {
+        //Check if temp auth is valid
+        const tempAuth = req.user;
+        if (!tempAuth || tempAuth.phone !== phone) {
+            errorHandler(
+                new AuthenticationError("Invalid temporary token"),
+                req,
+                res
+            );
+        }
+
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({ where: { phone } });
+        if (existingUser && existingUser.password_hash) {
+            errorHandler(
+                new ConflictError("User already exists with this phone number"),
+                req,
+                res
+            );
+        }
+
+        // Hash password
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        // Create user within transaction
+        const user = await prisma.user.upsert({
+            where: { phone },
+            update: {
+                password_hash: passwordHash,
+                role
+            },
+            create: {
+                phone,
+                password_hash: passwordHash,
+                role
+            }
+        });
+
+        // Create wallet
+        await prisma.wallet.upsert({
+            where: { user_id: user.id },
+            update: {
+                user_id: user.id
+            },
+            create: {
+                user_id: user.id
+            }
+        });
+
+        // Check for shadow wallet (unclaimed points)
+        const shadowWallet = await prisma.shadowWallet.findUnique({
+            where: { phone }
+        });
+
+        if (shadowWallet) {
+            // Move shadow wallet balance to real wallet
+            await prisma.wallet.update({
+                where: { user_id: user.id },
+                data: { balance: shadowWallet.balance }
+            });
+
+            // Delete shadow wallet
+            await prisma.shadowWallet.delete({ where: { phone } });
+
+            logger.info(
+                `Shadow wallet claimed for ${phone}: ${shadowWallet.balance} points`
+            );
+        }
+
+        // Generate auth token
+        const opts: SignOptions = {
+            expiresIn: config.JWT_EXPIRY as ms.StringValue
+        };
+        const token = jwt.sign(
+            { id: user.id, phone: user.phone, role: user.role },
+            config.JWT_SECRET as string,
+            opts
+        );
+
+        logger.info(`User registered successfully: ${phone} with role ${role}`);
+        return {
+            id: user.id,
+            phone: user.phone,
+            role: user.role,
+            token
+        };
+    } catch (err) {
+        logger.error(`Error registering user: ${err}`);
+        throw err;
     }
-
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user within transaction
-    const user = await prisma.user.create({
-      data: {
-        phone,
-        password_hash: passwordHash,
-        role,
-      },
-    });
-
-    // Create wallet
-    const wallet = await prisma.wallet.create({
-      data: {
-        user_id: user.id,
-      },
-    });
-
-    // Check for shadow wallet (unclaimed points)
-    const shadowWallet = await prisma.shadowWallet.findUnique({
-      where: { phone },
-    });
-
-    if (shadowWallet) {
-      // Move shadow wallet balance to real wallet
-      await prisma.wallet.update({
-        where: { user_id: user.id },
-        data: { balance: shadowWallet.balance },
-      });
-
-      // Delete shadow wallet
-      await prisma.shadowWallet.delete({ where: { phone } });
-
-      logger.info(`Shadow wallet claimed for ${phone}: ${shadowWallet.balance} points`);
-    }
-
-    // Generate auth token
-    const opts: SignOptions = { expiresIn: config.JWT_EXPIRY as any };
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: user.role },
-      config.JWT_SECRET as string,
-      opts
-    );
-
-    logger.info(`User registered successfully: ${phone} with role ${role}`);
-    return {
-      id: user.id,
-      phone: user.phone,
-      role: user.role,
-      token,
-    };
-  } catch (err) {
-    logger.error(`Error registering user: ${err}`);
-    throw err;
-  }
 }
 
 /**
- * Login with phone and password
+ * Login with phone and password.
+ *
+ * @param {string} phone - The phone number.
+ * @param {string} password - The password.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ id: string; phone: string; role: string; token: string }>} The logged-in user details and token.
  */
 export async function login(
-  phone: string,
-  password: string
+    phone: string,
+    password: string,
+    req: Request,
+    res: Response
 ): Promise<{ id: string; phone: string; role: string; token: string }> {
-  try {
-    const user = await prisma.user.findUnique({ where: { phone } });
+    try {
+        const user = await prisma.user.findUnique({ where: { phone } });
 
-    if (!user || !user.password_hash) {
-      throw new AuthenticationError('Invalid phone or password');
+        if (!user || !user.password_hash) {
+            errorHandler(
+                new AuthenticationError("Invalid phone or password"),
+                req,
+                res
+            );
+        }
+
+        if (!user.is_active) {
+            errorHandler(
+                new AuthenticationError("User account is inactive"),
+                req,
+                res
+            );
+        }
+
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!isPasswordValid) {
+            errorHandler(
+                new AuthenticationError("Invalid phone or password"),
+                req,
+                res
+            );
+        }
+
+        // Generate auth token
+        const opts: SignOptions = {
+            expiresIn: config.JWT_EXPIRY as ms.StringValue
+        };
+        const token = jwt.sign(
+            { id: user.id, phone: user.phone, role: user.role },
+            config.JWT_SECRET as string,
+            opts
+        );
+
+        logger.info(`User logged in: ${phone}`);
+        return {
+            id: user.id,
+            phone: user.phone,
+            role: user.role,
+            token
+        };
+    } catch (err) {
+        logger.error(`Error logging in: ${err}`);
+        throw err;
     }
-
-    if (!user.is_active) {
-      throw new AuthenticationError('User account is inactive');
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!isPasswordValid) {
-      throw new AuthenticationError('Invalid phone or password');
-    }
-
-    // Generate auth token
-    const opts: SignOptions = { expiresIn: config.JWT_EXPIRY as any };
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, role: user.role },
-      config.JWT_SECRET as string,
-      opts
-    );
-
-    logger.info(`User logged in: ${phone}`);
-    return {
-      id: user.id,
-      phone: user.phone,
-      role: user.role,
-      token,
-    };
-  } catch (err) {
-    logger.error(`Error logging in: ${err}`);
-    throw err;
-  }
 }
 
 /**
- * Verify JWT token
+ * Verify JWT token.
+ *
+ * @param {string} token - The JWT token.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ id: string; phone: string; role: string }>} The decoded token payload.
  */
-export async function verifyToken(token: string): Promise<{
-  id: string;
-  phone: string;
-  role: string;
+export async function verifyToken(
+    token: string,
+    req: Request,
+    res: Response
+): Promise<{
+    id: string;
+    phone: string;
+    role: string;
 }> {
-  try {
-    const decoded = jwt.verify(token, config.JWT_SECRET) as {
-      id: string;
-      phone: string;
-      role: string;
-    };
-    return decoded;
-  } catch (err: any) {
-    if (err.name === 'TokenExpiredError') {
-      throw new AuthenticationError('Token expired', ErrorCode.TOKEN_EXPIRED);
+    try {
+        const decoded = jwt.verify(token, config.JWT_SECRET) as {
+            id: string;
+            phone: string;
+            role: string;
+        };
+        return decoded;
+    } catch (unknownError) {
+        const err = unknownError as Error;
+        if (err.name === "TokenExpiredError") {
+            errorHandler(
+                new AuthenticationError(
+                    "Token expired",
+                    ErrorCode.TOKEN_EXPIRED
+                ),
+                req,
+                res
+            );
+            return { id: "", phone: "", role: "" };
+        }
+        errorHandler(
+            new AuthenticationError("Invalid token", ErrorCode.INVALID_TOKEN),
+            req,
+            res
+        );
+        return { id: "", phone: "", role: "" };
     }
-    throw new AuthenticationError('Invalid token', ErrorCode.INVALID_TOKEN);
-  }
 }
