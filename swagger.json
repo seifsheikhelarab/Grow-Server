@@ -1,0 +1,630 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Grow Server API",
+    "version": "1.0.0",
+    "description": "API Documentation for Grow Server"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4732/api/v1",
+      "description": "Local server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "phone": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["CUSTOMER", "WORKER", "OWNER", "ADMIN"]
+          },
+          "is_active": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Wallet": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "balance": { "type": "number", "format": "float" }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "sender_id": { "type": "string", "format": "uuid" },
+          "receiver_phone": { "type": "string" },
+          "receiver_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "kiosk_id": { "type": "string", "format": "uuid" },
+          "amount_gross": { "type": "number", "format": "float" },
+          "amount_net": { "type": "number", "format": "float" },
+          "commission": { "type": "number", "format": "float" },
+          "type": {
+            "type": "string",
+            "enum": ["DEPOSIT", "WITHDRAWAL", "COMMISSION"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "COMPLETED", "FAILED", "REJECTED"]
+          },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Kiosk": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "owner_id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "gov": { "type": "string" },
+          "area": { "type": "string" },
+          "is_approved": { "type": "boolean" }
+        }
+      },
+      "WorkerProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "kiosk_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string" }
+        }
+      },
+      "Goal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "target_amount": { "type": "number", "format": "float" },
+          "current_amount": { "type": "number", "format": "float" },
+          "type": { "type": "string" },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "RedemptionRequest": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "user_id": { "type": "string", "format": "uuid" },
+          "amount": { "type": "number", "format": "float" },
+          "method": { "type": "string" },
+          "details": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "COMPLETED", "FAILED", "REJECTED"]
+          },
+          "admin_note": { "type": "string", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "KioskDue": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "kiosk_id": { "type": "string", "format": "uuid" },
+          "amount": { "type": "number", "format": "float" },
+          "is_paid": { "type": "boolean" },
+          "collected_by": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SendOtpRequest": {
+        "type": "object",
+        "required": ["phone"],
+        "properties": {
+          "phone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" }
+        }
+      },
+      "VerifyOtpRequest": {
+        "type": "object",
+        "required": ["phone", "code"],
+        "properties": {
+          "phone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" },
+          "code": { "type": "string", "minLength": 6, "maxLength": 6 }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["phone", "password", "role"],
+        "properties": {
+          "phone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" },
+          "password": { "type": "string", "minLength": 8 },
+          "role": { "type": "string", "enum": ["CUSTOMER", "WORKER", "OWNER"] }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["phone", "password"],
+        "properties": {
+          "phone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" },
+          "password": { "type": "string" }
+        }
+      },
+      "SendPointsRequest": {
+        "type": "object",
+        "required": ["phone", "amount"],
+        "properties": {
+          "phone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" },
+          "amount": { "type": "number", "minimum": 1, "maximum": 100 }
+        }
+      },
+      "RedeemRequest": {
+        "type": "object",
+        "required": ["amount", "method", "details"],
+        "properties": {
+          "amount": { "type": "number", "exclusiveMinimum": 0 },
+          "method": { "type": "string", "minLength": 3 },
+          "details": { "type": "string", "minLength": 5 }
+        }
+      },
+      "CreateGoalRequest": {
+        "type": "object",
+        "required": ["title", "target", "type"],
+        "properties": {
+          "title": { "type": "string", "minLength": 3 },
+          "target": { "type": "number", "exclusiveMinimum": 0 },
+          "type": { "type": "string", "enum": ["SAVING", "WORKER_TARGET"] },
+          "deadline": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UpdateGoalRequest": {
+        "type": "object",
+        "required": ["amount"],
+        "properties": {
+          "amount": { "type": "number", "exclusiveMinimum": 0 }
+        }
+      },
+      "CreateKioskRequest": {
+        "type": "object",
+        "required": ["name", "gov", "area"],
+        "properties": {
+          "name": { "type": "string", "minLength": 3 },
+          "gov": { "type": "string", "minLength": 3 },
+          "area": { "type": "string", "minLength": 3 }
+        }
+      },
+      "InviteWorkerRequest": {
+        "type": "object",
+        "required": ["workerPhone"],
+        "properties": {
+          "workerPhone": { "type": "string", "pattern": "^\\+?[0-9]{10,15}$" }
+        }
+      },
+      "ApproveKioskRequest": {
+        "type": "object",
+        "required": ["kioskId"],
+        "properties": {
+          "kioskId": { "type": "string", "format": "uuid" }
+        }
+      },
+      "ProcessRedemptionRequest": {
+        "type": "object",
+        "required": ["reqId", "action"],
+        "properties": {
+          "reqId": { "type": "string", "format": "uuid" },
+          "action": { "type": "string", "enum": ["APPROVE", "REJECT"] },
+          "note": { "type": "string" }
+        }
+      },
+      "CollectDueRequest": {
+        "type": "object",
+        "required": ["dueId"],
+        "properties": {
+          "dueId": { "type": "string", "format": "uuid" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/send-otp": {
+      "post": {
+        "summary": "Send OTP to phone number",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SendOtpRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OTP sent successfully" }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "summary": "Verify OTP and get token",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/VerifyOtpRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OTP verified successfully" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered successfully" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login with phone and password",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" }
+        }
+      }
+    },
+    "/auth/verify": {
+      "get": {
+        "summary": "Verify authentication status",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Authenticated" }
+        }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "summary": "Get admin dashboard with stats",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Dashboard data" }
+        }
+      }
+    },
+    "/admin/kiosks/pending": {
+      "get": {
+        "summary": "Get pending kiosks",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of pending kiosks" }
+        }
+      }
+    },
+    "/admin/kiosks/approve": {
+      "post": {
+        "summary": "Approve a kiosk",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApproveKioskRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Kiosk approved" }
+        }
+      }
+    },
+    "/admin/redemptions/pending": {
+      "get": {
+        "summary": "Get pending redemptions",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of pending redemptions" }
+        }
+      }
+    },
+    "/admin/redemptions/process": {
+      "post": {
+        "summary": "Process redemption request",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessRedemptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Redemption processed" }
+        }
+      }
+    },
+    "/admin/dues/collect": {
+      "post": {
+        "summary": "Collect a due",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CollectDueRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Due collected" }
+        }
+      }
+    },
+    "/kiosks/create": {
+      "post": {
+        "summary": "Create new kiosk (Owner only)",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateKioskRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Kiosk created" }
+        }
+      }
+    },
+    "/kiosks/list": {
+      "get": {
+        "summary": "Get user's kiosks",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of kiosks" }
+        }
+      }
+    },
+    "/kiosks/invite-worker": {
+      "post": {
+        "summary": "Invite worker to kiosk (Owner only)",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InviteWorkerRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Worker invited" }
+        }
+      }
+    },
+    "/kiosks/accept-invitation": {
+      "post": {
+        "summary": "Accept worker invitation (Worker only)",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Invitation accepted" }
+        }
+      }
+    },
+    "/kiosks/{kioskId}/workers": {
+      "get": {
+        "summary": "Get kiosk workers (Owner only)",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "kioskId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of workers" }
+        }
+      }
+    },
+    "/kiosks/{kioskId}/dues": {
+      "get": {
+        "summary": "Get kiosk dues (Owner only)",
+        "tags": ["Kiosks"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "kioskId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of dues" }
+        }
+      }
+    },
+    "/transactions/send": {
+      "post": {
+        "summary": "Send points to customer",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SendPointsRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Points sent successfully" }
+        }
+      }
+    },
+    "/transactions/history": {
+      "get": {
+        "summary": "Get transaction history",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Transaction history" }
+        }
+      }
+    },
+    "/transactions/daily-stats": {
+      "get": {
+        "summary": "Get daily transaction statistics",
+        "tags": ["Transactions"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daily stats" }
+        }
+      }
+    },
+    "/wallet/balance": {
+      "get": {
+        "summary": "Get wallet balance",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Wallet balance" }
+        }
+      }
+    },
+    "/wallet/details": {
+      "get": {
+        "summary": "Get wallet details",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Wallet details" }
+        }
+      }
+    },
+    "/wallet/redeem": {
+      "post": {
+        "summary": "Create redemption request",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RedeemRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Redemption request created" }
+        }
+      }
+    },
+    "/wallet/goals": {
+      "get": {
+        "summary": "Get user's goals",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of goals" }
+        }
+      },
+      "post": {
+        "summary": "Create goal",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateGoalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Goal created" }
+        }
+      }
+    },
+    "/wallet/goals/{id}": {
+      "put": {
+        "summary": "Update goal progress",
+        "tags": ["Wallet"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateGoalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Goal updated" }
+        }
+      }
+    }
+  }
+}
