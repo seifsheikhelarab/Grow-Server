@@ -91,3 +91,57 @@ export const collectDue = asyncHandler(async (req: Request, res: Response) => {
         is_paid: due.is_paid
     });
 });
+
+/**
+ * Get system settings.
+ */
+export const getSettings = asyncHandler(async (req: Request, res: Response) => {
+    const settings = await adminService.getSystemSettings();
+    ResponseHandler.success(res, "System settings retrieved", settings);
+});
+
+/**
+ * Update system setting.
+ */
+export const updateSetting = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { key, value, description } = req.body;
+        // Guaranteed by authMiddleware
+        const adminId = req.user!.id;
+        const setting = await adminService.updateSystemSetting(
+            key,
+            value,
+            adminId,
+            description
+        );
+        ResponseHandler.success(res, "Setting updated", setting);
+    }
+);
+
+/**
+ * List admins.
+ */
+export const getAdmins = asyncHandler(async (req: Request, res: Response) => {
+    const admins = await adminService.getAllAdmins();
+    ResponseHandler.success(res, "Admins retrieved", admins);
+});
+
+/**
+ * Create admin.
+ */
+export const createAdmin = asyncHandler(async (req: Request, res: Response) => {
+    const { phone, fullName, password, adminRole } = req.body;
+    const creatorId = req.user!.id;
+    const newAdmin = await adminService.createAdminUser(
+        phone,
+        fullName,
+        password,
+        adminRole,
+        creatorId,
+        req,
+        res
+    );
+    if (newAdmin) {
+        ResponseHandler.created(res, "Admin created", newAdmin);
+    }
+});

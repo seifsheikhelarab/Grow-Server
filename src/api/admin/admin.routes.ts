@@ -1,10 +1,16 @@
 import { Router } from "express";
 import * as adminController from "./admin.controller";
-import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware";
 import {
     processRedemptionSchema,
-    collectDueSchema
+    collectDueSchema,
+    updateSettingSchema,
+    createAdminSchema
 } from "../../schemas/validation.schema";
+import {
+    authMiddleware,
+    roleGuard,
+    adminRoleGuard
+} from "../../middlewares/auth.middleware";
 import { validateRequest } from "../../middlewares/validate.middleware";
 
 const router = Router();
@@ -43,6 +49,44 @@ router.post(
     "/dues/collect",
     validateRequest(collectDueSchema),
     adminController.collectDue
+);
+
+/**
+ * GET /api/admin/settings
+ * Get system settings.
+ */
+router.get(
+    "/settings",
+    adminRoleGuard("SUPER_ADMIN", "EDITOR", "VIEWER"),
+    adminController.getSettings
+);
+
+/**
+ * PUT /api/admin/settings/update
+ * Update system setting (Super Admin).
+ */
+router.put(
+    "/settings",
+    adminRoleGuard("SUPER_ADMIN"),
+    validateRequest(updateSettingSchema),
+    adminController.updateSetting
+);
+
+/**
+ * GET /api/admin/team
+ * List admin team members (Super Admin).
+ */
+router.get("/team", adminRoleGuard("SUPER_ADMIN"), adminController.getAdmins);
+
+/**
+ * POST /api/admin/team/create
+ * Create new admin (Super Admin).
+ */
+router.post(
+    "/team",
+    adminRoleGuard("SUPER_ADMIN"),
+    validateRequest(createAdminSchema),
+    adminController.createAdmin
 );
 
 export default router;

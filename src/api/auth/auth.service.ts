@@ -151,25 +151,32 @@ export async function verifyOtp(
  * @param {"CUSTOMER" | "WORKER" | "OWNER"} role - The user role.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @returns {Promise<{ id: string; phone: string; role: string; token: string }>} The registered user details and token.
+ * @returns {Promise<{ id: string; full_name: string; phone: string; role: string; token: string }>} The registered user details and token.
  */
 export async function register(
     phone: string,
     password: string,
+    full_name: string,
     role: "CUSTOMER" | "WORKER" | "OWNER",
     req: Request,
     res: Response
-): Promise<{ id: string; phone: string; role: string; token: string }> {
+): Promise<{
+    id: string;
+    full_name: string;
+    phone: string;
+    role: string;
+    token: string;
+}> {
     try {
-        //Check if temp auth is valid
-        const tempAuth = req.user;
-        if (!tempAuth || tempAuth.phone !== phone) {
-            errorHandler(
-                new AuthenticationError("Invalid temporary token"),
-                req,
-                res
-            );
-        }
+        // //Check if temp auth is valid
+        // const tempAuth = req.user;
+        // if (!tempAuth || tempAuth.phone !== phone) {
+        //     errorHandler(
+        //         new AuthenticationError("Invalid temporary token"),
+        //         req,
+        //         res
+        //     );
+        // }
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { phone } });
@@ -188,11 +195,13 @@ export async function register(
         const user = await prisma.user.upsert({
             where: { phone },
             update: {
+                full_name,
                 password_hash: passwordHash,
                 role
             },
             create: {
                 phone,
+                full_name,
                 password_hash: passwordHash,
                 role
             }
@@ -242,6 +251,7 @@ export async function register(
         logger.info(`User registered successfully: ${phone} with role ${role}`);
         return {
             id: user.id,
+            full_name: user.full_name,
             phone: user.phone,
             role: user.role,
             token
@@ -259,14 +269,20 @@ export async function register(
  * @param {string} password - The password.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @returns {Promise<{ id: string; phone: string; role: string; token: string }>} The logged-in user details and token.
+ * @returns {Promise<{ id: string; full_name: string; phone: string; role: string; token: string }>} The logged-in user details and token.
  */
 export async function login(
     phone: string,
     password: string,
     req: Request,
     res: Response
-): Promise<{ id: string; phone: string; role: string; token: string }> {
+): Promise<{
+    id: string;
+    full_name: string;
+    phone: string;
+    role: string;
+    token: string;
+}> {
     try {
         const user = await prisma.user.findUnique({ where: { phone } });
 
@@ -312,6 +328,7 @@ export async function login(
 
         logger.info(`User logged in: ${phone}`);
         return {
+            full_name: user.full_name,
             id: user.id,
             phone: user.phone,
             role: user.role,
@@ -329,7 +346,7 @@ export async function login(
  * @param {string} token - The JWT token.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @returns {Promise<{ id: string; phone: string; role: string }>} The decoded token payload.
+ * @returns {Promise<{ id: string; full_name: string; phone: string; role: string }>} The decoded token payload.
  */
 export async function verifyToken(
     token: string,
@@ -337,12 +354,14 @@ export async function verifyToken(
     res: Response
 ): Promise<{
     id: string;
+    full_name: string;
     phone: string;
     role: string;
 }> {
     try {
         const decoded = jwt.verify(token, config.JWT_SECRET) as {
             id: string;
+            full_name: string;
             phone: string;
             role: string;
         };
@@ -358,13 +377,13 @@ export async function verifyToken(
                 req,
                 res
             );
-            return { id: "", phone: "", role: "" };
+            return { id: "", full_name: "", phone: "", role: "" };
         }
         errorHandler(
             new AuthenticationError("Invalid token", ErrorCode.INVALID_TOKEN),
             req,
             res
         );
-        return { id: "", phone: "", role: "" };
+        return { id: "", full_name: "", phone: "", role: "" };
     }
 }

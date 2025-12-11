@@ -1,4 +1,6 @@
 import prisma from "../../prisma";
+import bcrypt from "bcrypt";
+import { AdminRole } from "@prisma/client";
 import {
     NotFoundError,
     BusinessLogicError,
@@ -264,6 +266,161 @@ export async function collectDue(dueId: string, req: Request, res: Response) {
         return updated;
     } catch (err) {
         logger.error(`Error collecting due: ${err}`);
+        throw err;
+    }
+}
+/**
+ * Log an admin action.
+ */
+export async function logAdminAction(
+    adminId: string,
+    action: string,
+    targetId?: string,
+    details?: unknown
+) {
+    try {
+        await prisma.auditLog.create({
+            data: {
+                admin_id: adminId,
+                action,
+                target_id: targetId,
+                details: details ? JSON.stringify(details) : undefined,
+                ip_address: "0.0.0.0" // Placeholder, should get from request context if possible
+            }
+        });
+    } catch (err) {
+        logger.error(`Error creating audit log: ${err}`);
+        // Don't throw, just log error to avoid breaking main flow
+    }
+}
+
+/**
+ * Get system settings.
+ */
+export async function getSystemSettings() {
+    try {
+        const settings = await prisma.systemSetting.findMany();
+        // Convert array to object for easier consumption
+        const settingsMap: Record<string, boolean | string | number> = {};
+        settings.forEach((s) => {
+            try {
+                settingsMap[s.key] = JSON.parse(s.value);
+            } catch {
+                settingsMap[s.key] = s.value;
+            }
+        });
+        return settingsMap;
+    } catch (err) {
+        logger.error(`Error getting settings: ${err}`);
+        throw err;
+    }
+}
+
+/**
+ * Update system setting.
+ */
+export async function updateSystemSetting(
+    key: string,
+    value: boolean | string | number,
+    adminId: string,
+    description?: string
+) {
+    try {
+        const strValue =
+            typeof value === "string" ? value : JSON.stringify(value);
+
+        const setting = await prisma.systemSetting.upsert({
+            where: { key },
+            update: { value: strValue, description },
+            create: { key, value: strValue, description }
+        });
+
+        await logAdminAction(adminId, "UPDATE_SETTING", key, {
+            value,
+            description
+        });
+
+        return setting;
+    } catch (err) {
+        logger.error(`Error updating setting ${key}: ${err}`);
+        throw err;
+    }
+}
+
+/**
+ * Create a new admin user.
+ */
+export async function createAdminUser(
+    phone: string,
+    fullName: string,
+    password: string,
+    adminRole: AdminRole,
+    creatorId: string,
+    req: Request,
+    res: Response
+): Promise<object | void> {
+    try {
+        const existingUser = await prisma.user.findUnique({ where: { phone } });
+        if (existingUser) {
+            errorHandler(
+                new BusinessLogicError(
+                    "User with this phone already exists",
+                    ErrorCode.RESOURCE_CONFLICT
+                ),
+                req,
+                res
+            );
+            return;
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const newAdmin = await prisma.user.create({
+            data: {
+                phone,
+                full_name: fullName,
+                password_hash: passwordHash,
+                role: "ADMIN",
+                admin_role: adminRole,
+                is_active: true,
+                is_verified: true
+            }
+        });
+
+        await logAdminAction(creatorId, "CREATE_ADMIN", newAdmin.id, {
+            role: adminRole
+        });
+
+        return {
+            id: newAdmin.id,
+            phone: newAdmin.phone,
+            role: newAdmin.role,
+            admin_role: newAdmin.admin_role
+        };
+    } catch (err) {
+        logger.error(`Error creating admin: ${err}`);
+        throw err;
+    }
+}
+
+/**
+ * List all admins.
+ */
+export async function getAllAdmins() {
+    try {
+        return await prisma.user.findMany({
+            where: { role: "ADMIN" },
+            select: {
+                id: true,
+                full_name: true,
+                phone: true,
+                admin_role: true,
+                is_active: true,
+                created_at: true
+            }
+        });
+    } catch (err) {
+        logger.error(`Error getting admins: ${err}`);
         throw err;
     }
 }

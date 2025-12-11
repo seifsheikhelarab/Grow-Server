@@ -21,6 +21,7 @@ export const verifyOtpSchema = z.object({
 /** Schema for user registration */
 export const registerSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    full_name: z.string().min(2, "Full name required"),
     password: z
         .string()
         .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters"),
@@ -107,6 +108,21 @@ export const processRedemptionSchema = z.object({
 /** Schema for collecting due */
 export const collectDueSchema = z.object({
     dueId: z.string().uuid("Invalid due ID")
+});
+
+/** Schema for updating system setting */
+export const updateSettingSchema = z.object({
+    key: z.string().min(1, "Key is required"),
+    value: z.any(),
+    description: z.string().optional()
+});
+
+/** Schema for creating admin */
+export const createAdminSchema = z.object({
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    fullName: z.string().min(2, "Full name is required"),
+    password: z.string().min(8, "Password must be at least 8 chars"),
+    adminRole: z.enum(["SUPER_ADMIN", "EDITOR", "VIEWER"])
 });
 
 /**

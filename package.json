@@ -19,7 +19,7 @@
         "dev:start": "tsx src/app.ts",
         "dev:watch": "tsx watch src/index.ts",
         "dev:build": "tsc",
-        "dev:db": "prisma migrate dev --name init",
+        "dev:db": "prisma migrate dev --name init --skip-seed",
         "dev:lint": "eslint src --ext .ts",
         "dev:format": "prettier --write src/**/*.{js,ts}",
         "dev:doc": "typedoc --options ./typedoc.config.ts",
@@ -60,5 +60,8 @@
         "typedoc-material-theme": "^1.4.1",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.48.1"
+    },
+    "prisma": {
+        "seed": "tsx prisma/seed.ts"
     }
 }

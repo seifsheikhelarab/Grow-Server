@@ -58,9 +58,16 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
  * @param {Response} res - The Express response object.
  */
 export const register = asyncHandler(async (req: Request, res: Response) => {
-    const { phone, password, role } = req.body;
+    const { phone, password, role, full_name } = req.body;
 
-    const result = await authService.register(phone, password, role, req, res);
+    const result = await authService.register(
+        phone,
+        password,
+        full_name,
+        role,
+        req,
+        res
+    );
 
     ResponseHandler.created(res, "User registered successfully", {
         id: result.id,

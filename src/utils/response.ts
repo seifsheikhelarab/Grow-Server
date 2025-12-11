@@ -88,7 +88,7 @@ export interface ErrorResponse {
     statusCode: HttpStatus;
     timestamp: string;
     path?: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
 }
 
 /**
@@ -130,7 +130,7 @@ export class ResponseHandler {
         message: string,
         errorCode: ErrorCode | string,
         statusCode: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
-        details?: Record<string, any>,
+        details?: Record<string, unknown>,
         path?: string
     ): Response {
         const response: ErrorResponse = {
@@ -213,13 +213,13 @@ export class ResponseHandler {
 export class AppError extends Error {
     public statusCode: HttpStatus;
     public errorCode: ErrorCode | string;
-    public details?: Record<string, any>;
+    public details?: Record<string, unknown>;
 
     constructor(
         message: string,
         statusCode: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
         errorCode: ErrorCode | string = ErrorCode.INTERNAL_ERROR,
-        details?: Record<string, any>
+        details?: Record<string, unknown>
     ) {
         super(message);
         this.statusCode = statusCode;
@@ -233,11 +233,11 @@ export class AppError extends Error {
  * Validation Error Class
  */
 export class ValidationError extends AppError {
-    public fields?: Record<string, any>;
+    public fields?: Record<string, unknown>;
     constructor(
         message: string,
-        fields?: Record<string, any>,
-        details?: Record<string, any>
+        fields?: Record<string, unknown>,
+        details?: Record<string, unknown>
     ) {
         super(
             message,
@@ -305,7 +305,7 @@ export class BusinessLogicError extends AppError {
     constructor(
         message: string,
         businessErrorCode: ErrorCode,
-        details?: Record<string, any>
+        details?: Record<string, unknown>
     ) {
         super(
             message,

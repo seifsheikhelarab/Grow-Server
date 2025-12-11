@@ -52,6 +52,7 @@
     "./jest.config.ts",
     "./dist",
     "./node_modules",
-    "./typedoc.config.ts"
+    "./typedoc.config.ts",
+    "./prisma/seed.ts"
   ]
 }

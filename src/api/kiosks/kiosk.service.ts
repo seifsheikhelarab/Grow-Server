@@ -92,6 +92,7 @@ export async function inviteWorker(
             worker = await prisma.user.create({
                 data: {
                     phone: workerPhone,
+                    full_name: "Invited Worker", // Placeholder until they sign up properly
                     role: "WORKER"
                 }
             });
