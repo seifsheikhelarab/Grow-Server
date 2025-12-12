@@ -142,3 +142,52 @@ export const paginationSchema = z.object({
 export const dashboardFilterSchema = z.object({
     filter: z.enum(["1d", "7d", "30d"]).default("7d")
 });
+
+/**
+ * Admin User Management Schemas
+ */
+
+export const updateUserStatusSchema = z.object({
+    status: z.enum(["ACTIVE", "SUSPENDED", "PENDING", "REJECTED"]),
+    note: z.string().optional()
+});
+
+export const updateIdStatusSchema = z.object({
+    status: z.enum(["PENDING", "VERIFIED", "REJECTED"]),
+    rejectionReason: z.string().optional()
+});
+
+export const manualUserUpdateSchema = z.object({
+    full_name: z.string().min(2).optional(),
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/).optional(),
+    email: z.string().email().optional(),
+    role: z.enum(["CUSTOMER", "WORKER", "OWNER"]).optional()
+});
+
+export const adjustBalanceSchema = z.object({
+    amount: z.number().int(), // Can be negative for deduction
+    reason: z.string().min(5)
+});
+
+/**
+ * Admin Kiosk Management Schemas
+ */
+
+export const adminCreateKioskSchema = z.object({
+    name: z.string().min(3),
+    ownerPhone: z.string().regex(/^\+?[0-9]{10,15}$/),
+    location: z.string(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional()
+});
+
+export const updateKioskStatusSchema = z.object({
+    is_active: z.boolean(),
+    reason: z.string().optional()
+});
+
+export const reassignWorkerSchema = z.object({
+    kioskId: z.string().uuid()
+});
+
+

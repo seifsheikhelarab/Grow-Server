@@ -120,11 +120,14 @@ model KioskDue {
 // ---------------- KIOSK LOGIC ----------------
 
 model Kiosk {
-  id         String @id @default(uuid())
+  id         String  @id @default(uuid())
   owner_id   String
   name       String
   kiosk_type String
   location   String
+  latitude   Float?
+  longitude  Float?
+  is_active  Boolean @default(true)
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
   workers      WorkerProfile[]
