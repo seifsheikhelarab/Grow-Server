@@ -387,3 +387,23 @@ export async function verifyToken(
         return { id: "", full_name: "", phone: "", role: "" };
     }
 }
+
+/**
+ * Delete user account (soft delete).
+ *
+ * @param {string} userId - The ID of the user to delete.
+ * @returns {Promise<void>}
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { is_active: false }
+        });
+        logger.info(`User account deleted (soft): ${userId}`);
+    } catch (err) {
+        logger.error(`Error deleting account: ${err}`);
+        throw err;
+    }
+}
+

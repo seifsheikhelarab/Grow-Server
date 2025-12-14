@@ -1,7 +1,8 @@
 import { Router } from "express";
 import * as authController from "./auth.controller";
 import {
-    optionalAuthMiddleware
+    optionalAuthMiddleware,
+    authMiddleware as authMiddlewareAlias
     // tempAuthMiddleware
 } from "../../middlewares/auth.middleware";
 import {
@@ -56,5 +57,12 @@ router.post("/login", validateRequest(loginSchema), authController.login);
  * Verify authentication status.
  */
 router.get("/verify", optionalAuthMiddleware, authController.verifyAuth);
+
+/**
+ * DELETE /api/auth/delete-account
+ * Delete user account.
+ * Protected: Authenticated users.
+ */
+router.delete("/delete-account", authMiddlewareAlias, authController.deleteAccount);
 
 export default router;

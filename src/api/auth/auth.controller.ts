@@ -114,3 +114,23 @@ export const verifyAuth = asyncHandler(async (req: Request, res: Response) => {
         user: req.user
     });
 });
+
+/**
+ * Delete user account.
+ * 
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
+export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        // Should be caught by auth middleware
+        throw new AuthenticationError("User not authenticated", ErrorCode.UNAUTHORIZED_ACCESS);
+    }
+
+    await authService.deleteAccount(userId);
+
+    ResponseHandler.success(res, "Account deleted successfully", { deleted: true });
+});
+

@@ -136,10 +136,12 @@ model Kiosk {
 }
 
 model WorkerProfile {
-  id       String @id @default(uuid())
-  user_id  String @unique
-  kiosk_id String
-  status   String // PENDING_INVITE, ACTIVE
+  id            String @id @default(uuid())
+  user_id       String @unique
+  kiosk_id      String
+  position      String
+  working_hours String
+  status        String // PENDING_INVITE, ACTIVE
 
   user  User  @relation(fields: [user_id], references: [id])
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
@@ -155,6 +157,7 @@ model Goal {
   current_amount Decimal   @default(0) @db.Decimal(10, 2)
   type           String // SAVING, WORKER_TARGET
   deadline       DateTime?
+  created_at     DateTime  @default(now())
 
   user User @relation(fields: [user_id], references: [id])
 }

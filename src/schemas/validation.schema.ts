@@ -91,7 +91,9 @@ export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    kioskId: z.string().uuid("Invalid kiosk ID")
+    kioskId: z.string().uuid("Invalid kiosk ID"),
+    position: z.string().optional(),
+    workingHours: z.string().optional()
 });
 
 /**

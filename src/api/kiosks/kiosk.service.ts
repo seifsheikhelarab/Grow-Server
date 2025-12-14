@@ -49,6 +49,8 @@ export async function createKiosk(
  * @param {string} ownerId - The ID of the owner.
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} workerPhone - The phone number of the worker.
+ * @param {string} position - The position of the worker.
+ * @param {string} workingHours - The working hours of the worker.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @returns {Promise<object>} The created or updated worker profile.
@@ -57,6 +59,8 @@ export async function inviteWorker(
     ownerId: string,
     kioskId: string,
     workerPhone: string,
+    position: string,
+    workingHours: string,
     req: Request,
     res: Response
 ) {
@@ -136,11 +140,15 @@ export async function inviteWorker(
             where: { user_id: worker.id },
             update: {
                 kiosk_id: kioskId,
+                position,
+                working_hours: workingHours,
                 status: "PENDING_INVITE"
             },
             create: {
                 user_id: worker.id,
                 kiosk_id: kioskId,
+                position,
+                working_hours: workingHours,
                 status: "PENDING_INVITE"
             }
         });

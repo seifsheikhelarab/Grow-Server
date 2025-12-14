@@ -71,6 +71,7 @@ export async function startServer() {
                 `Server running on port ${port} in ${config.NODE_ENV} mode`
             );
             logger.info(`Health check: http://localhost:${port}/health`);
+            logger.info(`Swagger docs: http://localhost:${port}/docs`);
         });
 
         /**

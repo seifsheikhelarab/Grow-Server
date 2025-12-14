@@ -37,12 +37,14 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const inviteWorker = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
-        const { kioskId, workerPhone } = req.body;
+        const { kioskId, workerPhone, position, workingHours } = req.body;
 
         const profile = await kioskService.inviteWorker(
             ownerId,
             kioskId,
             workerPhone,
+            position,
+            workingHours,
             req,
             res
         );

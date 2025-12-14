@@ -12,7 +12,6 @@ import { Request, Response } from "express";
 
 /**
  * Get admin dashboard stats.
- *
  * @param {"1d" | "7d" | "30d"} filter - Time period filter (default: "7d").
  * @returns {Promise<object>} Dashboard statistics.
  */
@@ -129,8 +128,8 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
 
 /**
  * Get pending redemptions.
- *
  * @returns {Promise<object[]>} List of pending redemptions.
+ * @throws {Error} If the redemptions are not found.
  */
 export async function getPendingRedemptions() {
     try {
@@ -168,6 +167,8 @@ export async function getPendingRedemptions() {
  * @param {Response} res - The Express response object.
  * @param {string} [note] - Optional note from admin.
  * @returns {Promise<object>} The updated redemption request.
+ * @throws {Error} If the redemption request is not found.
+ * @throws {Error} If the redemption request is not pending.
  */
 export async function processRedemption(
     redemptionId: string,
@@ -235,6 +236,8 @@ export async function processRedemption(
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @returns {Promise<object>} The updated due.
+ * @throws {Error} If the due is not found.
+ * @throws {Error} If the due is already paid.
  */
 export async function collectDue(dueId: string, req: Request, res: Response) {
     try {
@@ -271,6 +274,13 @@ export async function collectDue(dueId: string, req: Request, res: Response) {
 }
 /**
  * Log an admin action.
+ *
+ * @param {string} adminId - The ID of the admin.
+ * @param {string} action - The action to log.
+ * @param {string} targetId - The ID of the target of the action.
+ * @param {unknown} details - The details of the action.
+ * @returns {Promise<void>}
+ * @throws {Error} If the admin is not found.
  */
 export async function logAdminAction(
     adminId: string,
@@ -296,6 +306,8 @@ export async function logAdminAction(
 
 /**
  * Get system settings.
+ * @returns {Promise<object>} The system settings.
+ * @throws {Error} If the settings are not found.
  */
 export async function getSystemSettings() {
     try {
@@ -318,6 +330,12 @@ export async function getSystemSettings() {
 
 /**
  * Update system setting.
+ * @param {string} key - The key of the setting to update.
+ * @param {boolean | string | number} value - The value of the setting to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @param {string} [description] - Optional description of the update.
+ * @returns {Promise<object>} The updated system setting.
+ * @throws {Error} If the setting is not found.
  */
 export async function updateSystemSetting(
     key: string,
@@ -349,6 +367,15 @@ export async function updateSystemSetting(
 
 /**
  * Create a new admin user.
+ * @param {string} phone - The phone number of the admin user.
+ * @param {string} fullName - The full name of the admin user.
+ * @param {string} password - The password of the admin user.
+ * @param {AdminRole} adminRole - The role of the admin user.
+ * @param {string} creatorId - The ID of the admin user who created the admin user.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object | void>} The created admin user.
+ * @throws {Error} If the admin user is not created.
  */
 export async function createAdminUser(
     phone: string,
@@ -405,6 +432,8 @@ export async function createAdminUser(
 
 /**
  * List all admins.
+ * @returns {Promise<object[]>} The list of admins.
+ * @throws {Error} If the admins are not found.
  */
 export async function getAllAdmins() {
     try {
@@ -429,6 +458,15 @@ export async function getAllAdmins() {
 // SHARED HELPERS
 // ============================================================================
 
+/**
+ * Update user status.
+ * @param {string} id - The ID of the user.
+ * @param {string} status - The status to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @param {string} [note] - Optional note from admin.
+ * @returns {Promise<object>} The updated user.
+ * @throws {Error} If the user is not found.
+ */
 async function updateUserStatusHelper(id: string, status: string, adminId: string, note?: string) {
     let data: any = {};
     if (status === "ACTIVE") {
@@ -455,6 +493,9 @@ async function updateUserStatusHelper(id: string, status: string, adminId: strin
 
 /**
  * Get owners with filters.
+ * @param filters - The filters to apply.
+ * @returns The owners with the specified filters.
+ * @throws {Error} If the owners are not found.
  */
 export async function getOwners(filters: any) {
     try {
@@ -512,6 +553,9 @@ export async function getOwners(filters: any) {
 
 /**
  * Get owner details.
+ * @param {string} id - The ID of the owner.
+ * @returns {Promise<object>} The owner details.
+ * @throws {Error} If the owner is not found.
  */
 export async function getOwnerDetails(id: string) {
     try {
@@ -538,6 +582,12 @@ export async function getOwnerDetails(id: string) {
 
 /**
  * Update owner status.
+ * @param {string} id - The ID of the owner.
+ * @param {string} status - The status to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @param {string} [note] - Optional note from admin.
+ * @returns {Promise<object>} The updated owner.
+ * @throws {Error} If the owner is not found.
  */
 export async function updateOwnerStatus(id: string, status: any, adminId: string, note?: string) {
     return updateUserStatusHelper(id, status, adminId, note);
@@ -545,6 +595,11 @@ export async function updateOwnerStatus(id: string, status: any, adminId: string
 
 /**
  * Update owner details.
+ * @param {string} id - The ID of the owner.
+ * @param {any} data - The data to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @returns {Promise<object>} The updated owner.
+ * @throws {Error} If the owner is not found.
  */
 export async function updateOwner(id: string, data: any, adminId: string) {
     try {
@@ -562,6 +617,12 @@ export async function updateOwner(id: string, data: any, adminId: string) {
 
 /**
  * Adjust owner balance.
+ * @param {string} id - The ID of the owner.
+ * @param {number} amount - The amount to adjust.
+ * @param {string} reason - The reason for the adjustment.
+ * @param {string} adminId - The ID of the admin performing the adjustment.
+ * @returns {Promise<object>} The updated owner.
+ * @throws {Error} If the owner is not found.
  */
 export async function adjustBalance(id: string, amount: number, reason: string, adminId: string) {
     try {
@@ -583,6 +644,9 @@ export async function adjustBalance(id: string, amount: number, reason: string, 
 
 /**
  * Get kiosks with filters.
+ * @param {any} filters - The filters to apply.
+ * @returns {Promise<object[]>} The kiosks with the specified filters.
+ * @throws {Error} If the kiosks are not found.
  */
 export async function getKiosks(filters: any) {
     try {
@@ -625,6 +689,9 @@ export async function getKiosks(filters: any) {
 
 /**
  * Get kiosk details.
+ * @param {string} id - The ID of the kiosk.
+ * @returns {Promise<object>} The kiosk details.
+ * @throws {Error} If the kiosk is not found.
  */
 export async function getKioskDetails(id: string) {
     try {
@@ -646,6 +713,12 @@ export async function getKioskDetails(id: string) {
 
 /**
  * Create kiosk manually.
+ * @param {any} data - The data to create the kiosk.
+ * @param {string} adminId - The ID of the admin performing the action.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object | void>} The created kiosk.
+ * @throws {Error} If the kiosk is not created.
  */
 export async function createKiosk(data: any, adminId: string, req: Request, res: Response) {
     try {
@@ -675,6 +748,12 @@ export async function createKiosk(data: any, adminId: string, req: Request, res:
 
 /**
  * Update kiosk status.
+ * @param {string} id - The ID of the kiosk.
+ * @param {boolean} is_active - The status to update.
+ * @param {string} reason - The reason for the update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @returns {Promise<object>} The updated kiosk.
+ * @throws {Error} If the kiosk is not found.
  */
 export async function updateKioskStatus(id: string, is_active: boolean, reason: string, adminId: string) {
     try {
@@ -695,7 +774,18 @@ export async function updateKioskStatus(id: string, is_active: boolean, reason: 
 // WORKER SERVICES
 // ============================================================================
 
-export async function getWorkers(filters: any) {
+/**
+ * Get workers with filters.
+ * @param {Object} filters - The filters to apply.
+ * @param {string} [filters.search] - The search term.
+ * @param {string} [filters.status] - The status to filter by.
+ * @param {string} [filters.kioskId] - The kiosk ID to filter by.
+ * @param {string} [filters.page] - The page number.
+ * @param {string} [filters.limit] - The number of items per page.
+ * @returns {Promise<object[]>} The workers with the specified filters.
+ * @throws {Error} If the workers are not found.
+ */
+export async function getWorkers(filters: { search?: string, status?: string, kioskId?: string, page?: string, limit?: string } | undefined) {
     try {
         const { search, status, kioskId, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
@@ -734,6 +824,13 @@ export async function getWorkers(filters: any) {
     }
 }
 
+/**
+ * Get worker details by ID.
+ * @param {string} id - The ID of the worker.
+ * @returns {Promise<object>} The worker details.
+ * @throws {Error} If the worker is not found.
+ * @throws {Error} If the worker profile is not found.
+ */
 export async function getWorkerDetails(id: string) {
     try {
         const worker = await prisma.user.findUnique({
@@ -752,10 +849,28 @@ export async function getWorkerDetails(id: string) {
     }
 }
 
+/**
+ * Update worker status.
+ * @param {string} id - The ID of the worker.
+ * @param {string} status - The status to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @param {string} [note] - Optional note from admin.
+ * @returns {Promise<object>} The updated worker.
+ * @throws {Error} If the worker is not found.
+ */
 export async function updateWorkerStatus(id: string, status: any, adminId: string, note?: string) {
     return updateUserStatusHelper(id, status, adminId, note);
 }
 
+/**
+ * Reassign worker to another kiosk.
+ * @param {string} id - The ID of the worker.
+ * @param {string} kioskId - The ID of the kiosk to reassign to.
+ * @param {string} adminId - The ID of the admin performing the reassignment.
+ * @returns {Promise<object>} The updated worker.
+ * @throws {Error} If the worker is not found.
+ * @throws {Error} If the worker profile is not found.
+ */
 export async function reassignWorker(id: string, kioskId: string, adminId: string) {
     try {
         const worker = await prisma.user.findUnique({ where: { id }, include: { worker_profile: true } });
@@ -777,6 +892,12 @@ export async function reassignWorker(id: string, kioskId: string, adminId: strin
 // CUSTOMER SERVICES
 // ============================================================================
 
+/**
+ * Get customers with filters.
+ * @param {any} filters - The filters to apply.
+ * @returns {Promise<object[]>} The customers with the specified filters.
+ * @throws {Error} If the customers are not found.
+ */
 export async function getCustomers(filters: any) {
     try {
         const { search, status, page = 1, limit = 10 } = filters;
@@ -813,6 +934,12 @@ export async function getCustomers(filters: any) {
     }
 }
 
+/**
+ * Get customer details by ID.
+ * @param {string} id - The ID of the customer.
+ * @returns {Promise<object>} The customer details.
+ * @throws {Error} If the customer is not found.
+ */
 export async function getCustomerDetails(id: string) {
     try {
         const customer = await prisma.user.findUnique({
@@ -831,6 +958,15 @@ export async function getCustomerDetails(id: string) {
     }
 }
 
+/**
+ * Update customer status.
+ * @param {string} id - The ID of the customer.
+ * @param {string} status - The status to update.
+ * @param {string} adminId - The ID of the admin performing the update.
+ * @param {string} [note] - Optional note from admin.
+ * @returns {Promise<object>} The updated customer.
+ * @throws {Error} If the customer is not found.
+ */
 export async function updateCustomerStatus(id: string, status: any, adminId: string, note?: string) {
     return updateUserStatusHelper(id, status, adminId, note);
 }

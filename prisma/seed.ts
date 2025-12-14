@@ -42,7 +42,7 @@ async function main() {
     await prisma.user.create({
         data: {
             full_name: "Super Admin User",
-            phone: "+201000000000",
+            phone: "01000000000",
             password_hash: passwordHash,
             role: "ADMIN",
             admin_role: "SUPER_ADMIN",
@@ -56,7 +56,7 @@ async function main() {
     await prisma.user.create({
         data: {
             full_name: "Editor Admin User",
-            phone: "+201000000001",
+            phone: "01000000001",
             password_hash: passwordHash,
             role: "ADMIN",
             admin_role: "EDITOR",
@@ -70,7 +70,7 @@ async function main() {
     const viewerAdmin = await prisma.user.create({
         data: {
             full_name: "Viewer Admin User",
-            phone: "+201000000002",
+            phone: "01000000002",
             password_hash: passwordHash,
             role: "ADMIN",
             admin_role: "VIEWER",
@@ -85,7 +85,7 @@ async function main() {
     const owner1 = await prisma.user.create({
         data: {
             full_name: "Ahmed Owner",
-            phone: "+201100000000",
+            phone: "01100000000",
             password_hash: passwordHash,
             role: "OWNER",
             is_active: true,
@@ -97,7 +97,7 @@ async function main() {
     const owner2 = await prisma.user.create({
         data: {
             full_name: "Mohamed Owner",
-            phone: "+201100000001",
+            phone: "01100000001",
             password_hash: passwordHash,
             role: "OWNER",
             is_active: true,
@@ -131,7 +131,7 @@ async function main() {
     const worker1 = await prisma.user.create({
         data: {
             full_name: "Sayed Worker",
-            phone: "+201200000000",
+            phone: "01200000000",
             password_hash: passwordHash,
             role: "WORKER",
             is_active: true,
@@ -140,7 +140,9 @@ async function main() {
             worker_profile: {
                 create: {
                     kiosk_id: kiosk1.id,
-                    status: "ACTIVE"
+                    status: "ACTIVE",
+                    position: "Manager",
+                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }
@@ -149,7 +151,7 @@ async function main() {
     const worker2 = await prisma.user.create({
         data: {
             full_name: "Ali Worker",
-            phone: "+201200000001",
+            phone: "01200000001",
             password_hash: passwordHash,
             role: "WORKER",
             is_active: true,
@@ -158,7 +160,9 @@ async function main() {
             worker_profile: {
                 create: {
                     kiosk_id: kiosk1.id, // Same kiosk as worker1
-                    status: "ACTIVE"
+                    status: "ACTIVE",
+                    position: "Helper",
+                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }
@@ -167,7 +171,7 @@ async function main() {
     await prisma.user.create({
         data: {
             full_name: "Pending Worker",
-            phone: "+201200000002",
+            phone: "01200000002",
             // No password hash yet as they are invited
             role: "WORKER",
             is_active: true,
@@ -176,7 +180,9 @@ async function main() {
             worker_profile: {
                 create: {
                     kiosk_id: kiosk2.id,
-                    status: "PENDING_INVITE"
+                    status: "PENDING_INVITE",
+                    position: "Worker",
+                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }
@@ -187,7 +193,7 @@ async function main() {
     const customer1 = await prisma.user.create({
         data: {
             full_name: "Fatma Customer",
-            phone: "+201500000000",
+            phone: "01500000000",
             password_hash: passwordHash,
             role: "CUSTOMER",
             is_active: true,
@@ -207,7 +213,7 @@ async function main() {
     const customer2 = await prisma.user.create({
         data: {
             full_name: "Mona Customer",
-            phone: "+201500000001",
+            phone: "01500000001",
             password_hash: passwordHash,
             role: "CUSTOMER",
             is_active: true,
@@ -270,7 +276,7 @@ async function main() {
             user_id: customer1.id,
             amount: 50,
             method: "Vodafone Cash",
-            details: "+201500000000",
+            details: "01500000000",
             status: "PENDING"
         }
     });
@@ -320,7 +326,7 @@ async function main() {
     // 12. Create Shadow Wallet
     await prisma.shadowWallet.create({
         data: {
-            phone: "+201999999999", // Non-registered user
+            phone: "01999999999", // Non-registered user
             balance: 25
         }
     });
