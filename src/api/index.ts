@@ -1,10 +1,10 @@
 import { Router } from "express";
-import authRoutes from "./auth/auth.routes";
-import walletRoutes from "./wallet/wallet.routes";
-import transactionRoutes from "./transactions/transaction.routes";
-import kioskRoutes from "./kiosks/kiosk.routes";
-import adminRoutes from "./admin/admin.routes";
-import dashboardRoutes from "./dashboard/dashboard.routes";
+import authRoutes from "./auth/auth.routes.js";
+import walletRoutes from "./wallet/wallet.routes.js";
+import transactionRoutes from "./transactions/transaction.routes.js";
+import kioskRoutes from "./kiosks/kiosk.routes.js";
+import adminRoutes from "./admin/admin.routes.js";
+import dashboardRoutes from "./dashboard/dashboard.routes.js";
 
 const router = Router();
 

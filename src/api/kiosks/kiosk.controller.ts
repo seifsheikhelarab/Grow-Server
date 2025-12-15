@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import * as kioskService from "./kiosk.service";
-import { ResponseHandler } from "../../utils/response";
-import { asyncHandler } from "../../middlewares/error.middleware";
+import * as kioskService from "./kiosk.service.js";
+import { ResponseHandler } from "../../utils/response.js";
+import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Create new kiosk.

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodSchema } from "zod";
-import { errorHandler } from "./error.middleware";
+import { errorHandler } from "./error.middleware.js";
 
 /**
  * Validation Middleware Factory

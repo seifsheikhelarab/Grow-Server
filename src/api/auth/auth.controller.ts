@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import * as authService from "./auth.service";
+import * as authService from "./auth.service.js";
 import {
     AuthenticationError,
     ErrorCode,
     ResponseHandler
-} from "../../utils/response";
-import { asyncHandler, errorHandler } from "../../middlewares/error.middleware";
+} from "../../utils/response.js";
+import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Send OTP to phone number.

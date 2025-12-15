@@ -26,5 +26,6 @@
             "password": "admin",
             "database": "grow-server"
         }
-    ]
+    ],
+    "prisma.pinToPrisma6": true
 }

@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import prisma from "../../prisma";
-import { config } from "../../config/env.config";
+import prisma from "../../prisma.js";
+import { config } from "../../config/env.config.js";
 import {
     AuthenticationError,
     ConflictError,
     NotFoundError,
     ErrorCode
-} from "../../utils/response";
-import logger from "../../utils/logger";
-import { errorHandler } from "../../middlewares/error.middleware";
+} from "../../utils/response.js";
+import logger from "../../utils/logger.js";
+import { errorHandler } from "../../middlewares/error.middleware.js";
 import ms from "ms";
 import jwt, { SignOptions } from "jsonwebtoken";
 

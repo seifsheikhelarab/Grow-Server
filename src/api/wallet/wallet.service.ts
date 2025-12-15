@@ -1,11 +1,11 @@
-import prisma from "../../prisma";
+import prisma from "../../prisma.js";
 import {
     NotFoundError,
     BusinessLogicError,
     ErrorCode
-} from "../../utils/response";
-import logger from "../../utils/logger";
-import { errorHandler } from "../../middlewares/error.middleware";
+} from "../../utils/response.js";
+import logger from "../../utils/logger.js";
+import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 
 /**
