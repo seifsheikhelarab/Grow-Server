@@ -94,10 +94,8 @@ router.put(
 );
 
 // ============================================================================
-// EXISTING ROUTES
+// OWNER MANAGEMENT
 // ============================================================================
-// ============================================================================
-
 /**
  * GET /api/admin/owners
  * List owners with filters.
@@ -179,7 +177,6 @@ router.put(
     adminController.updateKioskStatus
 );
 
-
 // ============================================================================
 // EXISTING ROUTES
 // ============================================================================
@@ -247,6 +244,5 @@ router.post(
     validateRequest(createAdminSchema),
     adminController.createAdmin
 );
-
 
 export default router;

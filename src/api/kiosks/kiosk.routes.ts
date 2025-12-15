@@ -1,6 +1,9 @@
 import { Router } from "express";
 import * as kioskController from "./kiosk.controller.js";
-import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware.js";
+import {
+    authMiddleware,
+    roleGuard
+} from "../../middlewares/auth.middleware.js";
 import {
     createKioskSchema,
     inviteWorkerSchema

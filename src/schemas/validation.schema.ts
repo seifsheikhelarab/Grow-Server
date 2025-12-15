@@ -43,11 +43,7 @@ export const loginSchema = z.object({
 /** Schema for sending points */
 export const sendPointsSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    amount: z
-        .number()
-        .int()
-        .min(5, "Amount must be at least 5")
-        .max(100, "Amount cannot exceed 100"),
+    amount: z.number().int().positive("Amount must be positive"),
     kioskId: z.string().uuid("Invalid kiosk ID")
 });
 
@@ -114,7 +110,13 @@ export const collectDueSchema = z.object({
 
 /** Schema for updating system setting */
 export const updateSettingSchema = z.object({
-    key: z.string().min(1, "Key is required"),
+    key: z.enum([
+        "commission_rate",
+        "max_transaction_amount",
+        "max_daily_tx",
+        "max_daily_tx_to_customer",
+        "max_kiosks"
+    ]),
     value: z.any(),
     description: z.string().optional()
 });
@@ -161,7 +163,10 @@ export const updateIdStatusSchema = z.object({
 
 export const manualUserUpdateSchema = z.object({
     full_name: z.string().min(2).optional(),
-    phone: z.string().regex(/^\+?[0-9]{10,15}$/).optional(),
+    phone: z
+        .string()
+        .regex(/^\+?[0-9]{10,15}$/)
+        .optional(),
     email: z.string().email().optional(),
     role: z.enum(["CUSTOMER", "WORKER", "OWNER"]).optional()
 });
@@ -191,5 +196,3 @@ export const updateKioskStatusSchema = z.object({
 export const reassignWorkerSchema = z.object({
     kioskId: z.string().uuid()
 });
-
-

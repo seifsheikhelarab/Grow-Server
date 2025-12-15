@@ -10,6 +10,13 @@ import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 
+type SystemSettingKey =
+    | "commission_rate"
+    | "max_transaction_amount"
+    | "max_daily_tx"
+    | "max_daily_tx_to_customer"
+    | "max_kiosks";
+
 /**
  * Get admin dashboard stats.
  * @param {"1d" | "7d" | "30d"} filter - Time period filter (default: "7d").
@@ -338,7 +345,7 @@ export async function getSystemSettings() {
  * @throws {Error} If the setting is not found.
  */
 export async function updateSystemSetting(
-    key: string,
+    key: SystemSettingKey,
     value: boolean | string | number,
     adminId: string,
     description?: string
@@ -467,8 +474,13 @@ export async function getAllAdmins() {
  * @returns {Promise<object>} The updated user.
  * @throws {Error} If the user is not found.
  */
-async function updateUserStatusHelper(id: string, status: string, adminId: string, note?: string) {
-    let data: any = {};
+async function updateUserStatusHelper(
+    id: string,
+    status: string,
+    adminId: string,
+    note?: string
+) {
+    let data: unknown = {};
     if (status === "ACTIVE") {
         data = { is_active: true, is_verified: true };
     } else if (status === "SUSPENDED") {
@@ -497,12 +509,12 @@ async function updateUserStatusHelper(id: string, status: string, adminId: strin
  * @returns The owners with the specified filters.
  * @throws {Error} If the owners are not found.
  */
-export async function getOwners(filters: any) {
+export async function getOwners(filters: { [key: string]: unknown }) {
     try {
         const { search, status, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
 
-        const where: any = { role: "OWNER" };
+        const where: { [key: string]: unknown } = { role: "OWNER" };
 
         if (search) {
             where.OR = [
@@ -515,11 +527,9 @@ export async function getOwners(filters: any) {
             if (status === "ACTIVE") {
                 where.is_active = true;
                 where.is_verified = true;
-            }
-            else if (status === "SUSPENDED") {
+            } else if (status === "SUSPENDED") {
                 where.is_active = false;
-            }
-            else if (status === "PENDING") {
+            } else if (status === "PENDING") {
                 where.is_verified = false;
                 where.is_active = true;
             }
@@ -589,7 +599,12 @@ export async function getOwnerDetails(id: string) {
  * @returns {Promise<object>} The updated owner.
  * @throws {Error} If the owner is not found.
  */
-export async function updateOwnerStatus(id: string, status: any, adminId: string, note?: string) {
+export async function updateOwnerStatus(
+    id: string,
+    status: string,
+    adminId: string,
+    note?: string
+) {
     return updateUserStatusHelper(id, status, adminId, note);
 }
 
@@ -601,7 +616,7 @@ export async function updateOwnerStatus(id: string, status: any, adminId: string
  * @returns {Promise<object>} The updated owner.
  * @throws {Error} If the owner is not found.
  */
-export async function updateOwner(id: string, data: any, adminId: string) {
+export async function updateOwner(id: string, data: unknown, adminId: string) {
     try {
         const updated = await prisma.user.update({
             where: { id },
@@ -624,7 +639,12 @@ export async function updateOwner(id: string, data: any, adminId: string) {
  * @returns {Promise<object>} The updated owner.
  * @throws {Error} If the owner is not found.
  */
-export async function adjustBalance(id: string, amount: number, reason: string, adminId: string) {
+export async function adjustBalance(
+    id: string,
+    amount: number,
+    reason: string,
+    adminId: string
+) {
     try {
         const updated = await prisma.wallet.update({
             where: { user_id: id },
@@ -648,12 +668,12 @@ export async function adjustBalance(id: string, amount: number, reason: string, 
  * @returns {Promise<object[]>} The kiosks with the specified filters.
  * @throws {Error} If the kiosks are not found.
  */
-export async function getKiosks(filters: any) {
+export async function getKiosks(filters: { [key: string]: unknown }) {
     try {
         const { search, status, ownerId, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
 
-        const where: any = {};
+        const where: { [key: string]: unknown } = {};
 
         if (search) {
             where.name = { contains: search, mode: "insensitive" };
@@ -699,8 +719,13 @@ export async function getKioskDetails(id: string) {
             where: { id },
             include: {
                 owner: { select: { full_name: true, phone: true } },
-                workers: { select: { id: true, user: { select: { full_name: true, phone: true } } } },
-                dues: { orderBy: { created_at: 'desc' }, take: 5 }
+                workers: {
+                    select: {
+                        id: true,
+                        user: { select: { full_name: true, phone: true } }
+                    }
+                },
+                dues: { orderBy: { created_at: "desc" }, take: 5 }
             }
         });
         if (!kiosk) throw new Error("Kiosk not found");
@@ -720,11 +745,25 @@ export async function getKioskDetails(id: string) {
  * @returns {Promise<object | void>} The created kiosk.
  * @throws {Error} If the kiosk is not created.
  */
-export async function createKiosk(data: any, adminId: string, req: Request, res: Response) {
+export async function createKiosk(
+    data,
+    adminId: string,
+    req: Request,
+    res: Response
+) {
     try {
-        const owner = await prisma.user.findUnique({ where: { phone: data.ownerPhone } });
+        const owner = await prisma.user.findUnique({
+            where: { phone: data.ownerPhone }
+        });
         if (!owner || owner.role !== "OWNER") {
-            errorHandler(new BusinessLogicError("Owner not found or invalid role", ErrorCode.RESOURCE_NOT_FOUND), req, res);
+            errorHandler(
+                new BusinessLogicError(
+                    "Owner not found or invalid role",
+                    ErrorCode.RESOURCE_NOT_FOUND
+                ),
+                req,
+                res
+            );
             return undefined;
         }
 
@@ -755,19 +794,26 @@ export async function createKiosk(data: any, adminId: string, req: Request, res:
  * @returns {Promise<object>} The updated kiosk.
  * @throws {Error} If the kiosk is not found.
  */
-export async function updateKioskStatus(id: string, is_active: boolean, reason: string, adminId: string) {
+export async function updateKioskStatus(
+    id: string,
+    is_active: boolean,
+    reason: string,
+    adminId: string
+) {
     try {
         const updated = await prisma.kiosk.update({
             where: { id },
             data: { is_active }
         });
-        await logAdminAction(adminId, "UPDATE_KIOSK_STATUS", id, { is_active, reason });
+        await logAdminAction(adminId, "UPDATE_KIOSK_STATUS", id, {
+            is_active,
+            reason
+        });
         return updated;
     } catch (err) {
         logger.error(`Error updating kiosk status: ${err}`);
         throw err;
     }
-
 }
 
 // ============================================================================
@@ -785,12 +831,22 @@ export async function updateKioskStatus(id: string, is_active: boolean, reason: 
  * @returns {Promise<object[]>} The workers with the specified filters.
  * @throws {Error} If the workers are not found.
  */
-export async function getWorkers(filters: { search?: string, status?: string, kioskId?: string, page?: string, limit?: string } | undefined) {
+export async function getWorkers(
+    filters:
+        | {
+              search?: string;
+              status?: string;
+              kioskId?: string;
+              page?: string;
+              limit?: string;
+          }
+        | undefined
+) {
     try {
         const { search, status, kioskId, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
 
-        const where: any = { role: "WORKER" };
+        const where: { [key: string]: unknown } = { role: "WORKER" };
 
         if (search) {
             where.OR = [
@@ -811,7 +867,9 @@ export async function getWorkers(filters: { search?: string, status?: string, ki
                 skip,
                 take: Number(limit),
                 include: {
-                    worker_profile: { include: { kiosk: { select: { name: true } } } },
+                    worker_profile: {
+                        include: { kiosk: { select: { name: true } } }
+                    },
                     wallet: { select: { balance: true } }
                 }
             }),
@@ -858,7 +916,12 @@ export async function getWorkerDetails(id: string) {
  * @returns {Promise<object>} The updated worker.
  * @throws {Error} If the worker is not found.
  */
-export async function updateWorkerStatus(id: string, status: any, adminId: string, note?: string) {
+export async function updateWorkerStatus(
+    id: string,
+    status: string,
+    adminId: string,
+    note?: string
+) {
     return updateUserStatusHelper(id, status, adminId, note);
 }
 
@@ -871,16 +934,27 @@ export async function updateWorkerStatus(id: string, status: any, adminId: strin
  * @throws {Error} If the worker is not found.
  * @throws {Error} If the worker profile is not found.
  */
-export async function reassignWorker(id: string, kioskId: string, adminId: string) {
+export async function reassignWorker(
+    id: string,
+    kioskId: string,
+    adminId: string
+) {
     try {
-        const worker = await prisma.user.findUnique({ where: { id }, include: { worker_profile: true } });
-        if (!worker || !worker.worker_profile) throw new Error("Worker profile not found");
+        const worker = await prisma.user.findUnique({
+            where: { id },
+            include: { worker_profile: true }
+        });
+        if (!worker || !worker.worker_profile)
+            throw new Error("Worker profile not found");
 
         const updated = await prisma.workerProfile.update({
             where: { id: worker.worker_profile.id },
             data: { kiosk_id: kioskId }
         });
-        await logAdminAction(adminId, "REASSIGN_WORKER", id, { from: worker.worker_profile.kiosk_id, to: kioskId });
+        await logAdminAction(adminId, "REASSIGN_WORKER", id, {
+            from: worker.worker_profile.kiosk_id,
+            to: kioskId
+        });
         return updated;
     } catch (err) {
         logger.error(`Error reassigning worker: ${err}`);
@@ -898,12 +972,12 @@ export async function reassignWorker(id: string, kioskId: string, adminId: strin
  * @returns {Promise<object[]>} The customers with the specified filters.
  * @throws {Error} If the customers are not found.
  */
-export async function getCustomers(filters: any) {
+export async function getCustomers(filters: { [key: string]: unknown }) {
     try {
         const { search, status, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
 
-        const where: any = { role: "CUSTOMER" };
+        const where: { [key: string]: unknown } = { role: "CUSTOMER" };
 
         if (search) {
             where.OR = [
@@ -967,6 +1041,11 @@ export async function getCustomerDetails(id: string) {
  * @returns {Promise<object>} The updated customer.
  * @throws {Error} If the customer is not found.
  */
-export async function updateCustomerStatus(id: string, status: any, adminId: string, note?: string) {
+export async function updateCustomerStatus(
+    id: string,
+    status: string,
+    adminId: string,
+    note?: string
+) {
     return updateUserStatusHelper(id, status, adminId, note);
 }

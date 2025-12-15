@@ -4,7 +4,10 @@ import "dotenv/config";
 import { config } from "./config/env.config.js";
 import logger from "./utils/logger.js";
 import prisma from "./prisma.js";
-import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import {
+    errorHandler,
+    notFoundHandler
+} from "./middlewares/error.middleware.js";
 import { globalLimiter } from "./middlewares/ratelimit.middleware.js";
 import { ResponseHandler } from "./utils/response.js";
 import apiRoutes from "./api/index.js";
@@ -34,11 +37,11 @@ app.use(globalLimiter);
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
-app.get("/health", (req: Request, res: Response) => {
+app.get("/health", async (req: Request, res: Response) => {
     ResponseHandler.success(res, "Server is healthy", {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        env: config.NODE_ENV
+        env: (await config).NODE_ENV
     });
 });
 
@@ -66,10 +69,10 @@ export async function startServer() {
         await prisma.$queryRaw`SELECT 1`;
         logger.info("Database connected successfully");
 
-        const port = config.PORT;
-        const server = app.listen(port, () => {
+        const port = (await config).PORT;
+        const server = app.listen(port, async () => {
             logger.info(
-                `Server running on port ${port} in ${config.NODE_ENV} mode`
+                `Server running on port ${port} in ${(await config).NODE_ENV} mode`
             );
             logger.info(`Health check: http://localhost:${port}/health`);
             logger.info(`Swagger docs: http://localhost:${port}/docs`);

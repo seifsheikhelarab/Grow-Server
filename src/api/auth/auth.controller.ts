@@ -5,7 +5,10 @@ import {
     ErrorCode,
     ResponseHandler
 } from "../../utils/response.js";
-import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
+import {
+    asyncHandler,
+    errorHandler
+} from "../../middlewares/error.middleware.js";
 
 /**
  * Send OTP to phone number.
@@ -117,20 +120,26 @@ export const verifyAuth = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * Delete user account.
- * 
+ *
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
-export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
-    const userId = req.user?.id;
+export const deleteAccount = asyncHandler(
+    async (req: Request, res: Response) => {
+        const userId = req.user?.id;
 
-    if (!userId) {
-        // Should be caught by auth middleware
-        throw new AuthenticationError("User not authenticated", ErrorCode.UNAUTHORIZED_ACCESS);
+        if (!userId) {
+            // Should be caught by auth middleware
+            throw new AuthenticationError(
+                "User not authenticated",
+                ErrorCode.UNAUTHORIZED_ACCESS
+            );
+        }
+
+        await authService.deleteAccount(userId);
+
+        ResponseHandler.success(res, "Account deleted successfully", {
+            deleted: true
+        });
     }
-
-    await authService.deleteAccount(userId);
-
-    ResponseHandler.success(res, "Account deleted successfully", { deleted: true });
-});
-
+);

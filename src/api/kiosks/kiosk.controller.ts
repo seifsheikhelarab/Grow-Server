@@ -17,7 +17,9 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
         ownerId,
         name,
         kiosk_type,
-        location
+        location,
+        req,
+        res
     );
 
     ResponseHandler.created(res, "Kiosk created successfully", {

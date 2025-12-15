@@ -44,7 +44,10 @@ export const tempAuthMiddleware = async (
             return;
         }
 
-        const decoded = jwt.verify(token, config.JWT_SECRET as string) as {
+        const decoded = jwt.verify(
+            token,
+            (await config).JWT_SECRET as string
+        ) as {
             phone: string;
         };
 
@@ -132,7 +135,10 @@ export const authMiddleware = async (
             return;
         }
 
-        const decoded = jwt.verify(token, config.JWT_SECRET as string) as {
+        const decoded = jwt.verify(
+            token,
+            (await config).JWT_SECRET as string
+        ) as {
             id: string;
             phone: string;
             role: string;
@@ -309,16 +315,16 @@ export const adminRoleGuard = (...allowedAdminRoles: string[]) => {
  * @param {Response} res - The Express response object.
  * @param {NextFunction} next - The Express next middleware function.
  */
-export const optionalAuthMiddleware = (
+export const optionalAuthMiddleware = async (
     req: Request,
     res: Response,
     next: NextFunction
-) => {
+): Promise<void> => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
 
         if (token) {
-            const decoded = jwt.verify(token, config.JWT_SECRET) as {
+            const decoded = jwt.verify(token, (await config).JWT_SECRET) as {
                 id: string;
                 phone: string;
                 role: string;

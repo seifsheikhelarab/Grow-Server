@@ -23,9 +23,46 @@ export async function createKiosk(
     ownerId: string,
     name: string,
     kiosk_type: string,
-    location: string
+    location: string,
+    req: Request,
+    res: Response
 ) {
     try {
+        const existingKiosk = await prisma.kiosk.findFirst({
+            where: {
+                owner_id: ownerId,
+                name: name
+            }
+        });
+
+        if (existingKiosk) {
+            errorHandler(
+                new ConflictError("Kiosk with this name already exists"),
+                req,
+                res
+            );
+        }
+
+        const kiosks = await prisma.kiosk.findMany({
+            where: { owner_id: ownerId }
+        });
+
+        const maxKiosksSetting = await prisma.systemSetting.findUnique({
+            where: { key: "max_kiosks" }
+        });
+        const maxKiosks = Number(maxKiosksSetting?.value || 0);
+
+        if (maxKiosks > 0 && kiosks.length >= maxKiosks) {
+            errorHandler(
+                new BusinessLogicError(
+                    "You have reached the maximum number of kiosks",
+                    ErrorCode.KIOSK_NOT_APPROVED
+                ),
+                req,
+                res
+            );
+        }
+
         const kiosk = await prisma.kiosk.create({
             data: {
                 owner_id: ownerId,

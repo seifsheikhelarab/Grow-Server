@@ -4,7 +4,7 @@ import { TxStatus } from "@prisma/client";
 
 /**
  * Get dashboard data for an Owner.
- * 
+ *
  * @param {string} userId - The ID of the owner.
  * @returns {Promise<{ totalPoints: number; kiosks: Array<{ id: string; name: string; location: string; points: number; dues: number }> }>} The dashboard data.
  * @throws {NotFoundError} If the user or wallet is not found.
@@ -51,10 +51,16 @@ export async function getOwnerDashboard(userId: string): Promise<{
 
     const kioskData = kiosks.map((kiosk) => {
         // Points: Sum of amount_gross of completed transactions
-        const points = kiosk.transactions.reduce((acc, tx) => acc + Number(tx.amount_gross), 0);
+        const points = kiosk.transactions.reduce(
+            (acc, tx) => acc + Number(tx.amount_gross),
+            0
+        );
 
         // Dues: Sum of unpaid dues
-        const dues = kiosk.dues.reduce((acc, due) => acc + Number(due.amount), 0);
+        const dues = kiosk.dues.reduce(
+            (acc, due) => acc + Number(due.amount),
+            0
+        );
 
         return {
             id: kiosk.id,
@@ -73,7 +79,7 @@ export async function getOwnerDashboard(userId: string): Promise<{
 
 /**
  * Get dashboard data for a Worker.
- * 
+ *
  * @param {string} userId - The ID of the worker.
  * @returns {Promise<{ totalPoints: number; goal: { title: string; current: number; target: number } | null; transactions: Array<any> }>} The dashboard data.
  * @throws {NotFoundError} If the user or wallet is not found.
@@ -111,15 +117,15 @@ export async function getWorkerDashboard(userId: string): Promise<{
     const totalPoints = Number(user.wallet.balance);
 
     // 2. Current Kiosk Goal (Type: WORKER_TARGET)
-    // Assuming we pick the first active one or most specific one. 
+    // Assuming we pick the first active one or most specific one.
     // The requirement says "show current kiosk goal".
     const goal = await prisma.goal.findFirst({
         where: {
             user_id: userId,
-            type: "WORKER_TARGET",
+            type: "WORKER_TARGET"
         },
         orderBy: {
-            deadline: 'asc' // Prioritize earliest deadline? Or creation?
+            deadline: "asc" // Prioritize earliest deadline? Or creation?
         }
     });
 
@@ -141,7 +147,9 @@ export async function getWorkerDashboard(userId: string): Promise<{
                 amount_gross: true
             }
         });
-        currentAmount = result._sum.amount_gross ? Number(result._sum.amount_gross) : 0;
+        currentAmount = result._sum.amount_gross
+            ? Number(result._sum.amount_gross)
+            : 0;
     }
 
     // 3. Latest transactions by worker
@@ -153,13 +161,15 @@ export async function getWorkerDashboard(userId: string): Promise<{
 
     return {
         totalPoints,
-        goal: goal ? {
-            title: goal.title,
-            current: currentAmount,
-            target: Number(goal.target_amount),
-            deadline: goal.deadline
-        } : null,
-        transactions: transactions.map(tx => ({
+        goal: goal
+            ? {
+                  title: goal.title,
+                  current: currentAmount,
+                  target: Number(goal.target_amount),
+                  deadline: goal.deadline
+              }
+            : null,
+        transactions: transactions.map((tx) => ({
             id: tx.id,
             amount: Number(tx.amount_gross),
             type: tx.type,

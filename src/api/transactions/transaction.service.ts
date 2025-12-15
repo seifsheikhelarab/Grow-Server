@@ -12,11 +12,46 @@ import logger from "../../utils/logger.js";
 /**
  * Constants for transaction limits
  */
-const TRANSACTION_FEE = 5;
-const COMMISSION_AMOUNT = 5;
-const MAX_TRANSACTION_AMOUNT = 100;
-const MAX_DAILY_TXS_PER_WORKER = 150;
-const MAX_DAILY_TXS_TO_CUSTOMER = 2;
+/**
+ * Fetch dynamic transaction constraints from system settings.
+ */
+async function getTransactionSettings() {
+    const settings = await prisma.systemSetting.findMany({
+        where: {
+            key: {
+                in: [
+                    "commission_rate",
+                    "max_transaction_amount",
+                    "max_daily_tx",
+                    "max_daily_tx_to_customer"
+                ]
+            }
+        }
+    });
+
+    const settingsMap = settings.reduce(
+        (acc, s) => {
+            try {
+                acc[s.key] = JSON.parse(s.value);
+            } catch {
+                acc[s.key] = s.value; // Fallback for plain strings if any
+            }
+            return acc;
+        },
+        {} as Record<string, unknown>
+    );
+
+    return {
+        commissionRate: Number(settingsMap["commission_rate"] || 5),
+        maxTransactionAmount: Number(
+            settingsMap["max_transaction_amount"] || 100
+        ),
+        maxDailyTxPerWorker: Number(settingsMap["max_daily_tx"] || 150),
+        maxDailyTxToCustomer: Number(
+            settingsMap["max_daily_tx_to_customer"] || 2
+        )
+    };
+}
 
 /**
  * Validate sender is active worker/owner.
@@ -150,23 +185,31 @@ async function checkConstraints(
     receiverPhone: string,
     kioskId: string,
     amount: number,
+    settings: {
+        maxTransactionAmount: number;
+        maxDailyTxToCustomer: number;
+        maxDailyTxPerWorker: number;
+    },
     req: Request,
     res: Response
 ) {
-    // Constraint 1: Amount <= 100
-    if (amount > MAX_TRANSACTION_AMOUNT) {
+    const { maxTransactionAmount, maxDailyTxToCustomer, maxDailyTxPerWorker } =
+        settings;
+
+    // Constraint 1: Amount <= maxTransactionAmount
+    if (amount > maxTransactionAmount) {
         errorHandler(
             new BusinessLogicError(
-                `Transaction amount cannot exceed ${MAX_TRANSACTION_AMOUNT}`,
+                `Transaction amount cannot exceed ${maxTransactionAmount}`,
                 ErrorCode.INVALID_TRANSACTION_AMOUNT,
-                { max: MAX_TRANSACTION_AMOUNT, requested: amount }
+                { max: maxTransactionAmount, requested: amount }
             ),
             req,
             res
         );
     }
 
-    // Constraint 2: Daily Tx count to this specific customer < 2
+    // Constraint 2: Daily Tx count to this specific customer < maxDailyTxToCustomer
     const dailyTxsToCustomer = await prisma.transaction.count({
         where: {
             sender_id: senderId,
@@ -178,19 +221,19 @@ async function checkConstraints(
         }
     });
 
-    if (dailyTxsToCustomer >= MAX_DAILY_TXS_TO_CUSTOMER) {
+    if (dailyTxsToCustomer >= maxDailyTxToCustomer) {
         errorHandler(
             new BusinessLogicError(
-                `Daily transaction limit to this customer (${MAX_DAILY_TXS_TO_CUSTOMER}) exceeded`,
+                `Daily transaction limit to this customer (${maxDailyTxToCustomer}) exceeded`,
                 ErrorCode.DAILY_TX_TO_USER_LIMIT,
-                { max: MAX_DAILY_TXS_TO_CUSTOMER, current: dailyTxsToCustomer }
+                { max: maxDailyTxToCustomer, current: dailyTxsToCustomer }
             ),
             req,
             res
         );
     }
 
-    // Constraint 3: Total Daily Tx count for this worker < 150
+    // Constraint 3: Total Daily Tx count for this worker < maxDailyTxPerWorker
     const totalDailyTxs = await prisma.transaction.count({
         where: {
             sender_id: senderId,
@@ -200,12 +243,12 @@ async function checkConstraints(
         }
     });
 
-    if (totalDailyTxs >= MAX_DAILY_TXS_PER_WORKER) {
+    if (totalDailyTxs >= maxDailyTxPerWorker) {
         errorHandler(
             new BusinessLogicError(
-                `Daily transaction limit (${MAX_DAILY_TXS_PER_WORKER}) exceeded`,
+                `Daily transaction limit (${maxDailyTxPerWorker}) exceeded`,
                 ErrorCode.DAILY_LIMIT_EXCEEDED,
-                { max: MAX_DAILY_TXS_PER_WORKER, current: totalDailyTxs }
+                { max: maxDailyTxPerWorker, current: totalDailyTxs }
             ),
             req,
             res
@@ -239,20 +282,24 @@ export async function sendPoints(
         // Validate kiosk
         await validateKiosk(kioskId, senderId, req, res);
 
+        // Get settings
+        const settings = await getTransactionSettings();
+
         // Check constraints
         await checkConstraints(
             senderId,
             receiverPhone,
             kioskId,
             amount,
+            settings,
             req,
             res
         );
 
         // Calculate amounts
-        const fee = TRANSACTION_FEE;
+        const fee = settings.commissionRate;
         const customerAmount = amount - fee;
-        const commission = COMMISSION_AMOUNT;
+        const commission = settings.commissionRate;
 
         logger.info(
             `[TX] Starting transaction: ${amount} from ${sender.phone} to ${receiverPhone}`
@@ -418,6 +465,8 @@ export async function getDailyStats(userId: string) {
             }
         });
 
+        const settings = await getTransactionSettings();
+
         return {
             transactions_count: stats._count,
             total_sent: stats._sum.amount_gross
@@ -432,7 +481,7 @@ export async function getDailyStats(userId: string) {
                 : 0,
             remaining_limit: Math.max(
                 0,
-                MAX_DAILY_TXS_PER_WORKER - stats._count
+                settings.maxDailyTxPerWorker - stats._count
             )
         };
     } catch (err) {

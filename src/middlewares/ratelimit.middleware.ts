@@ -6,8 +6,8 @@ import { config } from "../config/env.config.js";
  * Limits requests based on configuration (default: 100 requests per 15 minutes).
  */
 export const globalLimiter = rateLimit({
-    windowMs: config.RATE_LIMIT_WINDOW_MS,
-    max: config.RATE_LIMIT_MAX_REQUESTS,
+    windowMs: (await config).RATE_LIMIT_WINDOW_MS,
+    max: (await config).RATE_LIMIT_MAX_REQUESTS,
     message: "Too many requests, please try again later",
     standardHeaders: true,
     legacyHeaders: false

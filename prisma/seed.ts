@@ -33,6 +33,10 @@ async function main() {
             { key: "min_redemption", value: "50", description: "Minimum points for redemption" },
             { key: "max_daily_tx", value: "1000", description: "Maximum daily transaction amount per user" },
             { key: "maintenance_mode", value: "false", description: "System maintenance mode status" },
+            { key: "max_kiosks", value: "10", description: "Maximum number of kiosks per owner" },
+            { key: "max_transaction_amount", value: "1000", description: "Maximum transaction amount per user" },
+            { key: "max_daily_tx_to_customer", value: "1000", description: "Maximum daily transaction amount to customer" },
+            { key: "max_commission_rate", value: "1000", description: "Maximum commission rate per user" },
         ]
     });
     console.log("System settings created.");

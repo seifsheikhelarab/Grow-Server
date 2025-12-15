@@ -63,6 +63,10 @@ router.get("/verify", optionalAuthMiddleware, authController.verifyAuth);
  * Delete user account.
  * Protected: Authenticated users.
  */
-router.delete("/delete-account", authMiddlewareAlias, authController.deleteAccount);
+router.delete(
+    "/delete-account",
+    authMiddlewareAlias,
+    authController.deleteAccount
+);
 
 export default router;

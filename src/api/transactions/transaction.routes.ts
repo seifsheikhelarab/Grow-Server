@@ -1,6 +1,9 @@
 import { Router } from "express";
 import * as transactionController from "./transaction.controller.js";
-import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware.js";
+import {
+    authMiddleware,
+    roleGuard
+} from "../../middlewares/auth.middleware.js";
 import { sendPointsSchema } from "../../schemas/validation.schema.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 import { transactionLimiter } from "../../middlewares/ratelimit.middleware.js";

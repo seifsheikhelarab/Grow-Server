@@ -35,6 +35,7 @@ export async function sendOtp(phone: string): Promise<void> {
         });
 
         // TODO: Send OTP via SMS in production
+        // await sendSMS(phone, code);
         logger.info(
             `OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`
         );
@@ -102,7 +103,7 @@ export async function verifyOtp(
             const opts: SignOptions = { expiresIn: "30m" };
             const tempToken = jwt.sign(
                 { phone, tempAuth: true },
-                config.JWT_SECRET as string,
+                (await config).JWT_SECRET as string,
                 opts
             );
 
@@ -126,11 +127,11 @@ export async function verifyOtp(
 
         // Generate auth token for existing user
         const opts: SignOptions = {
-            expiresIn: config.JWT_EXPIRY as ms.StringValue
+            expiresIn: (await config).JWT_EXPIRY as ms.StringValue
         };
         const token = jwt.sign(
             { id: user.id, phone: user.phone, role: user.role },
-            config.JWT_SECRET as string,
+            (await config).JWT_SECRET as string,
             opts
         );
 
@@ -240,11 +241,11 @@ export async function register(
 
         // Generate auth token
         const opts: SignOptions = {
-            expiresIn: config.JWT_EXPIRY as ms.StringValue
+            expiresIn: (await config).JWT_EXPIRY as ms.StringValue
         };
         const token = jwt.sign(
             { id: user.id, phone: user.phone, role: user.role },
-            config.JWT_SECRET as string,
+            (await config).JWT_SECRET as string,
             opts
         );
 
@@ -318,11 +319,11 @@ export async function login(
 
         // Generate auth token
         const opts: SignOptions = {
-            expiresIn: config.JWT_EXPIRY as ms.StringValue
+            expiresIn: (await config).JWT_EXPIRY as ms.StringValue
         };
         const token = jwt.sign(
             { id: user.id, phone: user.phone, role: user.role },
-            config.JWT_SECRET as string,
+            (await config).JWT_SECRET as string,
             opts
         );
 
@@ -359,7 +360,7 @@ export async function verifyToken(
     role: string;
 }> {
     try {
-        const decoded = jwt.verify(token, config.JWT_SECRET) as {
+        const decoded = jwt.verify(token, (await config).JWT_SECRET) as {
             id: string;
             full_name: string;
             phone: string;
@@ -406,4 +407,3 @@ export async function deleteAccount(userId: string): Promise<void> {
         throw err;
     }
 }
-

@@ -1,31 +1,4 @@
 {
     "typescript.tsdk": "node_modules\\typescript\\lib",
-    "sqltools.connections": [
-        {
-            "mysqlOptions": {
-                "authProtocol": "default",
-                "enableSsl": "Disabled"
-            },
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 3306,
-            "driver": "MySQL",
-            "name": "northwind",
-            "database": "northwind",
-            "username": "root",
-            "password": ""
-        },
-        {
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 5432,
-            "driver": "PostgreSQL",
-            "name": "Postgre",
-            "username": "postgres",
-            "password": "admin",
-            "database": "grow-server"
-        }
-    ],
     "prisma.pinToPrisma6": true
 }
