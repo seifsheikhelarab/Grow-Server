@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import { rateLimit } from "express-rate-limit";
 import { config } from "../config/env.config.js";
 
 /**
