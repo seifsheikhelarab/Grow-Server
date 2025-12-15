@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import * as dashboardService from "./dashboard.service";
-import { ResponseHandler } from "../../utils/response";
-import { asyncHandler } from "../../middlewares/error.middleware";
+import * as dashboardService from "./dashboard.service.js";
+import { ResponseHandler } from "../../utils/response.js";
+import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Get Owner Dashboard.

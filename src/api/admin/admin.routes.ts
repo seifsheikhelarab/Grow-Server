@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as adminController from "./admin.controller";
+import * as adminController from "./admin.controller.js";
 import {
     processRedemptionSchema,
     collectDueSchema,
@@ -11,13 +11,13 @@ import {
     adminCreateKioskSchema,
     updateKioskStatusSchema,
     reassignWorkerSchema
-} from "../../schemas/validation.schema";
+} from "../../schemas/validation.schema.js";
 import {
     authMiddleware,
     roleGuard,
     adminRoleGuard
-} from "../../middlewares/auth.middleware";
-import { validateRequest } from "../../middlewares/validate.middleware";
+} from "../../middlewares/auth.middleware.js";
+import { validateRequest } from "../../middlewares/validate.middleware.js";
 
 const router = Router();
 

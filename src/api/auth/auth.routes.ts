@@ -1,17 +1,17 @@
 import { Router } from "express";
-import * as authController from "./auth.controller";
+import * as authController from "./auth.controller.js";
 import {
     optionalAuthMiddleware,
     authMiddleware as authMiddlewareAlias
     // tempAuthMiddleware
-} from "../../middlewares/auth.middleware";
+} from "../../middlewares/auth.middleware.js";
 import {
     sendOtpSchema,
     verifyOtpSchema,
     registerSchema,
     loginSchema
-} from "../../schemas/validation.schema";
-import { validateRequest } from "../../middlewares/validate.middleware";
+} from "../../schemas/validation.schema.js";
+import { validateRequest } from "../../middlewares/validate.middleware.js";
 
 const router = Router();
 

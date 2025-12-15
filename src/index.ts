@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { startServer } from "./app";
+import { startServer } from "./app.js";
 
 /**
  * Application Entry Point.

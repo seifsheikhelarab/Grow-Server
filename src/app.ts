@@ -1,14 +1,14 @@
 import express, { Express, Request, Response } from "express";
 import cors from "cors";
 import "dotenv/config";
-import { config } from "./config/env.config";
-import logger from "./utils/logger";
-import prisma from "./prisma";
-import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
-import { globalLimiter } from "./middlewares/ratelimit.middleware";
-import { ResponseHandler } from "./utils/response";
-import apiRoutes from "./api";
-import swaggerSetup from "./utils/swagger";
+import { config } from "./config/env.config.js";
+import logger from "./utils/logger.js";
+import prisma from "./prisma.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import { globalLimiter } from "./middlewares/ratelimit.middleware.js";
+import { ResponseHandler } from "./utils/response.js";
+import apiRoutes from "./api/index.js";
+import swaggerSetup from "./utils/swagger.js";
 
 const app: Express = express();
 

@@ -1,14 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { config } from "../config/env.config";
+import { config } from "../config/env.config.js";
 import {
     AuthenticationError,
     AuthorizationError,
     ErrorCode
-} from "../utils/response";
-import logger from "../utils/logger";
-import { errorHandler } from "./error.middleware";
-import prisma from "../prisma";
+} from "../utils/response.js";
+import logger from "../utils/logger.js";
+import { errorHandler } from "./error.middleware.js";
+import prisma from "../prisma.js";
 
 /**
  * Extend Express Request to include user data

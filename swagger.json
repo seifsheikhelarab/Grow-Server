@@ -326,7 +326,7 @@
                     "name": { "type": "string", "minLength": 3 },
                     "ownerPhone": {
                         "type": "string",
-                        "pattern": "^\\+?[0-9]{10,15}$"
+                        "pattern": "^\\++?[0-9]{10,15}$"
                     },
                     "location": { "type": "string" },
                     "latitude": { "type": "number" },
@@ -363,7 +363,7 @@
                 "properties": {
                     "phone": {
                         "type": "string",
-                        "pattern": "^\\+?[0-9]{10,15}$"
+                        "pattern": "^\\[0-9]{10,15}$"
                     },
                     "fullName": { "type": "string", "minLength": 2 },
                     "password": { "type": "string", "minLength": 8 },

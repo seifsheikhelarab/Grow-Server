@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import * as transactionService from "./transaction.service";
-import { ResponseHandler } from "../../utils/response";
-import { asyncHandler } from "../../middlewares/error.middleware";
+import * as transactionService from "./transaction.service.js";
+import { ResponseHandler } from "../../utils/response.js";
+import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Send points to customer.

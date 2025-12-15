@@ -1,11 +1,11 @@
 import { Router } from "express";
-import * as kioskController from "./kiosk.controller";
-import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware";
+import * as kioskController from "./kiosk.controller.js";
+import { authMiddleware, roleGuard } from "../../middlewares/auth.middleware.js";
 import {
     createKioskSchema,
     inviteWorkerSchema
-} from "../../schemas/validation.schema";
-import { validateRequest } from "../../middlewares/validate.middleware";
+} from "../../schemas/validation.schema.js";
+import { validateRequest } from "../../middlewares/validate.middleware.js";
 
 const router = Router();
 

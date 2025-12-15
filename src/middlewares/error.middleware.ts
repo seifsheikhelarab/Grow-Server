@@ -4,8 +4,8 @@ import {
     AppError,
     ErrorCode,
     HttpStatus
-} from "../utils/response";
-import logger from "../utils/logger";
+} from "../utils/response.js";
+import logger from "../utils/logger.js";
 
 /**
  * Global Error Handler Middleware

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import * as walletService from "./wallet.service";
-import { ResponseHandler } from "../../utils/response";
-import { asyncHandler } from "../../middlewares/error.middleware";
+import * as walletService from "./wallet.service.js";
+import { ResponseHandler } from "../../utils/response.js";
+import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Get wallet balance.

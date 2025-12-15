@@ -1,13 +1,13 @@
-import { errorHandler } from "./../../middlewares/error.middleware";
+import { errorHandler } from "./../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
-import prisma from "../../prisma";
+import prisma from "../../prisma.js";
 import {
     NotFoundError,
     AuthorizationError,
     BusinessLogicError,
     ErrorCode
-} from "../../utils/response";
-import logger from "../../utils/logger";
+} from "../../utils/response.js";
+import logger from "../../utils/logger.js";
 
 /**
  * Constants for transaction limits

@@ -1,5 +1,5 @@
-import prisma from "../../prisma";
-import { NotFoundError } from "../../utils/response";
+import prisma from "../../prisma.js";
+import { NotFoundError } from "../../utils/response.js";
 import { TxStatus } from "@prisma/client";
 
 /**
