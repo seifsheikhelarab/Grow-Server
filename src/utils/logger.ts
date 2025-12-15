@@ -1,10 +1,5 @@
-import pino from "pino";
+import { pino } from "pino";
 
-/**
- * Pino logger configuration.
- * Provides structured logging throughout the application.
- * Configured to use pino-pretty for development.
- */
 const logger = pino({
     level: process.env.LOG_LEVEL || "info",
     transport: {
