@@ -91,3 +91,232 @@ export const collectDue = asyncHandler(async (req: Request, res: Response) => {
         is_paid: due.is_paid
     });
 });
+
+/**
+ * Get system settings.
+ */
+export const getSettings = asyncHandler(async (req: Request, res: Response) => {
+    const settings = await adminService.getSystemSettings();
+    ResponseHandler.success(res, "System settings retrieved", settings);
+});
+
+/**
+ * Update system setting.
+ */
+export const updateSetting = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { key, value, description } = req.body;
+        // Guaranteed by authMiddleware
+        const adminId = req.user!.id;
+        const setting = await adminService.updateSystemSetting(
+            key,
+            value,
+            adminId,
+            description
+        );
+        ResponseHandler.success(res, "Setting updated", setting);
+    }
+);
+
+/**
+ * List admins.
+ */
+export const getAdmins = asyncHandler(async (req: Request, res: Response) => {
+    const admins = await adminService.getAllAdmins();
+    ResponseHandler.success(res, "Admins retrieved", admins);
+});
+
+/**
+ * Create admin.
+ */
+export const createAdmin = asyncHandler(async (req: Request, res: Response) => {
+    const { phone, fullName, password, adminRole } = req.body;
+    const creatorId = req.user!.id;
+    const newAdmin = await adminService.createAdminUser(
+        phone,
+        fullName,
+        password,
+        adminRole,
+        creatorId,
+        req,
+        res
+    );
+    if (newAdmin) {
+        ResponseHandler.created(res, "Admin created", newAdmin);
+    }
+});
+
+// ============================================================================
+// OWNER CONTROLLERS
+// ============================================================================
+
+/**
+ * Get owners with filters.
+ */
+export const getOwners = asyncHandler(async (req: Request, res: Response) => {
+    const filters = req.query;
+    const owners = await adminService.getOwners(filters);
+    ResponseHandler.success(res, "Owners retrieved", owners);
+});
+
+/**
+ * Get owner details by ID.
+ */
+export const getOwnerDetails = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const owner = await adminService.getOwnerDetails(id);
+    ResponseHandler.success(res, "Owner details retrieved", owner);
+});
+
+/**
+ * Update owner status.
+ */
+export const updateOwnerStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, note } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.updateOwnerStatus(id, status, adminId, note);
+    ResponseHandler.success(res, `Owner status updated to ${status}`, updated);
+});
+
+/**
+ * Update owner details manually.
+ */
+export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const data = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.updateOwner(id, data, adminId);
+    ResponseHandler.success(res, "Owner details updated", updated);
+});
+
+/**
+ * Adjust owner balance.
+ */
+export const adjustBalance = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { amount, reason } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.adjustBalance(id, amount, reason, adminId);
+    ResponseHandler.success(res, "Balance adjusted", updated);
+});
+
+// ============================================================================
+// KIOSK CONTROLLERS
+// ============================================================================
+
+/**
+ * Get kiosks with filters.
+ */
+export const getKiosks = asyncHandler(async (req: Request, res: Response) => {
+    const filters = req.query;
+    const kiosks = await adminService.getKiosks(filters);
+    ResponseHandler.success(res, "Kiosks retrieved", kiosks);
+});
+
+/**
+ * Get kiosk details by ID.
+ */
+export const getKioskDetails = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const kiosk = await adminService.getKioskDetails(id);
+    ResponseHandler.success(res, "Kiosk details retrieved", kiosk);
+});
+
+/**
+ * Create a new kiosk manually.
+ */
+export const createKiosk = asyncHandler(async (req: Request, res: Response) => {
+    const data = req.body;
+    const adminId = req.user!.id;
+    const kiosk = await adminService.createKiosk(data, adminId, req, res);
+    ResponseHandler.created(res, "Kiosk created", kiosk);
+});
+
+/**
+ * Update kiosk status.
+ */
+export const updateKioskStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { is_active, reason } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.updateKioskStatus(id, is_active, reason, adminId);
+    ResponseHandler.success(res, `Kiosk status updated`, updated);
+});
+
+// ============================================================================
+// WORKER CONTROLLERS
+// ============================================================================
+
+/**
+ * Get workers with filters.
+ */
+export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
+    const filters = req.query;
+    const workers = await adminService.getWorkers(filters);
+    ResponseHandler.success(res, "Workers retrieved", workers);
+});
+
+/**
+ * Get worker details by ID.
+ */
+export const getWorkerDetails = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const worker = await adminService.getWorkerDetails(id);
+    ResponseHandler.success(res, "Worker details retrieved", worker);
+});
+
+/**
+ * Update worker status.
+ */
+export const updateWorkerStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, note } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.updateWorkerStatus(id, status, adminId, note);
+    ResponseHandler.success(res, `Worker status updated to ${status}`, updated);
+});
+
+/**
+ * Reassign worker to another kiosk.
+ */
+export const reassignWorker = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { kioskId } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.reassignWorker(id, kioskId, adminId);
+    ResponseHandler.success(res, "Worker reassigned", updated);
+});
+
+// ============================================================================
+// CUSTOMER CONTROLLERS
+// ============================================================================
+
+/**
+ * Get customers with filters.
+ */
+export const getCustomers = asyncHandler(async (req: Request, res: Response) => {
+    const filters = req.query;
+    const customers = await adminService.getCustomers(filters);
+    ResponseHandler.success(res, "Customers retrieved", customers);
+});
+
+/**
+ * Get customer details by ID.
+ */
+export const getCustomerDetails = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const customer = await adminService.getCustomerDetails(id);
+    ResponseHandler.success(res, "Customer details retrieved", customer);
+});
+
+/**
+ * Update customer status.
+ */
+export const updateCustomerStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status, note } = req.body;
+    const adminId = req.user!.id;
+    const updated = await adminService.updateCustomerStatus(id, status, adminId, note);
+    ResponseHandler.success(res, `Customer status updated to ${status}`, updated);
+});

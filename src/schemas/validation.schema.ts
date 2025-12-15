@@ -21,6 +21,7 @@ export const verifyOtpSchema = z.object({
 /** Schema for user registration */
 export const registerSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    full_name: z.string().min(2, "Full name required"),
     password: z
         .string()
         .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters"),
@@ -90,7 +91,9 @@ export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    kioskId: z.string().uuid("Invalid kiosk ID")
+    kioskId: z.string().uuid("Invalid kiosk ID"),
+    position: z.string().optional(),
+    workingHours: z.string().optional()
 });
 
 /**
@@ -107,6 +110,21 @@ export const processRedemptionSchema = z.object({
 /** Schema for collecting due */
 export const collectDueSchema = z.object({
     dueId: z.string().uuid("Invalid due ID")
+});
+
+/** Schema for updating system setting */
+export const updateSettingSchema = z.object({
+    key: z.string().min(1, "Key is required"),
+    value: z.any(),
+    description: z.string().optional()
+});
+
+/** Schema for creating admin */
+export const createAdminSchema = z.object({
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    fullName: z.string().min(2, "Full name is required"),
+    password: z.string().min(8, "Password must be at least 8 chars"),
+    adminRole: z.enum(["SUPER_ADMIN", "EDITOR", "VIEWER"])
 });
 
 /**
@@ -126,3 +144,52 @@ export const paginationSchema = z.object({
 export const dashboardFilterSchema = z.object({
     filter: z.enum(["1d", "7d", "30d"]).default("7d")
 });
+
+/**
+ * Admin User Management Schemas
+ */
+
+export const updateUserStatusSchema = z.object({
+    status: z.enum(["ACTIVE", "SUSPENDED", "PENDING", "REJECTED"]),
+    note: z.string().optional()
+});
+
+export const updateIdStatusSchema = z.object({
+    status: z.enum(["PENDING", "VERIFIED", "REJECTED"]),
+    rejectionReason: z.string().optional()
+});
+
+export const manualUserUpdateSchema = z.object({
+    full_name: z.string().min(2).optional(),
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/).optional(),
+    email: z.string().email().optional(),
+    role: z.enum(["CUSTOMER", "WORKER", "OWNER"]).optional()
+});
+
+export const adjustBalanceSchema = z.object({
+    amount: z.number().int(), // Can be negative for deduction
+    reason: z.string().min(5)
+});
+
+/**
+ * Admin Kiosk Management Schemas
+ */
+
+export const adminCreateKioskSchema = z.object({
+    name: z.string().min(3),
+    ownerPhone: z.string().regex(/^\+?[0-9]{10,15}$/),
+    location: z.string(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional()
+});
+
+export const updateKioskStatusSchema = z.object({
+    is_active: z.boolean(),
+    reason: z.string().optional()
+});
+
+export const reassignWorkerSchema = z.object({
+    kioskId: z.string().uuid()
+});
+
+

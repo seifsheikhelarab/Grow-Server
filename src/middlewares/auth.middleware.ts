@@ -20,6 +20,7 @@ declare module "express-serve-static-core" {
             id: string;
             phone: string;
             role: "CUSTOMER" | "WORKER" | "OWNER" | "ADMIN";
+            admin_role?: "SUPER_ADMIN" | "EDITOR" | "VIEWER";
         };
     }
 }
@@ -135,17 +136,32 @@ export const authMiddleware = async (
             id: string;
             phone: string;
             role: string;
-        };
-
-        req.user = {
-            id: decoded.id,
-            phone: decoded.phone,
-            role: decoded.role as "CUSTOMER" | "WORKER" | "OWNER" | "ADMIN"
+            admin_role?: string;
         };
 
         const user = await prisma.user.findUnique({
             where: { phone: decoded.phone }
         });
+
+        if (!user) {
+            errorHandler(
+                new AuthenticationError(
+                    "User not found",
+                    ErrorCode.UNAUTHORIZED_ACCESS
+                ),
+                req,
+                res
+            );
+            return;
+        }
+
+        req.user = {
+            id: decoded.id,
+            phone: decoded.phone,
+            role: decoded.role as "CUSTOMER" | "WORKER" | "OWNER" | "ADMIN",
+            admin_role: user.admin_role as "SUPER_ADMIN" | "EDITOR" | "VIEWER"
+        };
+
         if (!user.is_verified) {
             errorHandler(
                 new AuthenticationError(
@@ -235,6 +251,45 @@ export const roleGuard = (...allowedRoles: string[]) => {
             errorHandler(
                 new AuthorizationError(
                     `Role '${req.user.role}' is not allowed to access this resource`
+                ),
+                req,
+                res
+            );
+            return;
+        }
+
+        next();
+    };
+};
+
+/**
+ * Admin Role Guard Middleware
+ * Ensures admin user has required admin sub-role.
+ *
+ * @param {...string[]} allowedAdminRoles - List of admin roles allowed (SUPER_ADMIN, EDITOR, VIEWER).
+ * @returns {Function} Express middleware function.
+ */
+export const adminRoleGuard = (...allowedAdminRoles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        if (!req.user || req.user.role !== "ADMIN") {
+            errorHandler(
+                new AuthorizationError("User is not an admin"),
+                req,
+                res
+            );
+            return;
+        }
+
+        if (
+            !req.user.admin_role ||
+            !allowedAdminRoles.includes(req.user.admin_role)
+        ) {
+            logger.warn(
+                `Unauthorized admin access attempt by ${req.user.phone} with admin role ${req.user.admin_role}`
+            );
+            errorHandler(
+                new AuthorizationError(
+                    `Admin Role '${req.user.admin_role}' is not allowed to access this resource`
                 ),
                 req,
                 res

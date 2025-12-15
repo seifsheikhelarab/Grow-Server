@@ -17,6 +17,12 @@ enum Role {
   ADMIN
 }
 
+enum AdminRole {
+  SUPER_ADMIN // Owner in doc
+  EDITOR // Admin in doc
+  VIEWER // Viewer in doc
+}
+
 enum TxType {
   DEPOSIT // Worker sends points to Customer
   WITHDRAWAL // Customer/Worker cashes out
@@ -33,13 +39,15 @@ enum TxStatus {
 // ---------------- CORE MODELS ----------------
 
 model User {
-  id            String   @id @default(uuid())
-  phone         String   @unique // +201xxxxxxxxx
+  id            String     @id @default(uuid())
+  full_name     String
+  phone         String     @unique // +201xxxxxxxxx
   password_hash String? // Nullable for users invited but not fully signed up
   role          Role
-  is_active     Boolean  @default(true) //for deletion/suspension
-  is_verified   Boolean  @default(false) //for verification
-  created_at    DateTime @default(now())
+  admin_role    AdminRole? // Only if role is ADMIN
+  is_active     Boolean    @default(true) //for deletion/suspension
+  is_verified   Boolean    @default(false) //for verification
+  created_at    DateTime   @default(now())
 
   // Relations
   wallet         Wallet?
@@ -47,6 +55,7 @@ model User {
   worker_profile WorkerProfile?
   goals          Goal[]
   redemptions    RedemptionRequest[]
+  audit_logs     AuditLog[]
 }
 
 // ---------------- FINANCIAL MODELS ----------------
@@ -111,11 +120,14 @@ model KioskDue {
 // ---------------- KIOSK LOGIC ----------------
 
 model Kiosk {
-  id          String  @id @default(uuid())
-  owner_id    String
-  name        String
-  kiosk_type  String
-  location    String
+  id         String  @id @default(uuid())
+  owner_id   String
+  name       String
+  kiosk_type String
+  location   String
+  latitude   Float?
+  longitude  Float?
+  is_active  Boolean @default(true)
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
   workers      WorkerProfile[]
@@ -124,10 +136,12 @@ model Kiosk {
 }
 
 model WorkerProfile {
-  id       String @id @default(uuid())
-  user_id  String @unique
-  kiosk_id String
-  status   String // PENDING_INVITE, ACTIVE
+  id            String @id @default(uuid())
+  user_id       String @unique
+  kiosk_id      String
+  position      String
+  working_hours String
+  status        String // PENDING_INVITE, ACTIVE
 
   user  User  @relation(fields: [user_id], references: [id])
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
@@ -143,6 +157,7 @@ model Goal {
   current_amount Decimal   @default(0) @db.Decimal(10, 2)
   type           String // SAVING, WORKER_TARGET
   deadline       DateTime?
+  created_at     DateTime  @default(now())
 
   user User @relation(fields: [user_id], references: [id])
 }
@@ -151,4 +166,25 @@ model Otp {
   phone     String   @id
   code      String
   expiresAt DateTime
+}
+
+// ---------------- ADMIN & SYSTEM ----------------
+
+model SystemSetting {
+  key         String   @id
+  value       String // JSON string or string value
+  description String?
+  updated_at  DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  admin_id   String
+  action     String
+  target_id  String?
+  details    String? // JSON
+  ip_address String?
+  created_at DateTime @default(now())
+
+  admin User @relation(fields: [admin_id], references: [id])
 }

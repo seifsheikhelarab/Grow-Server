@@ -19,12 +19,13 @@
         "dev:start": "tsx src/app.ts",
         "dev:watch": "tsx watch src/index.ts",
         "dev:build": "tsc",
-        "dev:db": "prisma migrate dev --name init",
+        "dev:db": "prisma migrate dev --name init --skip-seed",
         "dev:lint": "eslint src --ext .ts",
         "dev:format": "prettier --write src/**/*.{js,ts}",
         "dev:doc": "typedoc --options ./typedoc.config.ts",
         "prod:start": "node dist/app.js",
-        "prod:watch": "nodemon dist/app.js"
+        "prod:watch": "nodemon dist/app.js",
+        "seed": "tsx prisma/seed.ts"
     },
     "dependencies": {
         "@prisma/client": "^5.21.1",

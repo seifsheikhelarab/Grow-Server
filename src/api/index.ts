@@ -4,6 +4,7 @@ import walletRoutes from "./wallet/wallet.routes";
 import transactionRoutes from "./transactions/transaction.routes";
 import kioskRoutes from "./kiosks/kiosk.routes";
 import adminRoutes from "./admin/admin.routes";
+import dashboardRoutes from "./dashboard/dashboard.routes";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/wallet", walletRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/kiosks", kioskRoutes);
 router.use("/admin", adminRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;
