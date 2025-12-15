@@ -25,6 +25,7 @@ app.use(
 );
 
 // Global rate limiting
+app.set("trust proxy", 1);
 app.use(globalLimiter);
 
 /**
