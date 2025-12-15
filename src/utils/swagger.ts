@@ -1,7 +1,7 @@
 //Configuration for Swagger to generate API documentation
 import type { Application } from "express";
 import swaggerUi from "swagger-ui-express";
-import swaggerDoc from "../../swagger.json";
+import swaggerDoc from "../../swagger.json" with { type: "json" };
 
 /**
  * Sets up Swagger UI for API documentation.
