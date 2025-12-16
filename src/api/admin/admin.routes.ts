@@ -198,6 +198,12 @@ router.post(
 );
 
 /**
+ * GET /api/admin/dues
+ * Get due list.
+ */
+router.get("/dues", adminController.getDueList);
+
+/**
  * POST /api/admin/dues/collect
  * Collect a due.
  */

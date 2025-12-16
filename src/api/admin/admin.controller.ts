@@ -75,6 +75,20 @@ export const processRedemption = asyncHandler(
 );
 
 /**
+ * Get due list.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
+export const getDueList = asyncHandler(async (req: Request, res: Response) => {
+    const dueList = await adminService.getDueList();
+
+    ResponseHandler.success(res, "Due list retrieved successfully", {
+        dueList
+    });
+});
+
+/**
  * Collect due.
  *
  * @param {Request} req - The Express request object containing dueId in body.

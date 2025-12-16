@@ -82,6 +82,8 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
         title,
         target,
         type,
+        req,
+        res,
         deadline ? new Date(deadline) : undefined
     );
 

@@ -237,6 +237,32 @@ export async function processRedemption(
 }
 
 /**
+ * Get due list.
+ *
+ * @returns {Promise<object[]>} The list of dues.
+ * @throws {Error} If the dues are not found.
+ */
+export async function getDueList() {
+    try {
+        const dues = await prisma.kioskDue.findMany({
+            where: { is_paid: false },
+            orderBy: { created_at: "desc" }
+        });
+
+        return dues.map((d) => ({
+            id: d.id,
+            kiosk_id: d.kiosk_id,
+            amount: d.amount.toString(),
+            is_paid: d.is_paid,
+            created_at: d.created_at
+        }));
+    } catch (err) {
+        logger.error(`Error getting due list: ${err}`);
+        throw err;
+    }
+}
+
+/**
  * Collect due.
  *
  * @param {string} dueId - The ID of the due to collect.

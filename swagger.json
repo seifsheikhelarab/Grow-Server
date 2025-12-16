@@ -102,7 +102,11 @@
                     "user_id": { "type": "string", "format": "uuid" },
                     "title": { "type": "string" },
                     "target_amount": { "type": "number", "format": "float" },
-                    "current_amount": { "type": "number", "format": "float" },
+                    "current_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Dynamically calculated progress based on transactions"
+                    },
                     "type": { "type": "string" },
                     "deadline": {
                         "type": "string",
