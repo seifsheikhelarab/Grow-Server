@@ -4,13 +4,15 @@ import {
     authMiddleware,
     roleGuard
 } from "../../middlewares/auth.middleware.js"; // Adjust path
+import { validateRequest } from "../../middlewares/validate.middleware.js";
+import { setGoalSchema } from "../../schemas/validation.schema.js";
 
 const router = Router();
 
 // Set Goal: Only Owner
-router.post("/set", authMiddleware, roleGuard("OWNER"), setGoal);
+router.post("/", authMiddleware, roleGuard("OWNER"), validateRequest(setGoalSchema), setGoal);
 
 // Get Goal: Owner or Worker
-router.get("/:workerId", authMiddleware, getGoal);
+router.get("/:workerId", authMiddleware, roleGuard("OWNER","WORKER"), getGoal);
 
 export default router;

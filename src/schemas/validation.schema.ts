@@ -196,3 +196,8 @@ export const updateKioskStatusSchema = z.object({
 export const reassignWorkerSchema = z.object({
     kioskId: z.string().uuid()
 });
+
+export const setGoalSchema = z.object({
+    workerId: z.string().uuid(),
+    targetAmount: z.number().int().positive("Target amount must be positive")
+});
