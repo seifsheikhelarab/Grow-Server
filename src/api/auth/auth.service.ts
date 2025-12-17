@@ -12,6 +12,7 @@ import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import ms from "ms";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { sendSMS } from "../../utils/sms.js";
 
 /**
  * Generate and store OTP.
@@ -35,7 +36,7 @@ export async function sendOtp(phone: string): Promise<void> {
         });
 
         // TODO: Send OTP via SMS in production
-        // await sendSMS(phone, code);
+        await sendSMS(phone, code);
         logger.info(
             `OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`
         );
@@ -100,15 +101,18 @@ export async function verifyOtp(
 
         if (!user) {
             // Generate temporary token for registration
-            const opts: SignOptions = { expiresIn: "30m" };
-            const tempToken = jwt.sign(
-                { phone, tempAuth: true },
-                (await config).JWT_SECRET as string,
-                opts
-            );
+            // const opts: SignOptions = { expiresIn: "30m" };
+            // const tempToken = jwt.sign(
+            //     { phone, tempAuth: true },
+            //     (await config).JWT_SECRET as string,
+            //     opts
+            // );
 
             logger.info(`OTP verified for new user: ${phone}`);
-            return { userExists: true, token: tempToken };
+            return {
+                userExists: true,
+                token: ""
+            };
         }
 
         if (!user.is_active) {
@@ -198,13 +202,15 @@ export async function register(
             update: {
                 full_name,
                 password_hash: passwordHash,
-                role
+                role,
+                is_verified: false
             },
             create: {
                 phone,
                 full_name,
                 password_hash: passwordHash,
-                role
+                role,
+                is_verified: false
             }
         });
 

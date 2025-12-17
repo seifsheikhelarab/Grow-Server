@@ -207,12 +207,13 @@ async function main() {
                 create: {
                     title: "New Bike",
                     target_amount: 1000,
-                    current_amount: 100,
                     type: "SAVING"
                 }
             }
         }
     });
+
+
 
     const customer2 = await prisma.user.create({
         data: {
@@ -225,7 +226,20 @@ async function main() {
             wallet: { create: { balance: 50 } }
         }
     });
-    console.log("Customers created.");
+
+    // Worker Goal (Recurring)
+    await prisma.goal.create({
+        data: {
+            user_id: worker1.id,
+            owner_id: owner1.id,
+            title: "Daily Commission Target",
+            target_amount: 100,
+            type: "WORKER_TARGET",
+            is_recurring: true
+        }
+    });
+
+    console.log("Customers and additional goals created.");
 
     // 8. Create Transactions
     // Deposit: Worker1 -> Customer1
@@ -239,7 +253,8 @@ async function main() {
             amount_net: 100,
             commission: 5,
             type: "DEPOSIT",
-            status: "COMPLETED"
+            status: "COMPLETED",
+            commission_status: "PENDING"
         }
     });
 
@@ -269,7 +284,8 @@ async function main() {
             amount_net: 200,
             commission: 10,
             type: "DEPOSIT",
-            status: "FAILED"
+            status: "FAILED",
+            commission_status: "FORFEITED"
         }
     });
     console.log("Transactions created.");

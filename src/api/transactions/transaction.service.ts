@@ -301,8 +301,22 @@ export async function sendPoints(
         const customerAmount = amount - fee;
         const commission = settings.commissionRate;
 
+        // Check for active recurring goal (Daily Target)
+        const activeGoal = await prisma.goal.findFirst({
+            where: {
+                user_id: senderId,
+                type: "WORKER_TARGET",
+                is_recurring: true
+            }
+        });
+
+        // Determine commission status
+        // If goal exists, we HOLD the commission (PENDING).
+        // If no goal, we PAY it immediately (PAID).
+        const commissionStatus = activeGoal ? "PENDING" : "PAID";
+
         logger.info(
-            `[TX] Starting transaction: ${amount} from ${sender.phone} to ${receiverPhone}`
+            `[TX] Starting transaction: ${amount} from ${sender.phone} to ${receiverPhone}. Commission Status: ${commissionStatus}`
         );
 
         // Execute within transaction
@@ -331,12 +345,18 @@ export async function sendPoints(
                 logger.info(`[TX] Added ${customerAmount} to shadow wallet`);
             }
 
-            // Add commission to sender
-            await tx.wallet.update({
-                where: { user_id: senderId },
-                data: { balance: { increment: commission } }
-            });
-            logger.info(`[TX] Added ${commission} commission to sender`);
+            // Add commission to sender ONLY if PAID
+            if (commissionStatus === "PAID") {
+                await tx.wallet.update({
+                    where: { user_id: senderId },
+                    data: { balance: { increment: commission } }
+                });
+                logger.info(`[TX] Added ${commission} commission to sender`);
+            } else {
+                logger.info(
+                    `[TX] Held ${commission} commission (PENDING) for sender`
+                );
+            }
 
             // Create kiosk due
             const due = await tx.kioskDue.create({
@@ -358,7 +378,8 @@ export async function sendPoints(
                     amount_net: customerAmount,
                     commission: commission,
                     type: "DEPOSIT",
-                    status: "COMPLETED"
+                    status: "COMPLETED",
+                    commission_status: commissionStatus
                 }
             });
             logger.info(`[TX] Transaction recorded: ${transaction.id}`);

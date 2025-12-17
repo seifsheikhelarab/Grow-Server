@@ -7,6 +7,7 @@ import {
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
+import { Goal } from "@prisma/client";
 
 /**
  * Constants for transaction limits
@@ -40,51 +41,6 @@ export async function getBalance(userId: string, req: Request, res: Response) {
         throw err;
     }
 }
-
-// /**
-//  * Get wallet details.
-//  *
-//  * @param {string} userId - The ID of the user.
-//  * @param {Request} req - The Express request object.
-//  * @param {Response} res - The Express response object.
-//  * @returns {Promise<object>} The wallet details.
-//  */
-// export async function getWalletDetails(
-//     userId: string,
-//     req: Request,
-//     res: Response
-// ) {
-//     try {
-//         const wallet = await prisma.wallet.findUnique({
-//             where: { user_id: userId },
-//             include: {
-//                 user: {
-//                     select: {
-//                         id: true,
-//                         phone: true,
-//                         role: true
-//                     }
-//                 }
-//             }
-//         });
-
-//         if (!wallet) {
-//             errorHandler(new NotFoundError("Wallet not found"), req, res);
-//         }
-
-//         return {
-//             id: wallet.id,
-//             user_id: wallet.user_id,
-//             balance: wallet.balance.toNumber
-//                 ? wallet.balance.toNumber()
-//                 : Number(wallet.balance),
-//             user: wallet.user
-//         };
-//     } catch (err) {
-//         logger.error(`Error getting wallet details: ${err}`);
-//         throw err;
-//     }
-// }
 
 /**
  * Deduct points from wallet.
@@ -270,11 +226,15 @@ export async function createGoal(
     deadline?: Date
 ) {
     try {
-        if (type === 'WORKER_TARGET' && target_amount > 500) {
-            errorHandler(new BusinessLogicError(
-                "Worker target goal cannot exceed 500 points",
-                ErrorCode.INVALID_AMOUNT
-            ), req, res);
+        if (type === "WORKER_TARGET" && target_amount > 500) {
+            errorHandler(
+                new BusinessLogicError(
+                    "Worker target goal cannot exceed 500 points",
+                    ErrorCode.INVALID_AMOUNT
+                ),
+                req,
+                res
+            );
         }
 
         const goal = await prisma.goal.create({
@@ -317,66 +277,65 @@ export async function getGoals(userId: string) {
             throw new NotFoundError("User not found");
         }
 
-        const goalsWithProgress = await Promise.all(goals.map(async (goal) => {
-            let currentAmount = 0;
-            const deadline = goal.deadline || new Date();
+        const goalsWithProgress = await Promise.all(
+            goals.map(async (goal) => {
+                let currentAmount = 0;
+                const deadline = goal.deadline || new Date();
 
-            if (goal.type === 'SAVING') {
-                // Customer saving goal: Sum of deposits received
-                const aggregate = await prisma.transaction.aggregate({
-                    _sum: { amount_net: true },
-                    where: {
-                        receiver_id: userId,
-                        type: 'DEPOSIT',
-                        created_at: {
-                            gte: goal.created_at,
-                            lte: deadline
+                if (goal.type === "SAVING") {
+                    // Customer saving goal: Sum of deposits received
+                    const aggregate = await prisma.transaction.aggregate({
+                        _sum: { amount_net: true },
+                        where: {
+                            receiver_id: userId,
+                            type: "DEPOSIT",
+                            created_at: {
+                                gte: goal.created_at,
+                                lte: deadline
+                            }
                         }
+                    });
+                    currentAmount = aggregate._sum.amount_net?.toNumber() || 0;
+                } else if (goal.type === "WORKER_TARGET") {
+                    if (user.role === "WORKER") {
+                        // Worker target: Sum of commission earned from sent transactions
+                        const aggregate = await prisma.transaction.aggregate({
+                            _sum: { commission: true },
+                            where: {
+                                sender_id: userId,
+                                type: "DEPOSIT", // Commission earned on deposits
+                                created_at: {
+                                    gte: goal.created_at,
+                                    lte: deadline
+                                }
+                            }
+                        });
+                        currentAmount =
+                            aggregate._sum.commission?.toNumber() || 0;
+                    } else if (user.role === "OWNER") {
+                        // Owner target: Sum of commission earned by their kiosks
+                        const aggregate = await prisma.transaction.aggregate({
+                            _sum: { commission: true },
+                            where: {
+                                kiosk: { owner_id: userId },
+                                type: "DEPOSIT",
+                                created_at: {
+                                    gte: goal.created_at,
+                                    lte: deadline
+                                }
+                            }
+                        });
+                        currentAmount =
+                            aggregate._sum.commission?.toNumber() || 0;
                     }
-                });
-                currentAmount = aggregate._sum.amount_net?.toNumber() || 0;
-
-            } else if (goal.type === 'WORKER_TARGET') {
-                if (user.role === 'WORKER') {
-                    // Worker target: Sum of commission earned from sent transactions
-                    const aggregate = await prisma.transaction.aggregate({
-                        _sum: { commission: true },
-                        where: {
-                            sender_id: userId,
-                            type: 'DEPOSIT', // Commission earned on deposits
-                            created_at: {
-                                gte: goal.created_at,
-                                lte: deadline
-                            }
-                        }
-                    });
-                    currentAmount = aggregate._sum.commission?.toNumber() || 0;
-
-                } else if (user.role === 'OWNER') {
-                    // Owner target: Sum of commission earned by their kiosks
-                    const aggregate = await prisma.transaction.aggregate({
-                        _sum: { commission: true },
-                        where: {
-                            kiosk: { owner_id: userId },
-                            type: 'DEPOSIT',
-                            created_at: {
-                                gte: goal.created_at,
-                                lte: deadline
-                            }
-                        }
-                    });
-                    currentAmount = aggregate._sum.commission?.toNumber() || 0;
                 }
-            }
 
-            // Return goal with dynamically calculated current_amount
-            // We cast it to match the expected return type structure which likely expects Decimal or number
-            // The controller converts it to string, so number is fine.
-            return {
-                ...goal,
-                current_amount: currentAmount
-            };
-        }));
+                return {
+                    ...goal,
+                    current_amount: currentAmount
+                };
+            })
+        );
 
         return goalsWithProgress;
     } catch (err) {
@@ -386,40 +345,55 @@ export async function getGoals(userId: string) {
 }
 
 /**
- * Update goal progress.
+ * Edit owner's goal.
  *
- * @param {string} goalId - The ID of the goal.
- * @param {number} amount - The amount to add to the goal.
+ * @param {string} userId - The ID of the user.
+ * @param {string} id - The ID of the goal.
+ * @param {string} title - The title of the goal.
+ * @param {number} target - The target amount of the goal.
+ * @param {string} type - The type of the goal.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @returns {Promise<object>} The updated goal.
+ * @param {Date} deadline - The deadline of the goal.
+ * @returns {Promise<void>}
  */
-export async function updateGoalProgress(
-    goalId: string,
-    amount: number,
+export async function editGoal(
+    userId: string,
+    id: string,
+    title: string,
+    target: number,
+    type: string,
     req: Request,
-    res: Response
-) {
+    res: Response,
+    deadline: Date | undefined
+): Promise<Goal> {
     try {
         const goal = await prisma.goal.findUnique({
-            where: { id: goalId }
+            where: { id }
         });
 
         if (!goal) {
             errorHandler(new NotFoundError("Goal not found"), req, res);
         }
 
-        const updated = await prisma.goal.update({
-            where: { id: goalId },
-            data: {
-                current_amount: { increment: amount }
-            }
-        });
+        if (goal.owner_id !== userId) {
+            errorHandler(
+                new BusinessLogicError(
+                    "You are not authorized to edit this goal",
+                    ErrorCode.UNAUTHORIZED_ACCESS
+                ),
+                req,
+                res
+            );
+        }
 
-        logger.info(`Goal ${goalId} progress updated by ${amount}`);
-        return updated;
+        logger.info(`Edited goal ${id} for user ${userId}`);
+        return await prisma.goal.update({
+            where: { id },
+            data: { title, target_amount: target, type, deadline }
+        });
     } catch (err) {
-        logger.error(`Error updating goal: ${err}`);
+        logger.error(`Error editing goal: ${err}`);
         throw err;
     }
 }

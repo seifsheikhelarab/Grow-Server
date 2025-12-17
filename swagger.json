@@ -72,6 +72,10 @@
                         "type": "string",
                         "enum": ["PENDING", "COMPLETED", "FAILED", "REJECTED"]
                     },
+                    "commission_status": {
+                        "type": "string",
+                        "enum": ["PAID", "PENDING", "FORFEITED"]
+                    },
                     "created_at": { "type": "string", "format": "date-time" }
                 }
             },
@@ -100,6 +104,11 @@
                 "properties": {
                     "id": { "type": "string", "format": "uuid" },
                     "user_id": { "type": "string", "format": "uuid" },
+                    "owner_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
                     "title": { "type": "string" },
                     "target_amount": { "type": "number", "format": "float" },
                     "current_amount": {
@@ -108,11 +117,22 @@
                         "description": "Dynamically calculated progress based on transactions"
                     },
                     "type": { "type": "string" },
+                    "is_recurring": { "type": "boolean" },
                     "deadline": {
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
-                    }
+                    },
+                    "created_at": { "type": "string", "format": "date-time" },
+                    "updated_at": { "type": "string", "format": "date-time" }
+                }
+            },
+            "SetGoalRequest": {
+                "type": "object",
+                "required": ["workerId", "targetAmount"],
+                "properties": {
+                    "workerId": { "type": "string", "format": "uuid" },
+                    "targetAmount": { "type": "number" }
                 }
             },
             "RedemptionRequest": {
@@ -793,6 +813,44 @@
                 },
                 "responses": {
                     "201": { "description": "Kiosk created" }
+                }
+            }
+        },
+        "/goals/set": {
+            "post": {
+                "summary": "Set worker goal (Owner)",
+                "tags": ["Goals"],
+                "security": [{ "bearerAuth": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetGoalRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": { "description": "Goal set successfully" }
+                }
+            }
+        },
+        "/goals/{workerId}": {
+            "get": {
+                "summary": "Get worker goal",
+                "tags": ["Goals"],
+                "security": [{ "bearerAuth": [] }],
+                "parameters": [
+                    {
+                        "name": "workerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string", "format": "uuid" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Goal details" }
                 }
             }
         },

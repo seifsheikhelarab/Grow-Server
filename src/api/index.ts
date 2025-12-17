@@ -6,6 +6,8 @@ import kioskRoutes from "./kiosks/kiosk.routes.js";
 import adminRoutes from "./admin/admin.routes.js";
 import dashboardRoutes from "./dashboard/dashboard.routes.js";
 
+import goalsRoutes from "./goals/goals.routes.js";
+
 const router = Router();
 
 /**
@@ -18,5 +20,6 @@ router.use("/transactions", transactionRoutes);
 router.use("/kiosks", kioskRoutes);
 router.use("/admin", adminRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/goals", goalsRoutes);
 
 export default router;

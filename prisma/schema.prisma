@@ -86,11 +86,18 @@ model Transaction {
   amount_net   Decimal @db.Decimal(10, 2) // e.g., 95.00 (User gets)
   commission   Decimal @db.Decimal(10, 2) // e.g., 5.00 (Worker gets)
 
-  type       TxType
-  status     TxStatus @default(COMPLETED)
-  created_at DateTime @default(now())
+  type              TxType
+  status            TxStatus         @default(COMPLETED)
+  commission_status CommissionStatus @default(PAID) // PAID, PENDING, FORFEITED
+  created_at        DateTime         @default(now())
 
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
+}
+
+enum CommissionStatus {
+  PAID
+  PENDING
+  FORFEITED
 }
 
 model RedemptionRequest {
@@ -154,10 +161,14 @@ model Goal {
   user_id        String
   title          String
   target_amount  Decimal   @db.Decimal(10, 2)
-  current_amount Decimal   @default(0) @db.Decimal(10, 2)
   type           String // SAVING, WORKER_TARGET
   deadline       DateTime?
-  created_at     DateTime  @default(now())
+
+  owner_id     String?
+  is_recurring Boolean @default(false)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt // Added for tracking updates
 
   user User @relation(fields: [user_id], references: [id])
 }

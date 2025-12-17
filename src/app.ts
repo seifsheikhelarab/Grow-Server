@@ -13,7 +13,12 @@ import { ResponseHandler } from "./utils/response.js";
 import apiRoutes from "./api/index.js";
 import swaggerSetup from "./utils/swagger.js";
 
+import { initDailyGoalsJob } from "./jobs/dailyGoals.job.js";
+
 const app: Express = express();
+
+// Initialize Cron Jobs
+initDailyGoalsJob();
 
 // Body parser
 app.use(express.json({ limit: "10mb" }));

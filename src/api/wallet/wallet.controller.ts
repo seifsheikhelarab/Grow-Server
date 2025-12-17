@@ -19,26 +19,6 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
     });
 });
 
-// /**
-//  * Get wallet details.
-//  *
-//  * @param {Request} req - The Express request object.
-//  * @param {Response} res - The Express response object.
-//  */
-// export const getWalletDetails = asyncHandler(
-//     async (req: Request, res: Response) => {
-//         const userId = req.user!.id;
-
-//         const wallet = await walletService.getWalletDetails(userId, req, res);
-
-//         ResponseHandler.success(
-//             res,
-//             "Wallet details retrieved successfully",
-//             wallet
-//         );
-//     }
-// );
-
 /**
  * Create redemption request.
  *
@@ -91,7 +71,6 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
         id: goal.id,
         title: goal.title,
         target_amount: goal.target_amount.toString(),
-        current_amount: goal.current_amount.toString(),
         type: goal.type,
         deadline: goal.deadline
     });
@@ -125,30 +104,32 @@ export const getGoals = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * Update goal progress.
+ * Edit owner's goal.
  *
- * @param {Request} req - The Express request object containing id in params and amount in body.
+ * @param {Request} req - The Express request object containing id in params and title, target, type, and deadline in body.
  * @param {Response} res - The Express response object.
  */
-export const updateGoalProgress = asyncHandler(
-    async (req: Request, res: Response) => {
-        const { id } = req.params;
-        const { amount } = req.body;
+export const editGoal = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { title, target, type, deadline } = req.body;
 
-        const updated = await walletService.updateGoalProgress(
-            id,
-            amount,
-            req,
-            res
-        );
+    const goal = await walletService.editGoal(
+        userId,
+        id,
+        title,
+        target,
+        type,
+        req,
+        res,
+        deadline ? new Date(deadline) : undefined
+    );
 
-        ResponseHandler.success(res, "Goal progress updated successfully", {
-            id: updated.id,
-            current_amount: updated.current_amount.toString(),
-            target_amount: updated.target_amount.toString(),
-            progress_percentage: (
-                Number(updated.current_amount) / Number(updated.target_amount)
-            ).toFixed(2)
-        });
-    }
-);
+    ResponseHandler.success(res, "Goal edited successfully", {
+        id: goal.id,
+        title: goal.title,
+        target_amount: goal.target_amount.toString(),
+        type: goal.type,
+        deadline: goal.deadline
+    });
+});

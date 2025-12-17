@@ -1,10 +1,12 @@
 import { Router } from "express";
 import * as walletController from "./wallet.controller.js";
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import {
+    authMiddleware,
+    roleGuard
+} from "../../middlewares/auth.middleware.js";
 import {
     redeemSchema,
-    createGoalSchema,
-    updateGoalSchema
+    createGoalSchema
 } from "../../schemas/validation.schema.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 
@@ -19,12 +21,6 @@ router.use(authMiddleware);
  */
 router.get("/balance", walletController.getBalance);
 
-// /**
-//  * GET /api/wallet/details
-//  * Get wallet details.
-//  */
-// router.get("/details", walletController.getWalletDetails);
-
 /**
  * POST /api/wallet/redeem
  * Create redemption request.
@@ -35,26 +31,26 @@ router.post("/redeem", validateRequest(redeemSchema), walletController.redeem);
  * POST /api/wallet/goals
  * Create goal.
  */
-router.post(
-    "/goals",
-    validateRequest(createGoalSchema),
-    walletController.createGoal
-);
+router
+    .route("/goals")
+    .post(validateRequest(createGoalSchema), walletController.createGoal)
+    .get(walletController.getGoals);
 
 /**
  * GET /api/wallet/goals
  * Get user's goals.
  */
-router.get("/goals", walletController.getGoals);
 
 /**
  * PUT /api/wallet/goals/:id
- * Update goal progress.
+ * Edit user's goal.
  */
-router.put(
-    "/goals/:id",
-    validateRequest(updateGoalSchema),
-    walletController.updateGoalProgress
-);
+router
+    .route("/goals/:id")
+    .put(
+        roleGuard("ADMIN"),
+        validateRequest(createGoalSchema),
+        walletController.editGoal
+    );
 
 export default router;
