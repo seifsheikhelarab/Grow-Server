@@ -1,5 +1,5 @@
 import express, { Express, Request, Response } from "express";
-import cors from "cors";
+// import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config({quiet:true});
 import { config } from "./config/env.config.js";
@@ -26,12 +26,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // CORS
-app.use(
-    cors({
-        origin: process.env.CORS_ORIGIN || "*",
-        credentials: true
-    })
-);
+// app.use(
+//     cors({
+//         origin: process.env.CORS_ORIGIN || "*",
+//         credentials: true
+//     })
+// );
 
 // Global rate limiting
 app.set("trust proxy", 1);

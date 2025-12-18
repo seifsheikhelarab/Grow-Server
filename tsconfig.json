@@ -53,5 +53,5 @@
     "./node_modules",
     "./typedoc.config.ts",
     "./prisma/seed.ts"
-  ]
+  ],
 }
