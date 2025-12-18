@@ -833,8 +833,6 @@ export async function createKiosk(
             data: {
                 name: data.name,
                 location: data.location,
-                latitude: data.latitude,
-                longitude: data.longitude,
                 owner_id: owner.id,
                 kiosk_type: "STANDARD" // Default type
             }
