@@ -10,9 +10,15 @@ import { setGoalSchema } from "../../schemas/validation.schema.js";
 const router = Router();
 
 // Set Goal: Only Owner
-router.post("/", authMiddleware, roleGuard("OWNER"), validateRequest(setGoalSchema), setGoal);
+router.post(
+    "/",
+    authMiddleware,
+    roleGuard("OWNER"),
+    validateRequest(setGoalSchema),
+    setGoal
+);
 
 // Get Goal: Owner or Worker
-router.get("/:workerId", authMiddleware, roleGuard("OWNER","WORKER"), getGoal);
+router.get("/:workerId", authMiddleware, roleGuard("OWNER", "WORKER"), getGoal);
 
 export default router;

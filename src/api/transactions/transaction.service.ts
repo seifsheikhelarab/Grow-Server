@@ -5,7 +5,8 @@ import {
     NotFoundError,
     AuthorizationError,
     BusinessLogicError,
-    ErrorCode
+    ErrorCode,
+    AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 
@@ -280,7 +281,7 @@ export async function sendPoints(
         const sender = await validateSender(senderId, req, res);
 
         // Validate kiosk
-        await validateKiosk(kioskId, senderId, req, res);
+        const kiosk = await validateKiosk(kioskId, senderId, req, res);
 
         // Get settings
         const settings = await getTransactionSettings();
@@ -301,18 +302,19 @@ export async function sendPoints(
         const customerAmount = amount - fee;
         const commission = settings.commissionRate;
 
-        // Check for active recurring goal (Daily Target)
+        // Check for active recurring goal (Daily Target) created by owner
         const activeGoal = await prisma.goal.findFirst({
             where: {
                 user_id: senderId,
                 type: "WORKER_TARGET",
-                is_recurring: true
+                is_recurring: true,
+                owner_id: kiosk.owner_id
             }
         });
 
         // Determine commission status
-        // If goal exists, we HOLD the commission (PENDING).
-        // If no goal, we PAY it immediately (PAID).
+        // If goal exists, we HOLD the commission (PENDING) and send it to Owner.
+        // If no goal, we PAY it immediately (PAID) to Worker.
         const commissionStatus = activeGoal ? "PENDING" : "PAID";
 
         logger.info(
@@ -345,16 +347,24 @@ export async function sendPoints(
                 logger.info(`[TX] Added ${customerAmount} to shadow wallet`);
             }
 
-            // Add commission to sender ONLY if PAID
+            // Handle Commission
             if (commissionStatus === "PAID") {
+                // No Goal: Pay Worker immediately
                 await tx.wallet.update({
                     where: { user_id: senderId },
                     data: { balance: { increment: commission } }
                 });
-                logger.info(`[TX] Added ${commission} commission to sender`);
-            } else {
                 logger.info(
-                    `[TX] Held ${commission} commission (PENDING) for sender`
+                    `[TX] Added ${commission} commission to sender (Worker)`
+                );
+            } else {
+                // Goal Exists: Send to Owner (Held/Pending)
+                await tx.wallet.update({
+                    where: { user_id: kiosk.owner_id },
+                    data: { balance: { increment: commission } }
+                });
+                logger.info(
+                    `[TX] Sent ${commission} commission to Owner (PENDING for Worker)`
                 );
             }
 
@@ -394,7 +404,12 @@ export async function sendPoints(
         return result;
     } catch (err) {
         logger.error(`Error sending points: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError("Error sending points", 500, ErrorCode.INTERNAL_ERROR),
+            req,
+            res
+        );
+        return { transaction: null, due: null };
     }
 }
 
@@ -409,7 +424,9 @@ export async function sendPoints(
 export async function getTransactionHistory(
     userId: string,
     limit: number = 20,
-    offset: number = 0
+    offset: number = 0,
+    req: Request,
+    res: Response
 ) {
     try {
         const transactions = await prisma.transaction.findMany({
@@ -459,7 +476,16 @@ export async function getTransactionHistory(
         };
     } catch (err) {
         logger.error(`Error getting transaction history: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting transaction history",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return { transactions: [], total: 0 };
     }
 }
 
@@ -469,7 +495,11 @@ export async function getTransactionHistory(
  * @param {string} userId - The ID of the user.
  * @returns {Promise<object>} The daily transaction statistics.
  */
-export async function getDailyStats(userId: string) {
+export async function getDailyStats(
+    userId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -507,6 +537,20 @@ export async function getDailyStats(userId: string) {
         };
     } catch (err) {
         logger.error(`Error getting daily stats: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting daily stats",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return {
+            transactions_count: 0,
+            total_sent: 0,
+            total_commission: 0,
+            remaining_limit: 0
+        };
     }
 }

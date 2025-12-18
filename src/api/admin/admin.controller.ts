@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
 import * as adminService from "./admin.service.js";
 import { ResponseHandler } from "../../utils/response.js";
 import { asyncHandler } from "../../middlewares/error.middleware.js";
+import type { Request, Response } from "express";
 
 /**
  * Get admin dashboard stats.
@@ -13,7 +13,7 @@ export const getDashboard = asyncHandler(
     async (req: Request, res: Response) => {
         const filter = (req.query.filter as "1d" | "7d" | "30d") || "7d";
 
-        const stats = await adminService.getDashboardStats(filter);
+        const stats = await adminService.getDashboardStats(filter, req, res);
 
         ResponseHandler.success(
             res,
@@ -31,7 +31,7 @@ export const getDashboard = asyncHandler(
  */
 export const getPendingRedemptions = asyncHandler(
     async (req: Request, res: Response) => {
-        const redemptions = await adminService.getPendingRedemptions();
+        const redemptions = await adminService.getPendingRedemptions(req, res);
 
         ResponseHandler.success(
             res,
@@ -81,7 +81,7 @@ export const processRedemption = asyncHandler(
  * @param {Response} res - The Express response object.
  */
 export const getDueList = asyncHandler(async (req: Request, res: Response) => {
-    const dueList = await adminService.getDueList();
+    const dueList = await adminService.getDueList(req, res);
 
     ResponseHandler.success(res, "Due list retrieved successfully", {
         dueList
@@ -110,7 +110,7 @@ export const collectDue = asyncHandler(async (req: Request, res: Response) => {
  * Get system settings.
  */
 export const getSettings = asyncHandler(async (req: Request, res: Response) => {
-    const settings = await adminService.getSystemSettings();
+    const settings = await adminService.getSystemSettings(req, res);
     ResponseHandler.success(res, "System settings retrieved", settings);
 });
 
@@ -126,6 +126,8 @@ export const updateSetting = asyncHandler(
             key,
             value,
             adminId,
+            req,
+            res,
             description
         );
         ResponseHandler.success(res, "Setting updated", setting);
@@ -136,7 +138,7 @@ export const updateSetting = asyncHandler(
  * List admins.
  */
 export const getAdmins = asyncHandler(async (req: Request, res: Response) => {
-    const admins = await adminService.getAllAdmins();
+    const admins = await adminService.getAllAdmins(req, res);
     ResponseHandler.success(res, "Admins retrieved", admins);
 });
 
@@ -169,7 +171,7 @@ export const createAdmin = asyncHandler(async (req: Request, res: Response) => {
  */
 export const getOwners = asyncHandler(async (req: Request, res: Response) => {
     const filters = req.query;
-    const owners = await adminService.getOwners(filters);
+    const owners = await adminService.getOwners(filters, req, res);
     ResponseHandler.success(res, "Owners retrieved", owners);
 });
 
@@ -179,7 +181,7 @@ export const getOwners = asyncHandler(async (req: Request, res: Response) => {
 export const getOwnerDetails = asyncHandler(
     async (req: Request, res: Response) => {
         const { id } = req.params;
-        const owner = await adminService.getOwnerDetails(id);
+        const owner = await adminService.getOwnerDetails(id, req, res);
         ResponseHandler.success(res, "Owner details retrieved", owner);
     }
 );
@@ -213,7 +215,7 @@ export const updateOwner = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const data = req.body;
     const adminId = req.user!.id;
-    const updated = await adminService.updateOwner(id, data, adminId);
+    const updated = await adminService.updateOwner(id, data, adminId, req, res);
     ResponseHandler.success(res, "Owner details updated", updated);
 });
 
@@ -229,7 +231,9 @@ export const adjustBalance = asyncHandler(
             id,
             amount,
             reason,
-            adminId
+            adminId,
+            req,
+            res
         );
         ResponseHandler.success(res, "Balance adjusted", updated);
     }
@@ -244,7 +248,7 @@ export const adjustBalance = asyncHandler(
  */
 export const getKiosks = asyncHandler(async (req: Request, res: Response) => {
     const filters = req.query;
-    const kiosks = await adminService.getKiosks(filters);
+    const kiosks = await adminService.getKiosks(filters, req, res);
     ResponseHandler.success(res, "Kiosks retrieved", kiosks);
 });
 
@@ -254,7 +258,7 @@ export const getKiosks = asyncHandler(async (req: Request, res: Response) => {
 export const getKioskDetails = asyncHandler(
     async (req: Request, res: Response) => {
         const { id } = req.params;
-        const kiosk = await adminService.getKioskDetails(id);
+        const kiosk = await adminService.getKioskDetails(id, req, res);
         ResponseHandler.success(res, "Kiosk details retrieved", kiosk);
     }
 );
@@ -281,7 +285,9 @@ export const updateKioskStatus = asyncHandler(
             id,
             is_active,
             reason,
-            adminId
+            adminId,
+            req,
+            res
         );
         ResponseHandler.success(res, `Kiosk status updated`, updated);
     }
@@ -296,7 +302,7 @@ export const updateKioskStatus = asyncHandler(
  */
 export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
     const filters = req.query;
-    const workers = await adminService.getWorkers(filters);
+    const workers = await adminService.getWorkers(filters, req, res);
     ResponseHandler.success(res, "Workers retrieved", workers);
 });
 
@@ -306,7 +312,7 @@ export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
 export const getWorkerDetails = asyncHandler(
     async (req: Request, res: Response) => {
         const { id } = req.params;
-        const worker = await adminService.getWorkerDetails(id);
+        const worker = await adminService.getWorkerDetails(id, req, res);
         ResponseHandler.success(res, "Worker details retrieved", worker);
     }
 );
@@ -341,7 +347,13 @@ export const reassignWorker = asyncHandler(
         const { id } = req.params;
         const { kioskId } = req.body;
         const adminId = req.user!.id;
-        const updated = await adminService.reassignWorker(id, kioskId, adminId);
+        const updated = await adminService.reassignWorker(
+            id,
+            kioskId,
+            adminId,
+            req,
+            res
+        );
         ResponseHandler.success(res, "Worker reassigned", updated);
     }
 );
@@ -356,7 +368,7 @@ export const reassignWorker = asyncHandler(
 export const getCustomers = asyncHandler(
     async (req: Request, res: Response) => {
         const filters = req.query;
-        const customers = await adminService.getCustomers(filters);
+        const customers = await adminService.getCustomers(filters, req, res);
         ResponseHandler.success(res, "Customers retrieved", customers);
     }
 );
@@ -367,7 +379,7 @@ export const getCustomers = asyncHandler(
 export const getCustomerDetails = asyncHandler(
     async (req: Request, res: Response) => {
         const { id } = req.params;
-        const customer = await adminService.getCustomerDetails(id);
+        const customer = await adminService.getCustomerDetails(id, req, res);
         ResponseHandler.success(res, "Customer details retrieved", customer);
     }
 );

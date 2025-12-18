@@ -2,7 +2,8 @@ import prisma from "../../prisma.js";
 import {
     NotFoundError,
     BusinessLogicError,
-    ErrorCode
+    ErrorCode,
+    AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
@@ -38,7 +39,16 @@ export async function getBalance(userId: string, req: Request, res: Response) {
             : Number(wallet.balance);
     } catch (err) {
         logger.error(`Error getting balance: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting balance",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return 0;
     }
 }
 
@@ -86,7 +96,15 @@ export async function deductPoints(
         logger.info(`Deducted ${amount} points from user ${userId}`);
     } catch (err) {
         logger.error(`Error deducting points: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error deducting points",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
     }
 }
 
@@ -122,7 +140,11 @@ export async function addPoints(
         logger.info(`Added ${amount} points to user ${userId}`);
     } catch (err) {
         logger.error(`Error adding points: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError("Error adding points", 500, ErrorCode.INTERNAL_ERROR),
+            req,
+            res
+        );
     }
 }
 
@@ -202,7 +224,16 @@ export async function createRedemption(
         return redemption;
     } catch (err) {
         logger.error(`Error creating redemption: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error creating redemption",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return null;
     }
 }
 
@@ -251,7 +282,12 @@ export async function createGoal(
         return goal;
     } catch (err) {
         logger.error(`Error creating goal: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError("Error creating goal", 500, ErrorCode.INTERNAL_ERROR),
+            req,
+            res
+        );
+        return null;
     }
 }
 
@@ -261,7 +297,7 @@ export async function createGoal(
  * @param {string} userId - The ID of the user.
  * @returns {Promise<object[]>} List of goals.
  */
-export async function getGoals(userId: string) {
+export async function getGoals(userId: string, req: Request, res: Response) {
     try {
         const goals = await prisma.goal.findMany({
             where: { user_id: userId },
@@ -274,7 +310,8 @@ export async function getGoals(userId: string) {
         });
 
         if (!user) {
-            throw new NotFoundError("User not found");
+            errorHandler(new NotFoundError("User not found"), req, res);
+            return null;
         }
 
         const goalsWithProgress = await Promise.all(
@@ -340,7 +377,8 @@ export async function getGoals(userId: string) {
         return goalsWithProgress;
     } catch (err) {
         logger.error(`Error getting goals: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -394,6 +432,7 @@ export async function editGoal(
         });
     } catch (err) {
         logger.error(`Error editing goal: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }

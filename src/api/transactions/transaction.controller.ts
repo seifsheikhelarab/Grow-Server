@@ -54,7 +54,9 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
     const result = await transactionService.getTransactionHistory(
         userId,
         limit,
-        offset
+        offset,
+        req,
+        res
     );
 
     ResponseHandler.paginated(
@@ -77,7 +79,7 @@ export const getDailyStats = asyncHandler(
     async (req: Request, res: Response) => {
         const userId = req.user!.id;
 
-        const stats = await transactionService.getDailyStats(userId);
+        const stats = await transactionService.getDailyStats(userId, req, res);
 
         ResponseHandler.success(
             res,

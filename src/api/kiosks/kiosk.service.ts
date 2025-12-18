@@ -4,7 +4,8 @@ import {
     AuthorizationError,
     ConflictError,
     BusinessLogicError,
-    ErrorCode
+    ErrorCode,
+    AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
@@ -26,7 +27,7 @@ export async function createKiosk(
     location: string,
     req: Request,
     res: Response
-) {
+): Promise<{ id: string; name: string; kiosk_type: string; location: string }> {
     try {
         const existingKiosk = await prisma.kiosk.findFirst({
             where: {
@@ -76,7 +77,12 @@ export async function createKiosk(
         return kiosk;
     } catch (err) {
         logger.error(`Error creating kiosk: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError("Error creating kiosk", 500, ErrorCode.INTERNAL_ERROR),
+            req,
+            res
+        );
+        return { id: "", name: "", kiosk_type: "", location: "" };
     }
 }
 
@@ -100,7 +106,7 @@ export async function inviteWorker(
     workingHours: string,
     req: Request,
     res: Response
-) {
+): Promise<{ id: string; user_id: string; kiosk_id: string; status: string }> {
     try {
         // Verify kiosk ownership
         const kiosk = await prisma.kiosk.findUnique({
@@ -113,6 +119,7 @@ export async function inviteWorker(
                 req,
                 res
             );
+            return { id: "", user_id: "", kiosk_id: "", status: "" };
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -121,6 +128,7 @@ export async function inviteWorker(
                 req,
                 res
             );
+            return { id: "", user_id: "", kiosk_id: "", status: "" };
         }
 
         // Check if worker user exists
@@ -157,6 +165,7 @@ export async function inviteWorker(
                 req,
                 res
             );
+            return { id: "", user_id: "", kiosk_id: "", status: "" };
         }
 
         // Check if already a worker at this kiosk
@@ -170,6 +179,7 @@ export async function inviteWorker(
                 req,
                 res
             );
+            return { id: "", user_id: "", kiosk_id: "", status: "" };
         }
 
         // Create or update worker profile
@@ -194,7 +204,16 @@ export async function inviteWorker(
         return profile;
     } catch (err) {
         logger.error(`Error inviting worker: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error inviting worker",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return { id: "", user_id: "", kiosk_id: "", status: "" };
     }
 }
 
@@ -204,7 +223,11 @@ export async function inviteWorker(
  * @param {string} workerId - The ID of the worker.
  * @returns {Promise<object[]>} List of invitations.
  */
-export async function getWorkerInvitations(workerId: string) {
+export async function getWorkerInvitations(
+    workerId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const invitations = await prisma.workerProfile.findMany({
             where: { user_id: workerId },
@@ -224,7 +247,16 @@ export async function getWorkerInvitations(workerId: string) {
         }));
     } catch (err) {
         logger.error(`Error getting worker invitations: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting worker invitations",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return [];
     }
 }
 
@@ -272,7 +304,16 @@ export async function acceptInvitation(
         return updated;
     } catch (err) {
         logger.error(`Error accepting invitation: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error accepting invitation",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return null;
     }
 }
 
@@ -331,7 +372,16 @@ export async function getKioskWorkers(
         }));
     } catch (err) {
         logger.error(`Error getting kiosk workers: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting kiosk workers",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return [];
     }
 }
 
@@ -396,7 +446,24 @@ export async function getKioskDues(
         };
     } catch (err) {
         logger.error(`Error getting kiosk dues: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting kiosk dues",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return {
+            dues: [],
+            summary: {
+                total_dues: 0,
+                total_amount: "0",
+                paid_count: 0,
+                pending_count: 0
+            }
+        };
     }
 }
 
@@ -406,7 +473,11 @@ export async function getKioskDues(
  * @param {string} ownerId - The ID of the owner.
  * @returns {Promise<object[]>} List of kiosks.
  */
-export async function getUserKiosks(ownerId: string) {
+export async function getUserKiosks(
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const kiosks = await prisma.kiosk.findMany({
             where: { owner_id: ownerId },
@@ -427,6 +498,15 @@ export async function getUserKiosks(ownerId: string) {
         }));
     } catch (err) {
         logger.error(`Error getting user kiosks: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error getting user kiosks",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return [];
     }
 }

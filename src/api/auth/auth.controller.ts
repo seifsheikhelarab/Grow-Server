@@ -19,7 +19,7 @@ import {
 export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
     const { phone } = req.body;
 
-    await authService.sendOtp(phone);
+    await authService.sendOtp(phone, req, res);
 
     ResponseHandler.success(res, "OTP sent successfully", {
         message: "Please check your phone for the OTP"
@@ -130,13 +130,18 @@ export const deleteAccount = asyncHandler(
 
         if (!userId) {
             // Should be caught by auth middleware
-            throw new AuthenticationError(
-                "User not authenticated",
-                ErrorCode.UNAUTHORIZED_ACCESS
+            errorHandler(
+                new AuthenticationError(
+                    "User not authenticated",
+                    ErrorCode.UNAUTHORIZED_ACCESS
+                ),
+                req,
+                res
             );
+            return;
         }
 
-        await authService.deleteAccount(userId);
+        await authService.deleteAccount(userId, req, res);
 
         ResponseHandler.success(res, "Account deleted successfully", {
             deleted: true

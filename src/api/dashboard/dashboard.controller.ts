@@ -1,3 +1,4 @@
+import { errorHandler } from "./../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 import * as dashboardService from "./dashboard.service.js";
 import { ResponseHandler } from "../../utils/response.js";
@@ -16,10 +17,10 @@ export const getOwnerDashboard = asyncHandler(
 
         // Safety check mostly for TS, middleware should catch unauthed
         if (!userId) {
-            throw new Error("User ID not found in request");
+            errorHandler(new Error("User ID not found in request"), req, res);
         }
 
-        const data = await dashboardService.getOwnerDashboard(userId);
+        const data = await dashboardService.getOwnerDashboard(userId, req, res);
 
         ResponseHandler.success(
             res,
@@ -40,10 +41,14 @@ export const getWorkerDashboard = asyncHandler(
         const userId = req.user?.id;
 
         if (!userId) {
-            throw new Error("User ID not found in request");
+            errorHandler(new Error("User ID not found in request"), req, res);
         }
 
-        const data = await dashboardService.getWorkerDashboard(userId);
+        const data = await dashboardService.getWorkerDashboard(
+            userId,
+            req,
+            res
+        );
 
         ResponseHandler.success(
             res,

@@ -132,8 +132,6 @@ model Kiosk {
   name       String
   kiosk_type String
   location   String
-  latitude   Float?
-  longitude  Float?
   is_active  Boolean @default(true)
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
@@ -146,8 +144,8 @@ model WorkerProfile {
   id            String @id @default(uuid())
   user_id       String @unique
   kiosk_id      String
-  position      String
-  working_hours String
+  position      String?
+  working_hours String?
   status        String // PENDING_INVITE, ACTIVE
 
   user  User  @relation(fields: [user_id], references: [id])

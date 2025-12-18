@@ -85,7 +85,7 @@ export const createGoal = asyncHandler(async (req: Request, res: Response) => {
 export const getGoals = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
 
-    const goals = await walletService.getGoals(userId);
+    const goals = await walletService.getGoals(userId, req, res);
 
     ResponseHandler.success(res, "Goals retrieved successfully", {
         goals: goals.map((g) => ({

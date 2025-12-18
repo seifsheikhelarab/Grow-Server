@@ -70,7 +70,11 @@ export const getWorkerInvitations = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;
 
-        const invitations = await kioskService.getWorkerInvitations(workerId);
+        const invitations = await kioskService.getWorkerInvitations(
+            workerId,
+            req,
+            res
+        );
 
         ResponseHandler.success(res, "Invitations retrieved successfully", {
             invitations
@@ -151,7 +155,7 @@ export const getUserKiosks = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
 
-        const kiosks = await kioskService.getUserKiosks(ownerId);
+        const kiosks = await kioskService.getUserKiosks(ownerId, req, res);
 
         ResponseHandler.success(res, "Kiosks retrieved successfully", {
             kiosks

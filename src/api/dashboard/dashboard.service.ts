@@ -1,6 +1,9 @@
+import { errorHandler } from "../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js";
+import logger from "../../utils/logger.js";
 import { NotFoundError } from "../../utils/response.js";
 import { TxStatus } from "@prisma/client";
+import type { Response, Request } from "express";
 
 /**
  * Get dashboard data for an Owner.
@@ -9,7 +12,11 @@ import { TxStatus } from "@prisma/client";
  * @returns {Promise<{ totalPoints: number; kiosks: Array<{ id: string; name: string; location: string; points: number; dues: number }> }>} The dashboard data.
  * @throws {NotFoundError} If the user or wallet is not found.
  */
-export async function getOwnerDashboard(userId: string): Promise<{
+export async function getOwnerDashboard(
+    userId: string,
+    req: Request,
+    res: Response
+): Promise<{
     totalPoints: number;
     kiosks: Array<{
         id: string;
@@ -18,63 +25,75 @@ export async function getOwnerDashboard(userId: string): Promise<{
         points: number;
         dues: number;
     }>;
-}> {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { wallet: true }
-    });
+} | null> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { wallet: true }
+        });
 
-    if (!user) {
-        throw new NotFoundError("User not found");
-    }
-
-    if (!user.wallet) {
-        // Should catch this edge case if wallet is missing
-        throw new NotFoundError("Wallet not found for user");
-    }
-
-    // 1. Total points collected by owner (Wallet Balance)
-    const totalPoints = Number(user.wallet.balance);
-
-    // 2. Kiosks owned by owner with their points and dues
-    const kiosks = await prisma.kiosk.findMany({
-        where: { owner_id: userId, is_active: true },
-        include: {
-            transactions: {
-                where: { status: TxStatus.COMPLETED }
-            },
-            dues: {
-                where: { is_paid: false }
-            }
+        if (!user) {
+            errorHandler(new NotFoundError("User not found"), req, res);
+            return null;
         }
-    });
 
-    const kioskData = kiosks.map((kiosk) => {
-        // Points: Sum of amount_gross of completed transactions
-        const points = kiosk.transactions.reduce(
-            (acc, tx) => acc + Number(tx.amount_gross),
-            0
-        );
+        if (!user.wallet) {
+            // Should catch this edge case if wallet is missing
+            errorHandler(
+                new NotFoundError("Wallet not found for user"),
+                req,
+                res
+            );
+            return null;
+        }
 
-        // Dues: Sum of unpaid dues
-        const dues = kiosk.dues.reduce(
-            (acc, due) => acc + Number(due.amount),
-            0
-        );
+        // 1. Total points collected by owner (Wallet Balance)
+        const totalPoints = Number(user.wallet.balance);
+
+        // 2. Kiosks owned by owner with their points and dues
+        const kiosks = await prisma.kiosk.findMany({
+            where: { owner_id: userId, is_active: true },
+            include: {
+                transactions: {
+                    where: { status: TxStatus.COMPLETED }
+                },
+                dues: {
+                    where: { is_paid: false }
+                }
+            }
+        });
+
+        const kioskData = kiosks.map((kiosk) => {
+            // Points: Sum of amount_gross of completed transactions
+            const points = kiosk.transactions.reduce(
+                (acc, tx) => acc + Number(tx.amount_gross),
+                0
+            );
+
+            // Dues: Sum of unpaid dues
+            const dues = kiosk.dues.reduce(
+                (acc, due) => acc + Number(due.amount),
+                0
+            );
+
+            return {
+                id: kiosk.id,
+                name: kiosk.name,
+                location: kiosk.location,
+                points,
+                dues
+            };
+        });
 
         return {
-            id: kiosk.id,
-            name: kiosk.name,
-            location: kiosk.location,
-            points,
-            dues
+            totalPoints,
+            kiosks: kioskData
         };
-    });
-
-    return {
-        totalPoints,
-        kiosks: kioskData
-    };
+    } catch (error) {
+        logger.error("Error fetching owner dashboard data:", error);
+        errorHandler(new error(), req, res);
+        return null;
+    }
 }
 
 /**
@@ -84,7 +103,11 @@ export async function getOwnerDashboard(userId: string): Promise<{
  * @returns {Promise<{ totalPoints: number; goal: { title: string; current: number; target: number } | null; transactions: Array<any> }>} The dashboard data.
  * @throws {NotFoundError} If the user or wallet is not found.
  */
-export async function getWorkerDashboard(userId: string): Promise<{
+export async function getWorkerDashboard(
+    userId: string,
+    req: Request,
+    res: Response
+): Promise<{
     totalPoints: number;
     goal: {
         title: string;
@@ -99,82 +122,94 @@ export async function getWorkerDashboard(userId: string): Promise<{
         status: string;
         created_at: Date;
     }>;
-}> {
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { wallet: true }
-    });
+}> | null {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { wallet: true }
+        });
 
-    if (!user) {
-        throw new NotFoundError("User not found");
-    }
-
-    if (!user.wallet) {
-        throw new NotFoundError("Wallet not found for user");
-    }
-
-    // 1. Total points collected by worker (Wallet Balance)
-    const totalPoints = Number(user.wallet.balance);
-
-    // 2. Current Kiosk Goal (Type: WORKER_TARGET)
-    // Assuming we pick the first active one or most specific one.
-    // The requirement says "show current kiosk goal".
-    const goal = await prisma.goal.findFirst({
-        where: {
-            user_id: userId,
-            type: "WORKER_TARGET"
-        },
-        orderBy: {
-            deadline: "asc" // Prioritize earliest deadline? Or creation?
+        if (!user) {
+            errorHandler(new NotFoundError("User not found"), req, res);
+            return null;
         }
-    });
 
-    let currentAmount = 0;
-    if (goal) {
-        const result = await prisma.transaction.aggregate({
+        if (!user.wallet) {
+            errorHandler(
+                new NotFoundError("Wallet not found for user"),
+                req,
+                res
+            );
+            return null;
+        }
+
+        // 1. Total points collected by worker (Wallet Balance)
+        const totalPoints = Number(user.wallet.balance);
+
+        // 2. Current Kiosk Goal (Type: WORKER_TARGET)
+        // Assuming we pick the first active one or most specific one.
+        // The requirement says "show current kiosk goal".
+        const goal = await prisma.goal.findFirst({
             where: {
-                sender_id: userId,
-                // Only count transactions created AFTER the goal started
-                created_at: {
-                    gte: goal.created_at,
-                    // And before deadline if it exists
-                    lte: goal.deadline || undefined
-                },
-                type: "DEPOSIT", // Only count deposits (sales)
-                status: "COMPLETED"
+                user_id: userId,
+                type: "WORKER_TARGET"
             },
-            _sum: {
-                amount_gross: true
+            orderBy: {
+                deadline: "asc" // Prioritize earliest deadline? Or creation?
             }
         });
-        currentAmount = result._sum.amount_gross
-            ? Number(result._sum.amount_gross)
-            : 0;
+
+        let currentAmount = 0;
+        if (goal) {
+            const result = await prisma.transaction.aggregate({
+                where: {
+                    sender_id: userId,
+                    // Only count transactions created AFTER the goal started
+                    created_at: {
+                        gte: goal.created_at,
+                        // And before deadline if it exists
+                        lte: goal.deadline || undefined
+                    },
+                    type: "DEPOSIT", // Only count deposits (sales)
+                    status: "COMPLETED"
+                },
+                _sum: {
+                    amount_gross: true
+                }
+            });
+            currentAmount = result._sum.amount_gross
+                ? Number(result._sum.amount_gross)
+                : 0;
+        }
+
+        // 3. Latest transactions by worker
+        const transactions = await prisma.transaction.findMany({
+            where: { sender_id: userId },
+            orderBy: { created_at: "desc" },
+            take: 5
+        });
+
+        return {
+            totalPoints,
+            goal: goal
+                ? {
+                      title: goal.title,
+                      current: currentAmount,
+                      target: Number(goal.target_amount),
+                      deadline: goal.deadline
+                  }
+                : null,
+            transactions: transactions.map((tx) => ({
+                id: tx.id,
+                amount: Number(tx.amount_gross),
+                type: tx.type,
+                status: tx.status,
+                created_at: tx.created_at
+            }))
+        };
+    } catch (error) {
+        logger.error("Error fetching worker dashboard data:", error);
+        errorHandler(new error(), req, res);
+        return null;
     }
-
-    // 3. Latest transactions by worker
-    const transactions = await prisma.transaction.findMany({
-        where: { sender_id: userId },
-        orderBy: { created_at: "desc" },
-        take: 5
-    });
-
-    return {
-        totalPoints,
-        goal: goal
-            ? {
-                  title: goal.title,
-                  current: currentAmount,
-                  target: Number(goal.target_amount),
-                  deadline: goal.deadline
-              }
-            : null,
-        transactions: transactions.map((tx) => ({
-            id: tx.id,
-            amount: Number(tx.amount_gross),
-            type: tx.type,
-            status: tx.status,
-            created_at: tx.created_at
-        }))
-    };
 }

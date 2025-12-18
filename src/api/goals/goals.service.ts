@@ -1,4 +1,4 @@
-import { errorHandler } from './../../middlewares/error.middleware.js';
+import { errorHandler } from "./../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js"; // Adjust path if needed
 import { NotFoundError, AuthorizationError } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
@@ -28,9 +28,13 @@ export async function setWorkerGoal(
     }
 
     if (workerProfile.kiosk.owner_id !== ownerId) {
-        errorHandler(new AuthorizationError(
-            "You can only set goals for your own workers"
-        ), req, res);
+        errorHandler(
+            new AuthorizationError(
+                "You can only set goals for your own workers"
+            ),
+            req,
+            res
+        );
         return null;
     }
 
@@ -45,26 +49,36 @@ export async function setWorkerGoal(
     });
 
     if (existingGoal) {
-        const updatedGoal = await prisma.goal.upsert(
-            {
-                where: { id: existingGoal.id },
-                update: {
-                    target_amount: targetAmount,
-                    owner_id: ownerId
-                },
-                create: {
-                    user_id: workerId,
-                    owner_id: ownerId,
-                    title: "Daily Commission Target",
-                    target_amount: targetAmount,
-                    type: "WORKER_TARGET",
-                    is_recurring: true,
-                    deadline: null // Recurring has no fixed deadline, it happens daily
-                }
-            });
+        const updatedGoal = await prisma.goal.upsert({
+            where: { id: existingGoal.id },
+            update: {
+                target_amount: targetAmount,
+                owner_id: ownerId
+            },
+            create: {
+                user_id: workerId,
+                owner_id: ownerId,
+                title: "Daily Commission Target",
+                target_amount: targetAmount,
+                type: "WORKER_TARGET",
+                is_recurring: true,
+                deadline: null // Recurring has no fixed deadline, it happens daily
+            }
+        });
         return updatedGoal;
     } else {
-        return null;
+        const newGoal = await prisma.goal.create({
+            data: {
+                user_id: workerId,
+                owner_id: ownerId,
+                title: "Daily Commission Target",
+                target_amount: targetAmount,
+                type: "WORKER_TARGET",
+                is_recurring: true,
+                deadline: null // Recurring has no fixed deadline, it happens daily
+            }
+        });
+        return newGoal;
     }
 }
 
@@ -170,7 +184,16 @@ async function releaseCommission(
     if (amount <= 0) return;
 
     await prisma.$transaction(async (tx) => {
-        // Update: Owner Wallet acts as the source of liquidity.
+        // 1. Transfer funds: Owner -> Worker
+        // Determine commission already sits in Owner's wallet. We must move it to Worker.
+
+        // Decrement Owner Wallet
+        await tx.wallet.update({
+            where: { user_id: ownerId },
+            data: { balance: { decrement: amount } }
+        });
+
+        // Increment Worker Wallet
         await tx.wallet.update({
             where: { user_id: workerId },
             data: { balance: { increment: amount } }
@@ -195,7 +218,7 @@ async function forfeitCommission(
     startDate: Date,
     endDate: Date
 ) {
-    // Just mark as FORFEITED. Owner already "has" the value (via Gross KioskDue).
+    // Just mark as FORFEITED. Funds explicitly remain with Owner (sent during transaction).
     await prisma.transaction.updateMany({
         where: {
             sender_id: workerId,

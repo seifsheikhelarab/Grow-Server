@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import prisma from "../../prisma.js";
 import { config } from "../../config/env.config.js";
@@ -6,13 +6,16 @@ import {
     AuthenticationError,
     ConflictError,
     NotFoundError,
-    ErrorCode
+    ErrorCode,
+    AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import ms from "ms";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { sendSMS } from "../../utils/sms.js";
+import dotenv from "dotenv";
+dotenv.config({ quiet: true });
 
 /**
  * Generate and store OTP.
@@ -20,7 +23,11 @@ import { sendSMS } from "../../utils/sms.js";
  * @param {string} phone - The phone number to send OTP to.
  * @returns {Promise<void>}
  */
-export async function sendOtp(phone: string): Promise<void> {
+export async function sendOtp(
+    phone: string,
+    req: Request,
+    res: Response
+): Promise<void> {
     try {
         // Generate 4-digit OTP
         const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -35,14 +42,15 @@ export async function sendOtp(phone: string): Promise<void> {
             create: { phone, code, expiresAt }
         });
 
-        // TODO: Send OTP via SMS in production
-        await sendSMS(phone, code);
+        if (process.env.NODE_ENV !== "development") {
+            await sendSMS(phone, code);
+        }
         logger.info(
             `OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`
         );
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
     }
 }
 
@@ -265,7 +273,22 @@ export async function register(
         };
     } catch (err) {
         logger.error(`Error registering user: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error registering user",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return {
+            id: "",
+            full_name: "",
+            phone: "",
+            role: "",
+            token: ""
+        };
     }
 }
 
@@ -343,7 +366,18 @@ export async function login(
         };
     } catch (err) {
         logger.error(`Error logging in: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError("Error logging in", 500, ErrorCode.INTERNAL_ERROR),
+            req,
+            res
+        );
+        return {
+            full_name: "",
+            id: "",
+            phone: "",
+            role: "",
+            token: ""
+        };
     }
 }
 
@@ -401,7 +435,11 @@ export async function verifyToken(
  * @param {string} userId - The ID of the user to delete.
  * @returns {Promise<void>}
  */
-export async function deleteAccount(userId: string): Promise<void> {
+export async function deleteAccount(
+    userId: string,
+    req: Request,
+    res: Response
+): Promise<void> {
     try {
         await prisma.user.update({
             where: { id: userId },
@@ -410,6 +448,14 @@ export async function deleteAccount(userId: string): Promise<void> {
         logger.info(`User account deleted (soft): ${userId}`);
     } catch (err) {
         logger.error(`Error deleting account: ${err}`);
-        throw err;
+        errorHandler(
+            new AppError(
+                "Error deleting account",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
     }
 }

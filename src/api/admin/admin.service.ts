@@ -8,7 +8,7 @@ import {
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 type SystemSettingKey =
     | "commission_rate"
@@ -22,7 +22,11 @@ type SystemSettingKey =
  * @param {"1d" | "7d" | "30d"} filter - Time period filter (default: "7d").
  * @returns {Promise<object>} Dashboard statistics.
  */
-export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
+export async function getDashboardStats(
+    filter: "1d" | "7d" | "30d" = "7d",
+    req: Request,
+    res: Response
+) {
     try {
         const startDate = new Date();
 
@@ -129,7 +133,8 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
         };
     } catch (err) {
         logger.error(`Error getting dashboard stats: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -138,7 +143,7 @@ export async function getDashboardStats(filter: "1d" | "7d" | "30d" = "7d") {
  * @returns {Promise<object[]>} List of pending redemptions.
  * @throws {Error} If the redemptions are not found.
  */
-export async function getPendingRedemptions() {
+export async function getPendingRedemptions(req: Request, res: Response) {
     try {
         const redemptions = await prisma.redemptionRequest.findMany({
             where: { status: "PENDING" },
@@ -161,7 +166,8 @@ export async function getPendingRedemptions() {
         }));
     } catch (err) {
         logger.error(`Error getting pending redemptions: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -232,7 +238,8 @@ export async function processRedemption(
         return updated;
     } catch (err) {
         logger.error(`Error processing redemption: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -242,7 +249,7 @@ export async function processRedemption(
  * @returns {Promise<object[]>} The list of dues.
  * @throws {Error} If the dues are not found.
  */
-export async function getDueList() {
+export async function getDueList(req: Request, res: Response) {
     try {
         const dues = await prisma.kioskDue.findMany({
             where: { is_paid: false },
@@ -258,7 +265,8 @@ export async function getDueList() {
         }));
     } catch (err) {
         logger.error(`Error getting due list: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -302,7 +310,8 @@ export async function collectDue(dueId: string, req: Request, res: Response) {
         return updated;
     } catch (err) {
         logger.error(`Error collecting due: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 /**
@@ -342,7 +351,7 @@ export async function logAdminAction(
  * @returns {Promise<object>} The system settings.
  * @throws {Error} If the settings are not found.
  */
-export async function getSystemSettings() {
+export async function getSystemSettings(req: Request, res: Response) {
     try {
         const settings = await prisma.systemSetting.findMany();
         // Convert array to object for easier consumption
@@ -357,7 +366,8 @@ export async function getSystemSettings() {
         return settingsMap;
     } catch (err) {
         logger.error(`Error getting settings: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -374,6 +384,8 @@ export async function updateSystemSetting(
     key: SystemSettingKey,
     value: boolean | string | number,
     adminId: string,
+    req: Request,
+    res: Response,
     description?: string
 ) {
     try {
@@ -394,7 +406,8 @@ export async function updateSystemSetting(
         return setting;
     } catch (err) {
         logger.error(`Error updating setting ${key}: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -430,7 +443,7 @@ export async function createAdminUser(
                 req,
                 res
             );
-            return;
+            return null;
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -459,7 +472,7 @@ export async function createAdminUser(
         };
     } catch (err) {
         logger.error(`Error creating admin: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
     }
 }
 
@@ -468,7 +481,7 @@ export async function createAdminUser(
  * @returns {Promise<object[]>} The list of admins.
  * @throws {Error} If the admins are not found.
  */
-export async function getAllAdmins() {
+export async function getAllAdmins(req: Request, res: Response) {
     try {
         return await prisma.user.findMany({
             where: { role: "ADMIN" },
@@ -483,7 +496,8 @@ export async function getAllAdmins() {
         });
     } catch (err) {
         logger.error(`Error getting admins: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -535,7 +549,11 @@ async function updateUserStatusHelper(
  * @returns The owners with the specified filters.
  * @throws {Error} If the owners are not found.
  */
-export async function getOwners(filters: { [key: string]: unknown }) {
+export async function getOwners(
+    filters: { [key: string]: unknown },
+    req: Request,
+    res: Response
+) {
     try {
         const { search, status, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
@@ -583,7 +601,8 @@ export async function getOwners(filters: { [key: string]: unknown }) {
         return { owners, total, page: Number(page), limit: Number(limit) };
     } catch (err) {
         logger.error(`Error getting owners: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -593,7 +612,7 @@ export async function getOwners(filters: { [key: string]: unknown }) {
  * @returns {Promise<object>} The owner details.
  * @throws {Error} If the owner is not found.
  */
-export async function getOwnerDetails(id: string) {
+export async function getOwnerDetails(id: string, req: Request, res: Response) {
     try {
         const owner = await prisma.user.findUnique({
             where: { id },
@@ -608,11 +627,12 @@ export async function getOwnerDetails(id: string) {
                 }
             }
         });
-        if (!owner) throw new Error("Owner not found");
+        if (!owner) errorHandler(new Error("Owner not found"), req, res);
         return owner;
     } catch (err) {
         logger.error(`Error getting owner details: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -642,7 +662,13 @@ export async function updateOwnerStatus(
  * @returns {Promise<object>} The updated owner.
  * @throws {Error} If the owner is not found.
  */
-export async function updateOwner(id: string, data: unknown, adminId: string) {
+export async function updateOwner(
+    id: string,
+    data: unknown,
+    adminId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const updated = await prisma.user.update({
             where: { id },
@@ -652,7 +678,8 @@ export async function updateOwner(id: string, data: unknown, adminId: string) {
         return updated;
     } catch (err) {
         logger.error(`Error updating owner: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -669,7 +696,9 @@ export async function adjustBalance(
     id: string,
     amount: number,
     reason: string,
-    adminId: string
+    adminId: string,
+    req: Request,
+    res: Response
 ) {
     try {
         const updated = await prisma.wallet.update({
@@ -680,7 +709,8 @@ export async function adjustBalance(
         return updated;
     } catch (err) {
         logger.error(`Error adjusting balance: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -694,7 +724,11 @@ export async function adjustBalance(
  * @returns {Promise<object[]>} The kiosks with the specified filters.
  * @throws {Error} If the kiosks are not found.
  */
-export async function getKiosks(filters: { [key: string]: unknown }) {
+export async function getKiosks(
+    filters: { [key: string]: unknown },
+    req: Request,
+    res: Response
+) {
     try {
         const { search, status, ownerId, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
@@ -729,7 +763,8 @@ export async function getKiosks(filters: { [key: string]: unknown }) {
         return { kiosks, total, page: Number(page), limit: Number(limit) };
     } catch (err) {
         logger.error(`Error getting kiosks: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -739,7 +774,7 @@ export async function getKiosks(filters: { [key: string]: unknown }) {
  * @returns {Promise<object>} The kiosk details.
  * @throws {Error} If the kiosk is not found.
  */
-export async function getKioskDetails(id: string) {
+export async function getKioskDetails(id: string, req: Request, res: Response) {
     try {
         const kiosk = await prisma.kiosk.findUnique({
             where: { id },
@@ -754,11 +789,12 @@ export async function getKioskDetails(id: string) {
                 dues: { orderBy: { created_at: "desc" }, take: 5 }
             }
         });
-        if (!kiosk) throw new Error("Kiosk not found");
+        if (!kiosk) errorHandler(new Error("Kiosk not found"), req, res);
         return kiosk;
     } catch (err) {
         logger.error(`Error getting kiosk details: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -807,7 +843,8 @@ export async function createKiosk(
         return kiosk;
     } catch (err) {
         logger.error(`Error creating kiosk: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -824,7 +861,9 @@ export async function updateKioskStatus(
     id: string,
     is_active: boolean,
     reason: string,
-    adminId: string
+    adminId: string,
+    req: Request,
+    res: Response
 ) {
     try {
         const updated = await prisma.kiosk.update({
@@ -838,7 +877,8 @@ export async function updateKioskStatus(
         return updated;
     } catch (err) {
         logger.error(`Error updating kiosk status: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -866,7 +906,9 @@ export async function getWorkers(
               page?: string;
               limit?: string;
           }
-        | undefined
+        | undefined,
+    req: Request,
+    res: Response
 ) {
     try {
         const { search, status, kioskId, page = 1, limit = 10 } = filters;
@@ -904,7 +946,8 @@ export async function getWorkers(
         return { workers, total, page: Number(page), limit: Number(limit) };
     } catch (err) {
         logger.error(`Error getting workers: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -915,7 +958,11 @@ export async function getWorkers(
  * @throws {Error} If the worker is not found.
  * @throws {Error} If the worker profile is not found.
  */
-export async function getWorkerDetails(id: string) {
+export async function getWorkerDetails(
+    id: string,
+    req: Request,
+    res: Response
+) {
     try {
         const worker = await prisma.user.findUnique({
             where: { id },
@@ -925,11 +972,12 @@ export async function getWorkerDetails(id: string) {
                 goals: true
             }
         });
-        if (!worker) throw new Error("Worker not found");
+        if (!worker) errorHandler(new Error("Worker not found"), req, res);
         return worker;
     } catch (err) {
         logger.error(`Error getting worker details: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -963,7 +1011,9 @@ export async function updateWorkerStatus(
 export async function reassignWorker(
     id: string,
     kioskId: string,
-    adminId: string
+    adminId: string,
+    req: Request,
+    res: Response
 ) {
     try {
         const worker = await prisma.user.findUnique({
@@ -971,7 +1021,7 @@ export async function reassignWorker(
             include: { worker_profile: true }
         });
         if (!worker || !worker.worker_profile)
-            throw new Error("Worker profile not found");
+            errorHandler(new Error("Worker profile not found"), req, res);
 
         const updated = await prisma.workerProfile.update({
             where: { id: worker.worker_profile.id },
@@ -984,7 +1034,8 @@ export async function reassignWorker(
         return updated;
     } catch (err) {
         logger.error(`Error reassigning worker: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -998,7 +1049,11 @@ export async function reassignWorker(
  * @returns {Promise<object[]>} The customers with the specified filters.
  * @throws {Error} If the customers are not found.
  */
-export async function getCustomers(filters: { [key: string]: unknown }) {
+export async function getCustomers(
+    filters: { [key: string]: unknown },
+    req: Request,
+    res: Response
+) {
     try {
         const { search, status, page = 1, limit = 10 } = filters;
         const skip = (Number(page) - 1) * Number(limit);
@@ -1030,7 +1085,8 @@ export async function getCustomers(filters: { [key: string]: unknown }) {
         return { customers, total, page: Number(page), limit: Number(limit) };
     } catch (err) {
         logger.error(`Error getting customers: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 
@@ -1040,7 +1096,11 @@ export async function getCustomers(filters: { [key: string]: unknown }) {
  * @returns {Promise<object>} The customer details.
  * @throws {Error} If the customer is not found.
  */
-export async function getCustomerDetails(id: string) {
+export async function getCustomerDetails(
+    id: string,
+    req: Request,
+    res: Response
+) {
     try {
         const customer = await prisma.user.findUnique({
             where: { id },
@@ -1050,11 +1110,12 @@ export async function getCustomerDetails(id: string) {
                 goals: true
             }
         });
-        if (!customer) throw new Error("Customer not found");
+        if (!customer) errorHandler(new Error("Customer not found"), req, res);
         return customer;
     } catch (err) {
         logger.error(`Error getting customer details: ${err}`);
-        throw err;
+        errorHandler(err, req, res);
+        return null;
     }
 }
 

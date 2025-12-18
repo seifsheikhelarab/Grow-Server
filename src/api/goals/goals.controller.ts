@@ -10,7 +10,13 @@ export async function setGoal(req: Request, res: Response) {
     // Assume owner is authenticated and their ID is in req.user.id
     const ownerId = req.user.id;
 
-    const goal = await setWorkerGoal(ownerId, workerId, Number(targetAmount),req,res);
+    const goal = await setWorkerGoal(
+        ownerId,
+        workerId,
+        Number(targetAmount),
+        req,
+        res
+    );
     ResponseHandler.success(res, "Goal set successfully", goal);
 }
 

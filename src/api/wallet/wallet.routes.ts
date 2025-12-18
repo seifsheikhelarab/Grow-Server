@@ -37,8 +37,12 @@ router.post("/redeem", validateRequest(redeemSchema), walletController.redeem);
  */
 router
     .route("/goals")
-    .post(roleGuard("CUSTOMER"),validateRequest(createGoalSchema), walletController.createGoal)
-    .get(roleGuard("CUSTOMER"),walletController.getGoals);
+    .post(
+        roleGuard("CUSTOMER"),
+        validateRequest(createGoalSchema),
+        walletController.createGoal
+    )
+    .get(roleGuard("CUSTOMER"), walletController.getGoals);
 
 /**
  * PUT /api/wallet/goals/:id
@@ -47,7 +51,7 @@ router
 router
     .route("/goals/:id")
     .put(
-        roleGuard("OWNER","ADMIN"),
+        roleGuard("CUSTOMER"),
         validateRequest(createGoalSchema),
         walletController.editGoal
     );
