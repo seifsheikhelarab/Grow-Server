@@ -11,11 +11,10 @@ dotenv.config({ quiet: true });
 export async function sendSMS(to: string, code: string): Promise<void> {
     try {
         const response = await axios.post(
-            `https://sandbox.1msg.io/${process.env.SMS_CHANNEL}/sendMessage`,
+            process.env.SMS_URL as string,
             {
-                token: process.env.SMS_TOKEN,
-                phone: "2" + to,
-                body: `Your Grow verification code is ${code}`
+                chatId: "2"+to+"@c.us",
+                message: `Your Grow verification code is ${code}`,
             }
         );
         logger.info(response.data);

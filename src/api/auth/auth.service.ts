@@ -42,11 +42,9 @@ export async function sendOtp(
             create: { phone, code, expiresAt }
         });
 
-        if (process.env.NODE_ENV !== "development") {
-            await sendSMS(phone, code);
-        }
+        await sendSMS(phone, code);
         logger.info(
-            `OTP sent to ${phone}: ${code} (DEV MODE - Remove in production)`
+            `OTP sent to ${phone}: ${code}`
         );
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
