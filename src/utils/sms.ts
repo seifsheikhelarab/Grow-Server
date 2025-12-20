@@ -10,13 +10,10 @@ dotenv.config({ quiet: true });
  */
 export async function sendSMS(to: string, code: string): Promise<void> {
     try {
-        const response = await axios.post(
-            process.env.SMS_URL as string,
-            {
-                chatId: "2"+to+"@c.us",
-                message: `Your Grow verification code is ${code}`,
-            }
-        );
+        const response = await axios.post(process.env.SMS_URL as string, {
+            chatId: "2" + to + "@c.us",
+            message: `Your Grow verification code is ${code}`
+        });
         logger.info(response.data);
     } catch (err) {
         logger.error(err);

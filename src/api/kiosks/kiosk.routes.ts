@@ -6,7 +6,9 @@ import {
 } from "../../middlewares/auth.middleware.js";
 import {
     createKioskSchema,
-    inviteWorkerSchema
+    invitationResponseSchema,
+    inviteWorkerSchema,
+    removeWorkerSchema
 } from "../../schemas/validation.schema.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 
@@ -33,11 +35,11 @@ router
     .get(roleGuard("OWNER"), kioskController.getUserKiosks);
 
 /**
- * POST /api/kiosks/invite-worker
+ * POST /api/kiosks/invite
  * Invite worker to kiosk (Owner only).
  */
 router
-    .route("/invite-worker")
+    .route("/invite")
     .post(
         roleGuard("OWNER"),
         validateRequest(inviteWorkerSchema),
@@ -54,17 +56,28 @@ router
 
 /**
  * POST /api/kiosks/accept-invitation/:invitationId
- * Accept worker invitation (Worker only).
+ * Respond to worker invitation (Worker only).
  */
 router
-    .route("/accept-invitation/:invitationId")
-    .post(roleGuard("WORKER"), kioskController.acceptInvitation);
+    .route("/invitations/:invitationId")
+    .post(
+        roleGuard("WORKER"),
+        validateRequest(invitationResponseSchema),
+        kioskController.acceptInvitation
+    );
 
 /**
  * GET /api/kiosks/:kioskId/workers
  * Get kiosk workers (Owner only).
  */
-router.get("/:kioskId/workers", roleGuard("OWNER"), kioskController.getWorkers);
+router
+    .route("/:kioskId/workers")
+    .get(roleGuard("OWNER"), kioskController.getWorkers)
+    .delete(
+        roleGuard("OWNER"),
+        validateRequest(removeWorkerSchema),
+        kioskController.removeWorker
+    );
 
 /**
  * GET /api/kiosks/:kioskId/dues

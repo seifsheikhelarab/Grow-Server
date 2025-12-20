@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from "express";
 // import cors from "cors";
 import dotenv from "dotenv";
-dotenv.config({quiet:true});
+dotenv.config({ quiet: true });
 import { config } from "./config/env.config.js";
 import logger from "./utils/logger.js";
 import prisma from "./prisma.js";

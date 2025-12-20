@@ -11,7 +11,6 @@ export const sendOtpSchema = z.object({
 
 /** Schema for verifying OTP */
 export const verifyOtpSchema = z.object({
-    phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     code: z
         .string()
         .length(4, "OTP must be 4 digits")
@@ -87,9 +86,16 @@ export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    kioskId: z.string().uuid("Invalid kiosk ID"),
-    position: z.string().optional(),
-    workingHours: z.string().optional()
+    kioskId: z.string().uuid("Invalid kiosk ID")
+});
+
+/** Schema for invitation response */
+export const invitationResponseSchema = z.object({
+    action: z.enum(["ACCEPT", "REJECT"])
+});
+
+export const removeWorkerSchema = z.object({
+    workerId: z.string().uuid("Invalid worker ID")
 });
 
 /**

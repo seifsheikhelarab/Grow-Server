@@ -27,7 +27,7 @@ export async function sendOtp(
     phone: string,
     req: Request,
     res: Response
-): Promise<void> {
+): Promise<{ message: string; token: string }> {
     try {
         // Generate 4-digit OTP
         const code = Math.floor(1000 + Math.random() * 9000).toString();
@@ -43,12 +43,27 @@ export async function sendOtp(
         });
 
         await sendSMS(phone, code);
-        logger.info(
-            `OTP sent to ${phone}: ${code}`
+        logger.info(`OTP sent to ${phone}: ${code}`);
+
+        // Generate temporary token for registration
+        const opts: SignOptions = { expiresIn: "30m" };
+        const tempToken = jwt.sign(
+            { phone, tempAuth: true },
+            (await config).JWT_SECRET as string,
+            opts
         );
+
+        return {
+            message: "OTP sent successfully",
+            token: tempToken
+        };
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
         errorHandler(err, req, res);
+        return {
+            message: "Error sending OTP",
+            token: ""
+        };
     }
 }
 
@@ -106,14 +121,6 @@ export async function verifyOtp(
         const user = await prisma.user.findUnique({ where: { phone } });
 
         if (!user) {
-            // Generate temporary token for registration
-            // const opts: SignOptions = { expiresIn: "30m" };
-            // const tempToken = jwt.sign(
-            //     { phone, tempAuth: true },
-            //     (await config).JWT_SECRET as string,
-            //     opts
-            // );
-
             logger.info(`OTP verified for new user: ${phone}`);
             return {
                 userExists: true,

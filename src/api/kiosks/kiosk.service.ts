@@ -92,8 +92,6 @@ export async function createKiosk(
  * @param {string} ownerId - The ID of the owner.
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} workerPhone - The phone number of the worker.
- * @param {string} position - The position of the worker.
- * @param {string} workingHours - The working hours of the worker.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  * @returns {Promise<object>} The created or updated worker profile.
@@ -102,8 +100,6 @@ export async function inviteWorker(
     ownerId: string,
     kioskId: string,
     workerPhone: string,
-    position: string,
-    workingHours: string,
     req: Request,
     res: Response
 ): Promise<{ id: string; user_id: string; kiosk_id: string; status: string }> {
@@ -187,15 +183,11 @@ export async function inviteWorker(
             where: { user_id: worker.id },
             update: {
                 kiosk_id: kioskId,
-                position,
-                working_hours: workingHours,
                 status: "PENDING_INVITE"
             },
             create: {
                 user_id: worker.id,
                 kiosk_id: kioskId,
-                position,
-                working_hours: workingHours,
                 status: "PENDING_INVITE"
             }
         });
@@ -272,12 +264,17 @@ export async function getWorkerInvitations(
 export async function acceptInvitation(
     invitationId: string,
     workerId: string,
+    action: string,
     req: Request,
     res: Response
 ) {
     try {
         const profile = await prisma.workerProfile.findUnique({
-            where: { id: invitationId, user_id: workerId }
+            where: {
+                id: invitationId,
+                user_id: workerId,
+                status: "PENDING_INVITE"
+            }
         });
 
         if (!profile) {
@@ -289,8 +286,12 @@ export async function acceptInvitation(
         }
 
         const updated = await prisma.workerProfile.update({
-            where: { id: invitationId, user_id: workerId },
-            data: { status: "ACTIVE" },
+            where: {
+                id: invitationId,
+                user_id: workerId,
+                status: "PENDING_INVITE"
+            },
+            data: { status: action },
             include: {
                 kiosk: {
                     select: { id: true, name: true }
@@ -299,14 +300,14 @@ export async function acceptInvitation(
         });
 
         logger.info(
-            `Worker ${workerId} accepted invitation to kiosk ${profile.kiosk_id}`
+            `Worker ${workerId} changed invitation status to ${action} to kiosk ${profile.kiosk_id}`
         );
         return updated;
     } catch (err) {
-        logger.error(`Error accepting invitation: ${err}`);
+        logger.error(`Error changing invitation status: ${err}`);
         errorHandler(
             new AppError(
-                "Error accepting invitation",
+                "Error changing invitation status",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -508,5 +509,75 @@ export async function getUserKiosks(
             res
         );
         return [];
+    }
+}
+
+/**
+ * Remove worker from kiosk.
+ *
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} workerId - The ID of the worker.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The updated kiosk.
+ */
+export async function removeWorker(
+    kioskId: string,
+    workerId: string,
+    req: Request,
+    res: Response
+) {
+    try {
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: kioskId }
+        });
+
+        if (!kiosk) {
+            errorHandler(
+                new NotFoundError("Kiosk not found or not approved"),
+                req,
+                res
+            );
+        }
+
+        if (kiosk.owner_id !== req.user!.id) {
+            errorHandler(
+                new AuthorizationError("You are not the owner of this kiosk"),
+                req,
+                res
+            );
+        }
+
+        const worker = await prisma.workerProfile.findUnique({
+            where: { id: workerId }
+        });
+
+        if (!worker) {
+            errorHandler(new NotFoundError("Worker not found"), req, res);
+        }
+
+        await prisma.workerProfile.delete({
+            where: { user_id: workerId }
+        });
+
+        const updated = await prisma.kiosk.update({
+            where: { id: kioskId },
+            data: { workers: { disconnect: { id: workerId } } }
+        });
+
+        logger.info(`Worker ${workerId} removed from kiosk ${kioskId}`);
+        return updated;
+    } catch (err) {
+        logger.error(`Error removing worker: ${err}`);
+        errorHandler(
+            new AppError(
+                "Error removing worker",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return null;
     }
 }

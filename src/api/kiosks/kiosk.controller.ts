@@ -39,14 +39,12 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const inviteWorker = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
-        const { kioskId, workerPhone, position, workingHours } = req.body;
+        const { kioskId, workerPhone } = req.body;
 
         const profile = await kioskService.inviteWorker(
             ownerId,
             kioskId,
             workerPhone,
-            position,
-            workingHours,
             req,
             res
         );
@@ -92,10 +90,12 @@ export const acceptInvitation = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;
         const { invitationId } = req.params;
+        const { action } = req.body;
 
         const profile = await kioskService.acceptInvitation(
             invitationId,
             workerId,
+            action,
             req,
             res
         );
@@ -160,5 +160,27 @@ export const getUserKiosks = asyncHandler(
         ResponseHandler.success(res, "Kiosks retrieved successfully", {
             kiosks
         });
+    }
+);
+
+/**
+ * Remove worker from kiosk.
+ *
+ * @param {Request} req - The Express request object containing kioskId in params and workerId in body.
+ * @param {Response} res - The Express response object.
+ */
+export const removeWorker = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { kioskId } = req.params;
+        const { workerId } = req.body;
+
+        const result = await kioskService.removeWorker(
+            kioskId,
+            workerId,
+            req,
+            res
+        );
+
+        ResponseHandler.success(res, "Worker removed successfully", result);
     }
 );

@@ -19,10 +19,11 @@ import {
 export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
     const { phone } = req.body;
 
-    await authService.sendOtp(phone, req, res);
+    const result = await authService.sendOtp(phone, req, res);
 
     ResponseHandler.success(res, "OTP sent successfully", {
-        message: "Please check your phone for the OTP"
+        message: result.message,
+        token: result.token
     });
 });
 
@@ -33,7 +34,21 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
  * @param {Response} res - The Express response object.
  */
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
-    const { phone, code } = req.body;
+    const { code } = req.body;
+
+    const phone = req.user?.phone;
+
+    if (!phone) {
+        errorHandler(
+            new AuthenticationError(
+                "User not authenticated",
+                ErrorCode.UNAUTHORIZED_ACCESS
+            ),
+            req,
+            res
+        );
+        return;
+    }
 
     const result = await authService.verifyOtp(phone, code, req, res);
 

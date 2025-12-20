@@ -2,7 +2,8 @@ import { Router } from "express";
 import * as authController from "./auth.controller.js";
 import {
     optionalAuthMiddleware,
-    authMiddleware as authMiddlewareAlias
+    authMiddleware as authMiddlewareAlias,
+    tempAuthMiddleware
     // tempAuthMiddleware
 } from "../../middlewares/auth.middleware.js";
 import {
@@ -31,6 +32,7 @@ router.post(
  */
 router.post(
     "/verify-otp",
+    tempAuthMiddleware,
     validateRequest(verifyOtpSchema),
     authController.verifyOtp
 );

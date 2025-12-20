@@ -7,7 +7,7 @@ dotenv.config({ quiet: true });
  * Provides structured logging throughout the application.
  * Configured to use pino-pretty for development.
  */
-let logger: pino.Logger;
+// let logger: pino.Logger;
 
 // if (process.env.NODE_ENV === "development") {
 //     logger = pino({
@@ -23,10 +23,10 @@ let logger: pino.Logger;
 //         timestamp: pino.stdTimeFunctions.isoTime
 //     });
 // } else {
-    logger = pino({
-        level: process.env.LOG_LEVEL || "info",
-        timestamp: false
-    });
+const logger = pino({
+    level: process.env.LOG_LEVEL || "info",
+    timestamp: false
+});
 // }
 
 export default logger;

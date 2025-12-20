@@ -144,9 +144,7 @@ model WorkerProfile {
   id            String @id @default(uuid())
   user_id       String @unique
   kiosk_id      String
-  position      String?
-  working_hours String?
-  status        String // PENDING_INVITE, ACTIVE
+  status        String // PENDING_INVITE, ACTIVE, REJECTED
 
   user  User  @relation(fields: [user_id], references: [id])
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
