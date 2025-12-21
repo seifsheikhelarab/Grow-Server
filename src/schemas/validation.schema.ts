@@ -40,6 +40,7 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
+    code: z.string().length(4, "OTP must be 4 digits").regex(/^\d+$/, "OTP must be numeric"),
     password: z
         .string()
         .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")

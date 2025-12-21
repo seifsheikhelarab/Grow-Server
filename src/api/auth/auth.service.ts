@@ -527,6 +527,7 @@ export async function forgotPassword(
 export async function resetPassword(
     phone: string,
     password: string,
+    code: string,
     req: Request,
     res: Response
 ): Promise<{ message: string; token: string }> {
@@ -536,6 +537,16 @@ export async function resetPassword(
         if (!user) {
             errorHandler(
                 new AuthenticationError("User not found"),
+                req,
+                res
+            );
+        }
+
+        // Verify OTP
+        const otp = await prisma.otp.findUnique({ where: { phone } });
+        if (!otp || otp.code !== code || otp.expiresAt < new Date()) {
+            errorHandler(
+                new AuthenticationError("Invalid OTP"),
                 req,
                 res
             );
