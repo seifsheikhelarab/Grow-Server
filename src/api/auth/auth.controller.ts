@@ -89,6 +89,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
     ResponseHandler.created(res, "User registered successfully", {
         id: result.id,
+        name: result.full_name,
         phone: result.phone,
         role: result.role,
         token: result.token
@@ -108,6 +109,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
     ResponseHandler.success(res, "Login successful", {
         id: result.id,
+        name: result.full_name,
         phone: result.phone,
         role: result.role,
         token: result.token
