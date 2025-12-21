@@ -145,8 +145,6 @@ async function main() {
                 create: {
                     kiosk_id: kiosk1.id,
                     status: "ACTIVE",
-                    position: "Manager",
-                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }
@@ -165,8 +163,6 @@ async function main() {
                 create: {
                     kiosk_id: kiosk1.id, // Same kiosk as worker1
                     status: "ACTIVE",
-                    position: "Helper",
-                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }
@@ -185,8 +181,6 @@ async function main() {
                 create: {
                     kiosk_id: kiosk2.id,
                     status: "PENDING_INVITE",
-                    position: "Worker",
-                    working_hours: "8:00 AM - 5:00 PM"
                 }
             }
         }

@@ -47,11 +47,11 @@ router
     );
 
 /**
- * GET /api/kiosks/worker-invitations
+ * GET /api/kiosks/invitations
  * Get kiosk invitations (Worker only).
  */
 router
-    .route("/worker-invitations")
+    .route("/invitations")
     .get(roleGuard("WORKER"), kioskController.getWorkerInvitations);
 
 /**

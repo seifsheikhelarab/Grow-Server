@@ -91,7 +91,7 @@ export const inviteWorkerSchema = z.object({
 
 /** Schema for invitation response */
 export const invitationResponseSchema = z.object({
-    action: z.enum(["ACCEPT", "REJECT"])
+    action: z.enum(["ACTIVE", "REJECT"])
 });
 
 export const removeWorkerSchema = z.object({

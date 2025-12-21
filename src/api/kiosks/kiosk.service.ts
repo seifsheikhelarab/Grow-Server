@@ -269,7 +269,7 @@ export async function acceptInvitation(
     res: Response
 ) {
     try {
-        const profile = await prisma.workerProfile.findUnique({
+        const profile = await prisma.workerProfile.findFirst({
             where: {
                 id: invitationId,
                 user_id: workerId,
@@ -283,13 +283,12 @@ export async function acceptInvitation(
                 req,
                 res
             );
+            return null;
         }
 
         const updated = await prisma.workerProfile.update({
             where: {
-                id: invitationId,
-                user_id: workerId,
-                status: "PENDING_INVITE"
+                id: invitationId
             },
             data: { status: action },
             include: {
@@ -556,13 +555,13 @@ export async function removeWorker(
             errorHandler(new NotFoundError("Worker not found"), req, res);
         }
 
-        await prisma.workerProfile.delete({
-            where: { user_id: workerId }
-        });
-
         const updated = await prisma.kiosk.update({
             where: { id: kioskId },
-            data: { workers: { disconnect: { id: workerId } } }
+            data: {
+                workers: {
+                    delete: { id: workerId }
+                }
+            }
         });
 
         logger.info(`Worker ${workerId} removed from kiosk ${kioskId}`);
