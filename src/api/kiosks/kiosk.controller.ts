@@ -37,7 +37,8 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const inviteWorker = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
-        const { kioskId, workerPhone,name } = req.body;
+        const { workerPhone, name } = req.body;
+        const { kioskId } = req.params;
 
         const profile = await kioskService.inviteWorker(
             ownerId,
@@ -184,3 +185,12 @@ export const removeWorker = asyncHandler(
         ResponseHandler.success(res, "Worker removed successfully", result);
     }
 );
+
+export const kioskDetails = asyncHandler(async (req: Request, res: Response) => {
+    const ownerId = req.user!.id;
+    const { kioskId } = req.params;
+
+    const result = await kioskService.getKioskDetails(kioskId, ownerId, req, res);
+
+    ResponseHandler.success(res, "Kiosk details retrieved successfully", result);
+});

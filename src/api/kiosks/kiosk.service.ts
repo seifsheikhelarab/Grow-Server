@@ -581,3 +581,85 @@ export async function removeWorker(
         return null;
     }
 }
+
+/**
+ * Get Kiosk Details
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} The kiosk details.
+ */
+export async function getKioskDetails(
+    kioskId: string,
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
+    try {
+
+
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: kioskId }
+        });
+
+        if (!kiosk) {
+            errorHandler(
+                new NotFoundError("Kiosk not found or not approved"),
+                req,
+                res
+            );
+        }
+
+        if (ownerId !== kiosk.owner_id) {
+            errorHandler(
+                new AuthorizationError("You are not the owner of this kiosk"),
+                req,
+                res
+            );
+        }
+
+        const dues = await prisma.kioskDue.findMany({
+            where: { kiosk_id: kioskId, created_at: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) }, is_paid: false },
+            orderBy: { created_at: "desc" },
+            select: { amount: true }
+        });
+
+        const netEarnings = await prisma.transaction.findMany({
+            where: { kiosk_id: kioskId, created_at: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) } },
+            orderBy: { created_at: "desc" },
+            select: { amount_net: true, amount_gross: true }
+        });
+
+        const workers = await prisma.workerProfile.findMany({
+            where: { kiosk_id: kioskId },
+            select: { id: true, name: true, status: true }
+        });
+
+        
+        const totalGross = netEarnings.reduce((sum, d) => sum + Number(d.amount_gross), 0);
+        const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
+        const totalNetEarnings = netEarnings.reduce((sum, d) => sum + Number(d.amount_net), 0);
+
+        return {
+            kiosk,
+            summary: {
+                total_gross: totalGross.toString(),
+                total_dues: totalDue.toString(),
+                net_earnings: totalNetEarnings.toString(),
+                workers
+            }
+        };
+    } catch (err) {
+        logger.error(`Error getting kiosk details: ${err}`);
+        errorHandler(
+            new AppError(
+                "Error getting kiosk details",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return null;
+    }
+}

@@ -35,11 +35,11 @@ router
     .get(roleGuard("OWNER"), kioskController.getUserKiosks);
 
 /**
- * POST /api/kiosks/invite
+ * POST /api/kiosks/:kioskId/invite
  * Invite worker to kiosk (Owner only).
  */
 router
-    .route("/invite")
+    .route("/:kioskId/invite")
     .post(
         roleGuard("OWNER"),
         validateRequest(inviteWorkerSchema),
@@ -84,5 +84,7 @@ router
  * Get kiosk dues (Owner only).
  */
 router.get("/:kioskId/dues", roleGuard("OWNER"), kioskController.getDues);
+
+router.get("/:kioskId", roleGuard("OWNER"), kioskController.kioskDetails);
 
 export default router;

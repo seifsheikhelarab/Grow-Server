@@ -96,7 +96,6 @@ export const inviteWorkerSchema = z.object({
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     name: z.string().min(3, "Name must be at least 3 characters"),
-    kioskId: z.string().uuid("Invalid kiosk ID")
 });
 
 /** Schema for invitation response */
