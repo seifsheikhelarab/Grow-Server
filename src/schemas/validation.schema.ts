@@ -35,6 +35,16 @@ export const loginSchema = z.object({
         .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")
 });
 
+export const forgotPasswordSchema = z.object({
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format")
+});
+
+export const resetPasswordSchema = z.object({
+    password: z
+        .string()
+        .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")
+});
+
 /**
  * Transaction Schemas
  */
@@ -78,7 +88,6 @@ export const updateGoalSchema = z.object({
 export const createKioskSchema = z.object({
     name: z.string().min(3, "Kiosk name must be at least 3 characters"),
     kiosk_type: z.string().min(3, "type required"),
-    location: z.string().min(3).optional()
 });
 
 /** Schema for inviting a worker */
@@ -86,6 +95,7 @@ export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
+    name: z.string().min(3, "Name must be at least 3 characters"),
     kioskId: z.string().uuid("Invalid kiosk ID")
 });
 
@@ -189,9 +199,6 @@ export const adjustBalanceSchema = z.object({
 export const adminCreateKioskSchema = z.object({
     name: z.string().min(3),
     ownerPhone: z.string().regex(/^\+?[0-9]{10,15}$/),
-    location: z.string(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional()
 });
 
 export const updateKioskStatusSchema = z.object({

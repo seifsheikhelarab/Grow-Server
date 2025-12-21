@@ -9,7 +9,7 @@ import type { Response, Request } from "express";
  * Get dashboard data for an Owner.
  *
  * @param {string} userId - The ID of the owner.
- * @returns {Promise<{ totalPoints: number; kiosks: Array<{ id: string; name: string; location: string; points: number; dues: number }> }>} The dashboard data.
+ * @returns {Promise<{ totalPoints: number; kiosks: Array<{ id: string; name: string; points: number; dues: number }> }>} The dashboard data.
  * @throws {NotFoundError} If the user or wallet is not found.
  */
 export async function getOwnerDashboard(
@@ -21,7 +21,6 @@ export async function getOwnerDashboard(
     kiosks: Array<{
         id: string;
         name: string;
-        location: string;
         points: number;
         dues: number;
     }>;
@@ -79,7 +78,6 @@ export async function getOwnerDashboard(
             return {
                 id: kiosk.id,
                 name: kiosk.name,
-                location: kiosk.location,
                 points,
                 dues
             };

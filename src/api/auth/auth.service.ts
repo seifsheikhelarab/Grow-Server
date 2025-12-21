@@ -464,3 +464,109 @@ export async function deleteAccount(
         );
     }
 }
+
+/**
+ * Forgot password
+ * @param phone
+ * @param req
+ * @param res
+ * @returns
+ */
+export async function forgotPassword(
+    phone: string,
+    req: Request,
+    res: Response
+): Promise<{ message: string; token: string }> {
+    try {
+        // Generate 4-digit OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        // Expiry: 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        // Save to database
+        await prisma.otp.upsert({
+            where: { phone },
+            update: { code, expiresAt },
+            create: { phone, code, expiresAt }
+        });
+
+        await sendSMS(phone, code);
+        logger.info(`OTP sent to ${phone}: ${code}`);
+
+        // Generate temporary token for registration
+        const opts: SignOptions = { expiresIn: "30m" };
+        const tempToken = jwt.sign(
+            { phone, tempAuth: true },
+            (await config).JWT_SECRET as string,
+            opts
+        );
+
+        return {
+            message: "OTP sent successfully",
+            token: tempToken
+        };
+    } catch (err) {
+        logger.error(`Error sending OTP: ${err}`);
+        errorHandler(err, req, res);
+        return {
+            message: "Error sending OTP",
+            token: ""
+        };
+    }
+}
+
+/**
+ * Reset password
+ * @param phone
+ * @param password
+ * @param req
+ * @param res
+ * @returns
+ */
+export async function resetPassword(
+    phone: string,
+    password: string,
+    req: Request,
+    res: Response
+): Promise<{ message: string; token: string }> {
+    try {
+        // Find user by phone
+        const user = await prisma.user.findUnique({ where: { phone } });
+        if (!user) {
+            errorHandler(
+                new AuthenticationError("User not found"),
+                req,
+                res
+            );
+        }
+
+        // Update password
+        await prisma.user.update({
+            where: { phone },
+            data: { password_hash: await bcrypt.hash(password, 10) }
+        });
+
+        logger.info(`Password reset for ${phone}`);
+
+        // Generate auth token
+        const opts: SignOptions = { expiresIn: "30m" };
+        const token = jwt.sign(
+            { id: user.id, phone: user.phone, role: user.role },
+            (await config).JWT_SECRET as string,
+            opts
+        );
+
+        return {
+            message: "Password reset successfully",
+            token
+        };
+    } catch (err) {
+        logger.error(`Error resetting password: ${err}`);
+        errorHandler(err, req, res);
+        return {
+            message: "Error resetting password",
+            token: ""
+        };
+    }
+}

@@ -24,10 +24,9 @@ export async function createKiosk(
     ownerId: string,
     name: string,
     kiosk_type: string,
-    location: string,
     req: Request,
     res: Response
-): Promise<{ id: string; name: string; kiosk_type: string; location: string }> {
+): Promise<{ id: string; name: string; kiosk_type: string; }> {
     try {
         const existingKiosk = await prisma.kiosk.findFirst({
             where: {
@@ -69,7 +68,6 @@ export async function createKiosk(
                 owner_id: ownerId,
                 name,
                 kiosk_type,
-                location
             }
         });
 
@@ -82,7 +80,7 @@ export async function createKiosk(
             req,
             res
         );
-        return { id: "", name: "", kiosk_type: "", location: "" };
+        return { id: "", name: "", kiosk_type: "" };
     }
 }
 
@@ -100,9 +98,10 @@ export async function inviteWorker(
     ownerId: string,
     kioskId: string,
     workerPhone: string,
+    name: string,
     req: Request,
     res: Response
-): Promise<{ id: string; user_id: string; kiosk_id: string; status: string }> {
+): Promise<{ id: string; user_id: string; name: string; kiosk_id: string; status: string }> {
     try {
         // Verify kiosk ownership
         const kiosk = await prisma.kiosk.findUnique({
@@ -115,7 +114,7 @@ export async function inviteWorker(
                 req,
                 res
             );
-            return { id: "", user_id: "", kiosk_id: "", status: "" };
+            return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -124,7 +123,7 @@ export async function inviteWorker(
                 req,
                 res
             );
-            return { id: "", user_id: "", kiosk_id: "", status: "" };
+            return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
         }
 
         // Check if worker user exists
@@ -137,7 +136,7 @@ export async function inviteWorker(
             worker = await prisma.user.create({
                 data: {
                     phone: workerPhone,
-                    full_name: "Invited Worker", // Placeholder until they sign up properly
+                    full_name: name,
                     role: "WORKER"
                 }
             });
@@ -161,7 +160,7 @@ export async function inviteWorker(
                 req,
                 res
             );
-            return { id: "", user_id: "", kiosk_id: "", status: "" };
+            return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
         }
 
         // Check if already a worker at this kiosk
@@ -175,7 +174,7 @@ export async function inviteWorker(
                 req,
                 res
             );
-            return { id: "", user_id: "", kiosk_id: "", status: "" };
+            return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
         }
 
         // Create or update worker profile
@@ -183,12 +182,14 @@ export async function inviteWorker(
             where: { user_id: worker.id },
             update: {
                 kiosk_id: kioskId,
-                status: "PENDING_INVITE"
+                status: "PENDING_INVITE",
+                name
             },
             create: {
                 user_id: worker.id,
                 kiosk_id: kioskId,
-                status: "PENDING_INVITE"
+                status: "PENDING_INVITE",
+                name
             }
         });
 
@@ -205,7 +206,7 @@ export async function inviteWorker(
             req,
             res
         );
-        return { id: "", user_id: "", kiosk_id: "", status: "" };
+        return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
     }
 }
 
@@ -367,6 +368,7 @@ export async function getKioskWorkers(
             id: w.id,
             user_id: w.user_id,
             phone: w.user.phone,
+            name: w.name,
             status: w.status,
             is_active: w.user.is_active
         }));
@@ -492,7 +494,6 @@ export async function getUserKiosks(
             id: k.id,
             name: k.name,
             kiosk_type: k.kiosk_type,
-            location: k.location,
             workers_count: k._count.workers,
             transactions_count: k._count.transactions
         }));

@@ -165,3 +165,39 @@ export const deleteAccount = asyncHandler(
         });
     }
 );
+
+
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { phone } = req.body;
+
+    const result = await authService.forgotPassword(phone, req, res);
+
+    ResponseHandler.success(res, "OTP sent successfully", {
+        message: result.message,
+        token: result.token
+    });
+});
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { password } = req.body;
+
+    const phone = req.user?.phone;
+
+    if (!phone) {
+        errorHandler(
+            new AuthenticationError(
+                "User not authenticated",
+                ErrorCode.UNAUTHORIZED_ACCESS
+            ),
+            req,
+            res
+        );
+        return;
+    }
+
+    const result = await authService.resetPassword(phone, password, req, res);
+
+    ResponseHandler.success(res, "Password reset successfully", {
+        token: result.token
+    });
+});

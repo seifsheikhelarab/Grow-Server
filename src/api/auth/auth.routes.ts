@@ -10,7 +10,9 @@ import {
     sendOtpSchema,
     verifyOtpSchema,
     registerSchema,
-    loginSchema
+    loginSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema
 } from "../../schemas/validation.schema.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
 
@@ -70,5 +72,8 @@ router.delete(
     authMiddlewareAlias,
     authController.deleteAccount
 );
+
+router.post("/forgot-password", validateRequest(forgotPasswordSchema), authController.forgotPassword);
+router.post("/reset-password", tempAuthMiddleware, validateRequest(resetPasswordSchema), authController.resetPassword);
 
 export default router;

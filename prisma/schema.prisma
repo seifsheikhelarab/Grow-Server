@@ -131,7 +131,6 @@ model Kiosk {
   owner_id   String
   name       String
   kiosk_type String
-  location   String
   is_active  Boolean @default(true)
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
@@ -141,10 +140,11 @@ model Kiosk {
 }
 
 model WorkerProfile {
-  id            String @id @default(uuid())
-  user_id       String @unique
-  kiosk_id      String
-  status        String // PENDING_INVITE, ACTIVE, REJECTED
+  id       String @id @default(uuid())
+  user_id  String @unique
+  kiosk_id String
+  name     String @default("Worker")
+  status   String // PENDING_INVITE, ACTIVE, REJECTED
 
   user  User  @relation(fields: [user_id], references: [id])
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
@@ -153,12 +153,12 @@ model WorkerProfile {
 // ---------------- GOALS ----------------
 
 model Goal {
-  id             String    @id @default(uuid())
-  user_id        String
-  title          String
-  target_amount  Decimal   @db.Decimal(10, 2)
-  type           String // SAVING, WORKER_TARGET
-  deadline       DateTime?
+  id            String    @id @default(uuid())
+  user_id       String
+  title         String
+  target_amount Decimal   @db.Decimal(10, 2)
+  type          String // SAVING, WORKER_TARGET
+  deadline      DateTime?
 
   owner_id     String?
   is_recurring Boolean @default(false)

@@ -11,13 +11,12 @@ import { asyncHandler } from "../../middlewares/error.middleware.js";
  */
 export const create = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
-    const { name, kiosk_type, location } = req.body;
+    const { name, kiosk_type } = req.body;
 
     const kiosk = await kioskService.createKiosk(
         ownerId,
         name,
         kiosk_type,
-        location,
         req,
         res
     );
@@ -26,7 +25,6 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
         id: kiosk.id,
         name: kiosk.name,
         kiosk_type: kiosk.kiosk_type,
-        location: kiosk.location
     });
 });
 
@@ -39,12 +37,13 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const inviteWorker = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
-        const { kioskId, workerPhone } = req.body;
+        const { kioskId, workerPhone,name } = req.body;
 
         const profile = await kioskService.inviteWorker(
             ownerId,
             kioskId,
             workerPhone,
+            name,
             req,
             res
         );
@@ -53,6 +52,7 @@ export const inviteWorker = asyncHandler(
             id: profile.id,
             user_id: profile.user_id,
             kiosk_id: profile.kiosk_id,
+            name: profile.name,
             status: profile.status
         });
     }

@@ -832,7 +832,6 @@ export async function createKiosk(
         const kiosk = await prisma.kiosk.create({
             data: {
                 name: data.name,
-                location: data.location,
                 owner_id: owner.id,
                 kiosk_type: "STANDARD" // Default type
             }
