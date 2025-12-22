@@ -659,7 +659,7 @@ export async function getKioskDetails(
 
         const workers = await prisma.workerProfile.findMany({
             where: { kiosk_id: kioskId },
-            select: { id: true, name: true, status: true }
+            select: { id: true, name: true, status: true, user_id: true }
         });
 
 
@@ -689,4 +689,321 @@ export async function getKioskDetails(
         );
         return null;
     }
+}
+
+export async function getKioskReports(
+    kioskId: string,
+    ownerId: string,
+    month: number,
+    year: number,
+    req: Request,
+    res: Response
+) {
+    try {
+        // 1. Authorization Check
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: kioskId }
+        });
+
+        if (!kiosk) {
+            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            return null;
+        }
+
+        if (kiosk.owner_id !== ownerId) {
+            errorHandler(
+                new AuthorizationError("You are not the owner of this kiosk"),
+                req,
+                res
+            );
+            return null;
+        }
+
+        // 2. Define Time Range (Current Month)
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+        // 3. Get Total Dues for the Month
+        const duesAgg = await prisma.kioskDue.aggregate({
+            where: {
+                kiosk_id: kioskId,
+                created_at: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                },
+                is_paid: false
+            },
+            _sum: {
+                amount: true
+            }
+        });
+        const totalDues = Number(duesAgg._sum.amount || 0);
+
+        // 4. Get Total Commission for the Month
+        const commissionAgg = await prisma.transaction.aggregate({
+            where: {
+                kiosk_id: kioskId,
+                created_at: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                },
+                // Assuming commission is generated on active transactions,
+                // double check if status needs to be COMPLETED.
+                // Usually for reports COMPLETED is safer.
+                status: "COMPLETED",
+                type: "DEPOSIT"
+            },
+            _sum: {
+                commission: true
+            }
+        });
+        const totalCommission = Number(commissionAgg._sum.commission || 0);
+
+        // 5. Get Workers and their Weekly Aggregation
+        const workers = await prisma.workerProfile.findMany({
+            where: { kiosk_id: kioskId },
+            include: { user: true }
+        });
+
+        const workerReports = [];
+
+        for (const worker of workers) {
+            // Fetch all transactions for this worker in the month
+            const txs = await prisma.transaction.findMany({
+                where: {
+                    kiosk_id: kioskId,
+                    sender_id: worker.user_id, // Assuming worker is the sender
+                    created_at: {
+                        gte: startOfMonth,
+                        lte: endOfMonth
+                    },
+                    status: "COMPLETED",
+                    type: "DEPOSIT"
+                },
+                select: {
+                    id: true,
+                    amount_gross: true,
+                    created_at: true
+                }
+            });
+
+            // Initialize buckets
+            const weeks = {
+                week1: 0, // Days 1-7
+                week2: 0, // Days 8-14
+                week3: 0, // Days 15-21
+                week4: 0  // Days 22-End
+            };
+
+            for (const tx of txs) {
+                const day = tx.created_at.getDate();
+                const amount = Number(tx.amount_gross) || 0;
+
+                if (day <= 7) weeks.week1 += amount;
+                else if (day <= 14) weeks.week2 += amount;
+                else if (day <= 21) weeks.week3 += amount;
+                else weeks.week4 += amount;
+            }
+
+            workerReports.push({
+                worker_id: worker.user_id,
+                worker_name: worker.name,
+                weekly_gross: weeks,
+                total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
+            });
+        }
+
+        return {
+            month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            summary: {
+                total_dues: totalDues,
+                total_commission: totalCommission
+            },
+            worker_reports: workerReports
+        };
+
+    } catch (error) {
+        logger.error(`Error generating kiosk reports: ${error}`);
+        errorHandler(error, req, res);
+        return null;
+    }
+}
+
+export async function getWorkerDetails(
+    workerId: string,
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
+    try {
+        const worker = await prisma.workerProfile.findUnique({
+            where: { user_id: workerId }
+        });
+
+        const user = await prisma.user.findUnique({
+            where: { id: workerId }
+        });
+
+        const transactions = await prisma.transaction.findMany({
+            where: { sender_id: workerId, status: "COMPLETED", type: "DEPOSIT" },
+            select: {
+                amount_gross: true,
+                created_at: true
+            }
+        });
+
+        if (!worker) {
+            errorHandler(new NotFoundError("Worker not found"), req, res);
+            return null;
+        }
+
+        return {
+            // ...worker,
+            // user,
+            id: user.id,
+            name: worker.name,
+            phone: user.phone,
+            transactions
+        };
+    } catch (error) {
+        logger.error(`Error getting worker details: ${error}`);
+        errorHandler(error, req, res);
+        return null;
+    }
+}
+
+export async function deleteKiosk(
+    kioskId: string,
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
+    try {
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: kioskId }
+        });
+
+        if (!kiosk) {
+            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            return null;
+        }
+
+        if (kiosk.owner_id !== ownerId) {
+            errorHandler(
+                new AuthorizationError("You are not the owner of this kiosk"),
+                req,
+                res
+            );
+            return null;
+        }
+
+        await prisma.kiosk.delete({
+            where: { id: kioskId }
+        });
+
+        return true;
+    } catch (error) {
+        logger.error(`Error deleting kiosk: ${error}`);
+        errorHandler(error, req, res);
+        return null;
+    }
+}
+
+
+export async function getWorkerReport(
+    workerId: string,
+    month: number,
+    year: number,
+    req: Request,
+    res: Response
+) {
+    try{
+
+    // 2. Define Time Range (Current Month)
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+
+
+    // 4. Get Total Commission for the Month
+    const commissionAgg = await prisma.transaction.aggregate({
+        where: {
+            sender_id: workerId,
+            created_at: {
+                gte: startOfMonth,
+                lte: endOfMonth
+            },
+            // Assuming commission is generated on active transactions,
+            // double check if status needs to be COMPLETED.
+            // Usually for reports COMPLETED is safer.
+            status: "COMPLETED",
+            type: "DEPOSIT"
+        },
+        _sum: {
+            commission: true
+        }
+    });
+        const totalCommission = Number(commissionAgg._sum.commission || 0);
+        
+        const worker = await prisma.user.findUnique({
+            where: { id: workerId }
+        });
+
+
+        // Fetch all transactions for this worker in the month
+        const txs = await prisma.transaction.findMany({
+            where: {
+                sender_id: workerId, // Assuming worker is the sender
+                created_at: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                },
+                status: "COMPLETED",
+                type: "DEPOSIT"
+            },
+            select: {
+                id: true,
+                amount_gross: true,
+                created_at: true
+            }
+        });
+
+        // Initialize buckets
+        const weeks = {
+            week1: 0, // Days 1-7
+            week2: 0, // Days 8-14
+            week3: 0, // Days 15-21
+            week4: 0  // Days 22-End
+        };
+
+        for (const tx of txs) {
+            const day = tx.created_at.getDate();
+            const amount = Number(tx.amount_gross) || 0;
+
+            if (day <= 7) weeks.week1 += amount;
+            else if (day <= 14) weeks.week2 += amount;
+            else if (day <= 21) weeks.week3 += amount;
+            else weeks.week4 += amount;
+        }
+
+        const workerReport={
+            worker_id: workerId,
+            worker_name: worker.full_name,
+            weekly_gross: weeks,
+            total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
+        };
+    
+
+    return {
+        month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+        summary: {
+            total_commission: totalCommission
+        },
+        worker_report: workerReport
+    };
+
+} catch (error) {
+    logger.error(`Error generating kiosk reports: ${error}`);
+    errorHandler(error, req, res);
+    return null;
+}
 }

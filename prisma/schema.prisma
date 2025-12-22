@@ -56,6 +56,8 @@ model User {
   goals          Goal[]
   redemptions    RedemptionRequest[]
   audit_logs     AuditLog[]
+
+  sent_transactions Transaction[] @relation(name: "SenderRelation")
 }
 
 // ---------------- FINANCIAL MODELS ----------------
@@ -92,6 +94,7 @@ model Transaction {
   created_at        DateTime         @default(now())
 
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
+  sender User @relation(fields: [sender_id], references: [id], name: "SenderRelation")
 }
 
 enum CommissionStatus {

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as kioskService from "./kiosk.service.js";
-import { ResponseHandler } from "../../utils/response.js";
+import { ErrorCode, ResponseHandler } from "../../utils/response.js";
 import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
@@ -211,4 +211,61 @@ export const kioskDetails = asyncHandler(async (req: Request, res: Response) => 
     if (res.headersSent) return;
 
     ResponseHandler.success(res, "Kiosk details retrieved successfully", result);
+});
+
+export const getReports = asyncHandler(async (req: Request, res: Response) => {
+    const ownerId = req.user!.id;
+    const { kioskId } = req.params;
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+        return ResponseHandler.error(res, "Month and year are required", ErrorCode.VALIDATION_ERROR);
+    }
+
+    const result = await kioskService.getKioskReports(kioskId, ownerId, Number(month), Number(year), req, res);
+
+    if (res.headersSent) return null;
+
+    ResponseHandler.success(res, "Kiosk reports retrieved successfully", result);
+    return result;
+});
+
+export const getWorkerDetails = asyncHandler(async (req: Request, res: Response) => {
+    const ownerId = req.user!.id;
+    const { workerId } = req.params;
+
+    const result = await kioskService.getWorkerDetails(workerId, ownerId, req, res);
+
+    if (res.headersSent) return null;
+
+    ResponseHandler.success(res, "Worker details retrieved successfully", result);
+    return result;
+});
+
+export const deleteKiosk = asyncHandler(async (req: Request, res: Response) => {
+    const ownerId = req.user!.id;
+    const { kioskId } = req.params;
+
+    const result = await kioskService.deleteKiosk(kioskId, ownerId, req, res);
+
+    if (res.headersSent) return null;
+
+    ResponseHandler.success(res, "Kiosk deleted successfully", result);
+    return result;
+});
+
+export const getWorkerReport = asyncHandler(async (req: Request, res: Response) => {
+    const workerId = req.user!.id;
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+        return ResponseHandler.error(res, "Month and year are required", ErrorCode.VALIDATION_ERROR);
+    }
+
+    const result = await kioskService.getWorkerReport(workerId, Number(month), Number(year), req, res);
+
+    if (res.headersSent) return null;
+
+    ResponseHandler.success(res, "Worker report retrieved successfully", result);
+    return result;
 });

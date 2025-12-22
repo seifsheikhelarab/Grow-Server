@@ -1,6 +1,6 @@
 import { errorHandler } from "./../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js"; // Adjust path if needed
-import { NotFoundError, AuthorizationError } from "../../utils/response.js";
+import { NotFoundError, AuthorizationError, ResponseHandler, ErrorCode } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { Goal } from "@prisma/client";
 import type { Request, Response } from "express";
@@ -311,4 +311,58 @@ async function forfeitCommission(
         },
         data: { commission_status: "FORFEITED" }
     });
+}
+
+export async function getGoalWorker(workerId: string, req: Request, res: Response) {
+    try {
+
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const goal = await prisma.goal.findFirst({
+            where: {
+                user_id: workerId,
+                is_recurring: true,
+                type: "WORKER_TARGET"
+            }
+        });
+
+        if (!goal) {
+            return ResponseHandler.error(res, "Goal not found", ErrorCode.RESOURCE_NOT_FOUND);
+        }
+
+        const achieved = await prisma.transaction.aggregate({
+            where: {
+                sender_id: workerId,
+                type: "DEPOSIT",
+                status: "COMPLETED",
+                commission_status: "PENDING",
+                created_at: {
+                    gte: todayStart,
+                    lte: todayEnd
+                }
+            },
+            _sum: {
+                commission: true
+            }
+        });
+
+        const commission = Number(achieved._sum.commission);
+        const targetAmount = Number(goal.target_amount);
+
+        const status = commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+
+        return {
+            commission,
+            targetAmount,
+            status
+        };
+    } catch (error) {
+        errorHandler(error, req, res);
+        return ResponseHandler.error(res, "Failed to retrieve goal", ErrorCode.INTERNAL_ERROR);
+    }
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { setWorkerGoal, getKioskGoal } from "./goals.service.js";
+import { setWorkerGoal, getKioskGoal, getGoalWorker } from "./goals.service.js";
 import { ResponseHandler } from "../../utils/response.js";
 import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
 
@@ -41,3 +41,24 @@ export const getGoal = asyncHandler(async (req: Request, res: Response) => {
         return ResponseHandler.error(res, "Failed to retrieve goal", error);
     }
 });
+
+
+/**
+ * Get a goal for a worker.
+ */
+export const getWorkerStatus = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const workerId = req.user.id;
+
+        const goals = await getGoalWorker(workerId, req, res);
+
+        if (res.headersSent) return null;
+
+        return ResponseHandler.success(res, "Goal retrieved", goals);
+    } catch (error) {
+        errorHandler(error, req, res);
+        if (res.headersSent) return null;
+        return ResponseHandler.error(res, "Failed to retrieve goal", error);
+    }
+});
+
