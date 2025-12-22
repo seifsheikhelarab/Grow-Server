@@ -93,6 +93,6 @@ router.get("/:kioskId/reports", roleGuard("OWNER"), kioskController.getReports);
 
 router.get("/workers/:workerId", roleGuard("OWNER"), kioskController.getWorkerDetails);
 
-router.get("/worker/report",roleGuard("WORKER"),kioskController.getWorkerReport);
+router.get("/worker/report", roleGuard("WORKER"), kioskController.getWorkerReport);
 
 export default router;
