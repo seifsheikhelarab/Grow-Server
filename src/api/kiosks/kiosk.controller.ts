@@ -21,6 +21,8 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
         res
     );
 
+    if (res.headersSent) return;
+
     ResponseHandler.created(res, "Kiosk created successfully", {
         id: kiosk.id,
         name: kiosk.name,
@@ -49,6 +51,8 @@ export const inviteWorker = asyncHandler(
             res
         );
 
+        if (res.headersSent) return;
+
         ResponseHandler.created(res, "Worker invited successfully", {
             id: profile.id,
             user_id: profile.user_id,
@@ -74,6 +78,8 @@ export const getWorkerInvitations = asyncHandler(
             req,
             res
         );
+
+        if (res.headersSent) return;
 
         ResponseHandler.success(res, "Invitations retrieved successfully", {
             invitations
@@ -101,6 +107,8 @@ export const acceptInvitation = asyncHandler(
             res
         );
 
+        if (res.headersSent) return;
+
         ResponseHandler.success(res, "Invitation accepted successfully", {
             id: profile.id,
             kiosk: profile.kiosk,
@@ -126,6 +134,8 @@ export const getWorkers = asyncHandler(async (req: Request, res: Response) => {
         res
     );
 
+    if (res.headersSent) return;
+
     ResponseHandler.success(res, "Workers retrieved successfully", {
         workers
     });
@@ -143,6 +153,8 @@ export const getDues = asyncHandler(async (req: Request, res: Response) => {
 
     const result = await kioskService.getKioskDues(kioskId, ownerId, req, res);
 
+    if (res.headersSent) return;
+
     ResponseHandler.success(res, "Kiosk dues retrieved successfully", result);
 });
 
@@ -157,6 +169,8 @@ export const getUserKiosks = asyncHandler(
         const ownerId = req.user!.id;
 
         const kiosks = await kioskService.getUserKiosks(ownerId, req, res);
+
+        if (res.headersSent) return;
 
         ResponseHandler.success(res, "Kiosks retrieved successfully", {
             kiosks
@@ -182,6 +196,8 @@ export const removeWorker = asyncHandler(
             res
         );
 
+        if (res.headersSent) return;
+
         ResponseHandler.success(res, "Worker removed successfully", result);
     }
 );
@@ -191,6 +207,8 @@ export const kioskDetails = asyncHandler(async (req: Request, res: Response) => 
     const { kioskId } = req.params;
 
     const result = await kioskService.getKioskDetails(kioskId, ownerId, req, res);
+
+    if (res.headersSent) return;
 
     ResponseHandler.success(res, "Kiosk details retrieved successfully", result);
 });

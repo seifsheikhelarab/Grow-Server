@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import { setWorkerGoal, getWorkerGoal } from "./goals.service.js";
+import { setWorkerGoal, getKioskGoal } from "./goals.service.js";
 import { ResponseHandler } from "../../utils/response.js";
+import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Set a goal for a worker.
  */
-export async function setGoal(req: Request, res: Response) {
+export const setGoal = asyncHandler(async (req: Request, res: Response) => {
     const { workerId, targetAmount } = req.body;
-    // Assume owner is authenticated and their ID is in req.user.id
     const ownerId = req.user.id;
 
     const goal = await setWorkerGoal(
@@ -17,14 +17,27 @@ export async function setGoal(req: Request, res: Response) {
         req,
         res
     );
-    ResponseHandler.success(res, "Goal set successfully", goal);
-}
+    if (res.headersSent) return null;
+    return ResponseHandler.success(res, "Goal set successfully", goal);
+});
 
 /**
  * Get a goal for a worker.
  */
-export async function getGoal(req: Request, res: Response) {
-    const { workerId } = req.params;
-    const goal = await getWorkerGoal(workerId);
-    ResponseHandler.success(res, "Goal retrieved", goal);
-}
+export const getGoal = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { kioskId } = req.params;
+        const ownerId = req.user.id;
+
+
+        const goals = await getKioskGoal(kioskId, ownerId, req, res); // Fixed argument order: kioskId first
+
+        if (res.headersSent) return null;
+
+        return ResponseHandler.success(res, "Goal retrieved", goals);
+    } catch (error) {
+        errorHandler(error, req, res);
+        if (res.headersSent) return null;
+        return ResponseHandler.error(res, "Failed to retrieve goal", error);
+    }
+});

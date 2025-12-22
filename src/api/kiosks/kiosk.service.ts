@@ -41,6 +41,7 @@ export async function createKiosk(
                 req,
                 res
             );
+            return { id: "", name: "", kiosk_type: "" };
         }
 
         const kiosks = await prisma.kiosk.findMany({
@@ -61,6 +62,7 @@ export async function createKiosk(
                 req,
                 res
             );
+            return { id: "", name: "", kiosk_type: "" };
         }
 
         const kiosk = await prisma.kiosk.create({
@@ -345,6 +347,7 @@ export async function getKioskWorkers(
                 req,
                 res
             );
+            return [];
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -353,6 +356,7 @@ export async function getKioskWorkers(
                 req,
                 res
             );
+            return [];
         }
 
         const workers = await prisma.workerProfile.findMany({
@@ -414,6 +418,15 @@ export async function getKioskDues(
                 req,
                 res
             );
+            return {
+                dues: [],
+                summary: {
+                    total_dues: 0,
+                    total_amount: "0",
+                    paid_count: 0,
+                    pending_count: 0
+                }
+            };
         }
 
         if (kiosk.owner_id !== ownerId) {
@@ -422,6 +435,15 @@ export async function getKioskDues(
                 req,
                 res
             );
+            return {
+                dues: [],
+                summary: {
+                    total_dues: 0,
+                    total_amount: "0",
+                    paid_count: 0,
+                    pending_count: 0
+                }
+            };
         }
 
         const dues = await prisma.kioskDue.findMany({
@@ -538,6 +560,7 @@ export async function removeWorker(
                 req,
                 res
             );
+            return null;
         }
 
         if (kiosk.owner_id !== req.user!.id) {
@@ -546,6 +569,7 @@ export async function removeWorker(
                 req,
                 res
             );
+            return null;
         }
 
         const worker = await prisma.workerProfile.findUnique({
@@ -554,6 +578,7 @@ export async function removeWorker(
 
         if (!worker) {
             errorHandler(new NotFoundError("Worker not found"), req, res);
+            return null;
         }
 
         const updated = await prisma.kiosk.update({
@@ -608,6 +633,7 @@ export async function getKioskDetails(
                 req,
                 res
             );
+            return null;
         }
 
         if (ownerId !== kiosk.owner_id) {
@@ -616,6 +642,7 @@ export async function getKioskDetails(
                 req,
                 res
             );
+            return null;
         }
 
         const dues = await prisma.kioskDue.findMany({
@@ -635,7 +662,7 @@ export async function getKioskDetails(
             select: { id: true, name: true, status: true }
         });
 
-        
+
         const totalGross = netEarnings.reduce((sum, d) => sum + Number(d.amount_gross), 0);
         const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
         const totalNetEarnings = netEarnings.reduce((sum, d) => sum + Number(d.amount_net), 0);
