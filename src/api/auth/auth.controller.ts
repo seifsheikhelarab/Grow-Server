@@ -179,7 +179,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { password, code } = req.body;
+    const { password } = req.body;
 
     const phone = req.user?.phone;
 
@@ -195,7 +195,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
         return;
     }
 
-    const result = await authService.resetPassword(phone, password, code, req, res);
+    const result = await authService.resetPassword(phone, password, req, res);
 
     ResponseHandler.success(res, "Password reset successfully", {
         token: result.token

@@ -5,7 +5,7 @@ import transactionRoutes from "./transactions/transaction.routes.js";
 import kioskRoutes from "./kiosks/kiosk.routes.js";
 import adminRoutes from "./admin/admin.routes.js";
 import dashboardRoutes from "./dashboard/dashboard.routes.js";
-
+import profileRoutes from "./profile/profile.routes.js";
 import goalsRoutes from "./goals/goals.routes.js";
 
 const router = Router();
@@ -21,5 +21,6 @@ router.use("/kiosks", kioskRoutes);
 router.use("/admin", adminRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/goals", goalsRoutes);
+router.use("/profile", profileRoutes);
 
 export default router;

@@ -27,12 +27,13 @@ export const getBalance = asyncHandler(async (req: Request, res: Response) => {
  */
 export const redeem = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
-    const { amount, method, details } = req.body;
+    const { amount, method, type, details } = req.body;
 
     const redemption = await walletService.createRedemption(
         userId,
         amount,
         method,
+        type,
         details,
         req,
         res
@@ -42,6 +43,8 @@ export const redeem = asyncHandler(async (req: Request, res: Response) => {
         id: redemption.id,
         amount: redemption.amount.toString(),
         method: redemption.method,
+        details: redemption.details,
+        type: redemption.type,
         status: redemption.status,
         created_at: redemption.created_at
     });

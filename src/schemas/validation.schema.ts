@@ -40,7 +40,6 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-    code: z.string().length(4, "OTP must be 4 digits").regex(/^\d+$/, "OTP must be numeric"),
     password: z
         .string()
         .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")
@@ -65,6 +64,7 @@ export const sendPointsSchema = z.object({
 export const redeemSchema = z.object({
     amount: z.number().positive("Amount must be positive"),
     method: z.string().min(3, "Redemption method required"),
+    type: z.enum(["E-Wallet", "Bank Transfer"]).default("E-Wallet"),
     details: z.string().min(5, "Redemption details required")
 });
 
@@ -183,7 +183,6 @@ export const manualUserUpdateSchema = z.object({
         .string()
         .regex(/^\+?[0-9]{10,15}$/)
         .optional(),
-    email: z.string().email().optional(),
     role: z.enum(["CUSTOMER", "WORKER", "OWNER"]).optional()
 });
 
@@ -214,3 +213,9 @@ export const setGoalSchema = z.object({
     workerId: z.string().uuid(),
     targetAmount: z.number().int().positive("Target amount must be positive")
 });
+
+// Profile Schemas
+
+export const updateProfileSchema = z.object({
+    full_name: z.string().min(2, "Name must be at least 2 chars"),
+})

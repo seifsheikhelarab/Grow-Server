@@ -366,3 +366,63 @@ export async function getGoalWorker(workerId: string, req: Request, res: Respons
         return ResponseHandler.error(res, "Failed to retrieve goal", ErrorCode.INTERNAL_ERROR);
     }
 }
+
+export async function getKioskGoals(kioskId: string, req: Request, res: Response) {
+    try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const workers = await prisma.workerProfile.findMany({
+            where: {
+                kiosk_id: kioskId,
+                status: "ACTIVE"
+            }
+        });
+
+        const workerIds = workers.map((worker) => worker.user_id);
+
+        const goals = await prisma.goal.findMany({
+            where: {
+                user_id: { in: workerIds },
+                is_recurring: true,
+                type: "KIOSK_TARGET"
+            }
+        });
+
+        const totalTarget = goals.reduce((acc, curr) => acc + Number(curr.target_amount), 0);
+
+        const achieved = await prisma.transaction.aggregate({
+            where: {
+                sender_id: { in: workerIds },
+                type: "DEPOSIT",
+                status: "COMPLETED",
+                commission_status: "PENDING",
+                created_at: {
+                    gte: todayStart,
+                    lte: todayEnd
+                }
+            },
+            _sum: {
+                commission: true
+            }
+        });
+
+        const commission = achieved._sum.commission ? achieved._sum.commission.toNumber() : 0;
+
+        let status = "NOT_ACHIEVED";
+        if (goals.length > 0 && commission >= totalTarget) {
+            status = "ACHIEVED";
+        }
+
+        return {
+            commission,
+            targetAmount: totalTarget,
+            status
+        };
+    } catch (error) {
+        errorHandler(error, req, res);
+        return ResponseHandler.error(res, "Failed to retrieve goals", ErrorCode.INTERNAL_ERROR);
+    }
+}

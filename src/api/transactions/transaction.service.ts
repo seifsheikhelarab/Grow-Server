@@ -554,3 +554,61 @@ export async function getDailyStats(
         };
     }
 }
+
+export async function getTotalNetByAllWorkers(userId: string, req: Request, res: Response) {
+    try {
+        // 1. Find all kiosks owned by this owner
+        const kiosks = await prisma.kiosk.findMany({
+            where: {
+                owner_id: userId
+            },
+            select: { id: true }
+        });
+
+        if (kiosks.length === 0) {
+            return 0;
+        }
+
+        const kioskIds = kiosks.map(k => k.id);
+
+        // 2. Find all workers belonging to these kiosks
+        const workers = await prisma.workerProfile.findMany({
+            where: {
+                kiosk_id: { in: kioskIds }
+            },
+            select: { user_id: true }
+        });
+
+        if (workers.length === 0) {
+            return 0;
+        }
+
+        const workerUserIds = workers.map(w => w.user_id);
+
+        // 3. Aggregate transactions where sender is one of these workers
+        const result = await prisma.transaction.aggregate({
+            where: {
+                sender_id: { in: workerUserIds },
+                type: "DEPOSIT",
+            },
+            _sum: {
+                amount_net: true
+            }
+        });
+
+        return result._sum.amount_net ? result._sum.amount_net.toNumber() : 0;
+
+    } catch (err) {
+        logger.error(`Error getting total net by all workers: ${err}`);
+        errorHandler(
+            new AppError(
+                "Error getting total net by all workers",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
+        return 0;
+    }
+}

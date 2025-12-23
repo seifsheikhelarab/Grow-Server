@@ -42,7 +42,7 @@ export async function sendOtp(
             create: { phone, code, expiresAt }
         });
 
-        await sendSMS(phone, code);
+        // await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration
@@ -527,7 +527,6 @@ export async function forgotPassword(
 export async function resetPassword(
     phone: string,
     password: string,
-    code: string,
     req: Request,
     res: Response
 ): Promise<{ message: string; token: string }> {
@@ -542,15 +541,6 @@ export async function resetPassword(
             );
         }
 
-        // Verify OTP
-        const otp = await prisma.otp.findUnique({ where: { phone } });
-        if (!otp || otp.code !== code || otp.expiresAt < new Date()) {
-            errorHandler(
-                new AuthenticationError("Invalid OTP"),
-                req,
-                res
-            );
-        }
 
         // Update password
         await prisma.user.update({

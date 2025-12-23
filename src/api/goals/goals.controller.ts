@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { setWorkerGoal, getKioskGoal, getGoalWorker } from "./goals.service.js";
+import { setWorkerGoal, getKioskGoal, getGoalWorker, getKioskGoals } from "./goals.service.js";
 import { ResponseHandler } from "../../utils/response.js";
 import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
 
@@ -30,11 +30,12 @@ export const getGoal = asyncHandler(async (req: Request, res: Response) => {
         const ownerId = req.user.id;
 
 
-        const goals = await getKioskGoal(kioskId, ownerId, req, res); // Fixed argument order: kioskId first
+        const goals = await getKioskGoal(kioskId, ownerId, req, res);
+        const total = await getKioskGoals(kioskId, req, res);
 
         if (res.headersSent) return null;
 
-        return ResponseHandler.success(res, "Goal retrieved", goals);
+        return ResponseHandler.success(res, "Goal retrieved", { total,goals });
     } catch (error) {
         errorHandler(error, req, res);
         if (res.headersSent) return null;

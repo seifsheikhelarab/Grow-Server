@@ -154,6 +154,7 @@ export async function addPoints(
  * @param {string} userId - The ID of the user.
  * @param {number} amount - The amount to redeem.
  * @param {string} method - The redemption method.
+ * @param {string} type - The redemption type.
  * @param {string} details - The redemption details.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
@@ -163,6 +164,7 @@ export async function createRedemption(
     userId: string,
     amount: number,
     method: string,
+    type: string,
     details: string,
     req: Request,
     res: Response
@@ -211,6 +213,7 @@ export async function createRedemption(
                 data: {
                     user_id: userId,
                     amount: amount,
+                    type,
                     method,
                     details,
                     status: "PENDING"

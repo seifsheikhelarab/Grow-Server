@@ -109,6 +109,7 @@ model RedemptionRequest {
   amount     Decimal  @db.Decimal(10, 2)
   method     String // "Vodafone Cash", "Instapay"
   details    String // Phone number or address
+  type       String @default("E-Wallet") // E-Wallet or Bank Transfer 
   status     TxStatus @default(PENDING)
   admin_note String?
   created_at DateTime @default(now())
