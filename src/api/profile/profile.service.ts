@@ -72,12 +72,20 @@ export async function updateProfile(
             }
         });
 
+        const balance = await prisma.wallet.findUnique({
+            where: {
+                user_id: userId
+            }
+        });
+
+        const totalNet = await getTotalNetByAllWorkers(userId, req, res);
+
         if (!user) {
             errorHandler(new BusinessLogicError("User not found", ErrorCode.RESOURCE_NOT_FOUND), req, res);
             return null;
         }
 
-        return user;
+        return { user, balance: balance?.balance || 0, totalNet };
     } catch (error) {
         errorHandler(error as Error, req, res);
         return null;
