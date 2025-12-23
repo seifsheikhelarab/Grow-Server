@@ -657,10 +657,10 @@ export async function getKioskDetails(
             select: { amount_net: true, amount_gross: true }
         });
 
-        const workers = await prisma.workerProfile.findMany({
+        const workers = (await prisma.workerProfile.findMany({
             where: { kiosk_id: kioskId },
-            select: { id: true, name: true, status: true, user_id: true }
-        });
+            select: { name: true, status: true, user_id: true }
+        })).map((w) => ({ name: w.name, status: w.status, id: w.user_id }));
 
 
         const totalGross = netEarnings.reduce((sum, d) => sum + Number(d.amount_gross), 0);
@@ -897,10 +897,30 @@ export async function deleteKiosk(
             return null;
         }
 
-        await prisma.kiosk.delete({
-            where: { id: kioskId }
+        // Use a transaction to ensure all related records are deleted or none are
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete Transactions associated with this kiosk
+            await tx.transaction.deleteMany({
+                where: { kiosk_id: kioskId }
+            });
+
+            // 2. Delete WorkerProfiles associated with this kiosk
+            await tx.workerProfile.deleteMany({
+                where: { kiosk_id: kioskId }
+            });
+
+            // 3. Delete KioskDue records associated with this kiosk
+            await tx.kioskDue.deleteMany({
+                where: { kiosk_id: kioskId }
+            });
+
+            // 4. Finally, delete the Kiosk
+            await tx.kiosk.delete({
+                where: { id: kioskId },
+            });
         });
 
+        logger.info(`Kiosk ${kioskId} and all related records deleted by owner ${ownerId}`);
         return true;
     } catch (error) {
         logger.error(`Error deleting kiosk: ${error}`);
@@ -917,33 +937,33 @@ export async function getWorkerReport(
     req: Request,
     res: Response
 ) {
-    try{
+    try {
 
-    // 2. Define Time Range (Current Month)
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
+        // 2. Define Time Range (Current Month)
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
 
-    // 4. Get Total Commission for the Month
-    const commissionAgg = await prisma.transaction.aggregate({
-        where: {
-            sender_id: workerId,
-            created_at: {
-                gte: startOfMonth,
-                lte: endOfMonth
+        // 4. Get Total Commission for the Month
+        const commissionAgg = await prisma.transaction.aggregate({
+            where: {
+                sender_id: workerId,
+                created_at: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                },
+                // Assuming commission is generated on active transactions,
+                // double check if status needs to be COMPLETED.
+                // Usually for reports COMPLETED is safer.
+                status: "COMPLETED",
+                type: "DEPOSIT"
             },
-            // Assuming commission is generated on active transactions,
-            // double check if status needs to be COMPLETED.
-            // Usually for reports COMPLETED is safer.
-            status: "COMPLETED",
-            type: "DEPOSIT"
-        },
-        _sum: {
-            commission: true
-        }
-    });
+            _sum: {
+                commission: true
+            }
+        });
         const totalCommission = Number(commissionAgg._sum.commission || 0);
-        
+
         const worker = await prisma.user.findUnique({
             where: { id: workerId }
         });
@@ -985,25 +1005,25 @@ export async function getWorkerReport(
             else weeks.week4 += amount;
         }
 
-        const workerReport={
+        const workerReport = {
             worker_id: workerId,
             worker_name: worker.full_name,
             weekly_gross: weeks,
             total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
         };
-    
 
-    return {
-        month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
-        summary: {
-            total_commission: totalCommission
-        },
-        worker_report: workerReport
-    };
 
-} catch (error) {
-    logger.error(`Error generating kiosk reports: ${error}`);
-    errorHandler(error, req, res);
-    return null;
-}
+        return {
+            month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            summary: {
+                total_commission: totalCommission
+            },
+            worker_report: workerReport
+        };
+
+    } catch (error) {
+        logger.error(`Error generating kiosk reports: ${error}`);
+        errorHandler(error, req, res);
+        return null;
+    }
 }
