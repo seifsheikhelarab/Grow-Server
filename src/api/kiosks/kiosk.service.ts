@@ -573,7 +573,7 @@ export async function removeWorker(
         }
 
         const worker = await prisma.workerProfile.findUnique({
-            where: { user_id: workerId }
+            where: { id: workerId }
         });
 
         if (!worker) {
@@ -585,7 +585,7 @@ export async function removeWorker(
             where: { id: kioskId },
             data: {
                 workers: {
-                    delete: { user_id: workerId }
+                    delete: { id: workerId }
                 }
             }
         });
