@@ -7,6 +7,7 @@ import adminRoutes from "./admin/admin.routes.js";
 import dashboardRoutes from "./dashboard/dashboard.routes.js";
 import profileRoutes from "./profile/profile.routes.js";
 import goalsRoutes from "./goals/goals.routes.js";
+import notificationsRoutes from "./notifications/notifications.routes.js";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/admin", adminRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/goals", goalsRoutes);
 router.use("/profile", profileRoutes);
+router.use("/notifications", notificationsRoutes);
 
 export default router;
