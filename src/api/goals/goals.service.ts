@@ -315,14 +315,6 @@ async function forfeitCommission(
 
 export async function getGoalWorker(workerId: string, req: Request, res: Response) {
     try {
-
-
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
-
         const goal = await prisma.goal.findFirst({
             where: {
                 user_id: workerId,
@@ -335,32 +327,48 @@ export async function getGoalWorker(workerId: string, req: Request, res: Respons
             return ResponseHandler.error(res, "Goal not found", ErrorCode.RESOURCE_NOT_FOUND);
         }
 
-        const achieved = await prisma.transaction.aggregate({
-            where: {
-                sender_id: workerId,
-                type: "DEPOSIT",
-                status: "COMPLETED",
-                commission_status: "PENDING",
-                created_at: {
-                    gte: todayStart,
-                    lte: todayEnd
-                }
-            },
-            _sum: {
-                commission: true
-            }
-        });
-
-        const commission = Number(achieved._sum.commission);
+        const history = [];
         const targetAmount = Number(goal.target_amount);
 
-        const status = commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+        // Iterate for the last 7 days (including today)
+        for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
 
-        return {
-            commission,
-            targetAmount,
-            status
-        };
+            const dayStart = new Date(date);
+            dayStart.setHours(0, 0, 0, 0);
+
+            const dayEnd = new Date(date);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            const achieved = await prisma.transaction.aggregate({
+                where: {
+                    sender_id: workerId,
+                    type: "DEPOSIT",
+                    status: "COMPLETED",
+                    // commission_status: "PENDING", // REMOVED: We want all completed commissions regardless of status (PAID/FORFEITED/PENDING)
+                    created_at: {
+                        gte: dayStart,
+                        lte: dayEnd
+                    }
+                },
+                _sum: {
+                    commission: true
+                }
+            });
+
+            const commission = Number(achieved._sum.commission || 0);
+            const status = commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+
+            history.push({
+                date: dayStart.toISOString().split('T')[0], // YYYY-MM-DD
+                commission,
+                targetAmount,
+                status
+            });
+        }
+
+        return history; // Returns array of 7 items
     } catch (error) {
         errorHandler(error, req, res);
         return ResponseHandler.error(res, "Failed to retrieve goal", ErrorCode.INTERNAL_ERROR);

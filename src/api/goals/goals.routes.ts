@@ -21,7 +21,7 @@ router.post(
 // Get Goal: Owner
 router.get("/:kioskId", authMiddleware, roleGuard("OWNER"), getGoal);
 
-// Get Worker Goal: Worker
+// Get Worker Goals: Worker
 router.get("/", authMiddleware, roleGuard("WORKER"), getWorkerStatus);
 
 export default router;
