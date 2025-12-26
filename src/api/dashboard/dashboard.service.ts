@@ -120,11 +120,15 @@ export async function getWorkerDashboard(
         status: string;
         created_at: Date;
     }>;
+    kiosk: {
+        id: string;
+        name: string;
+    };
 }> | null {
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { wallet: true }
+            include: { wallet: true, worker_profile:true }
         });
 
         if (!user) {
@@ -141,12 +145,12 @@ export async function getWorkerDashboard(
             return null;
         }
 
+
+
         // 1. Total points collected by worker (Wallet Balance)
         const totalPoints = Number(user.wallet.balance);
 
         // 2. Current Kiosk Goal (Type: WORKER_TARGET)
-        // Assuming we pick the first active one or most specific one.
-        // The requirement says "show current kiosk goal".
         const goal = await prisma.goal.findFirst({
             where: {
                 user_id: userId,
@@ -187,15 +191,23 @@ export async function getWorkerDashboard(
             take: 5
         });
 
+        const kiosk = await prisma.kiosk.findFirst({
+            where: { id: user.worker_profile.kiosk_id },
+            select: {
+                name: true,
+                id: true
+            }
+        });
+
         return {
             totalPoints,
             goal: goal
                 ? {
-                      title: goal.title,
-                      current: currentAmount,
-                      target: Number(goal.target_amount),
-                      deadline: goal.deadline
-                  }
+                    title: goal.title,
+                    current: currentAmount,
+                    target: Number(goal.target_amount),
+                    deadline: goal.deadline
+                }
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,
@@ -203,7 +215,11 @@ export async function getWorkerDashboard(
                 type: tx.type,
                 status: tx.status,
                 created_at: tx.created_at
-            }))
+            })),
+            kiosk: {
+                id: kiosk?.id || null,
+                name: kiosk?.name || null,
+            },
         };
     } catch (error) {
         logger.error("Error fetching worker dashboard data:", error);

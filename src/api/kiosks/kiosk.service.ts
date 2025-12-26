@@ -228,7 +228,11 @@ export async function getWorkerInvitations(
             where: { user_id: workerId },
             include: {
                 kiosk: {
-                    select: { id: true, name: true }
+                    include: {
+                        owner: {
+                            select: { full_name: true }
+                        }
+                    }
                 }
             }
         });
@@ -238,6 +242,7 @@ export async function getWorkerInvitations(
             kiosk_id: i.kiosk_id,
             kiosk_name: i.kiosk.name,
             worker_id: i.user_id,
+            owner_name: i.kiosk.owner.full_name,
             status: i.status
         }));
     } catch (err) {
