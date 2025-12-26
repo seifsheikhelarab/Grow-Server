@@ -8,6 +8,7 @@ import dashboardRoutes from "./dashboard/dashboard.routes.js";
 import profileRoutes from "./profile/profile.routes.js";
 import goalsRoutes from "./goals/goals.routes.js";
 import notificationsRoutes from "./notifications/notifications.routes.js";
+import otpRoutes from "./otp/otp.routes.js";
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/goals", goalsRoutes);
 router.use("/profile", profileRoutes);
 router.use("/notifications", notificationsRoutes);
+router.use("/otp", otpRoutes);
 
 export default router;
