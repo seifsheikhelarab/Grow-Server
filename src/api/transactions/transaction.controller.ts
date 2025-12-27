@@ -11,7 +11,7 @@ import { asyncHandler } from "../../middlewares/error.middleware.js";
  */
 export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
     const senderId = req.user!.id;
-    const { phone, amount, kioskId } = req.body;
+    const { phone, amount, kioskId, workerProfileId } = req.body;
 
     const result = await transactionService.sendPoints(
         req,
@@ -19,7 +19,8 @@ export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
         senderId,
         phone,
         kioskId,
-        amount
+        amount,
+        workerProfileId
     );
 
     ResponseHandler.created(res, "Points sent successfully", {

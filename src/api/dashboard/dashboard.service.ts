@@ -103,6 +103,7 @@ export async function getOwnerDashboard(
  */
 export async function getWorkerDashboard(
     userId: string,
+    workerProfileId: string | undefined,
     req: Request,
     res: Response
 ): Promise<{
@@ -128,7 +129,7 @@ export async function getWorkerDashboard(
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { wallet: true, worker_profile: true }
+            include: { wallet: true, worker_profiles: true }
         });
 
         if (!user) {
@@ -145,17 +146,39 @@ export async function getWorkerDashboard(
             return null;
         }
 
-        // 1. Total points collected by worker (Wallet Balance)
+        // Get the active worker profile (use provided ID or find first active)
+        let activeProfile = null;
+        if (workerProfileId) {
+            activeProfile = user.worker_profiles?.find(
+                (p) => p.id === workerProfileId
+            );
+        } else {
+            activeProfile = user.worker_profiles?.find(
+                (p) => p.status === "ACTIVE"
+            );
+        }
+
+        if (!activeProfile) {
+            errorHandler(
+                new NotFoundError("No active worker profile found"),
+                req,
+                res
+            );
+            return null;
+        }
+
+        // 1. Total points collected by worker (Wallet Balance - shared)
         const totalPoints = Number(user.wallet.balance);
 
-        // 2. Current Kiosk Goal (Type: WORKER_TARGET)
+        // 2. Current Kiosk Goal for this profile (Type: WORKER_TARGET)
         const goal = await prisma.goal.findFirst({
             where: {
                 user_id: userId,
+                kiosk_id: activeProfile.kiosk_id,
                 type: "WORKER_TARGET"
             },
             orderBy: {
-                deadline: "asc" // Prioritize earliest deadline? Or creation?
+                deadline: "asc"
             }
         });
 
@@ -163,14 +186,12 @@ export async function getWorkerDashboard(
         if (goal) {
             const result = await prisma.transaction.aggregate({
                 where: {
-                    sender_id: userId,
-                    // Only count transactions created AFTER the goal started
+                    workerprofile_id: activeProfile.id,
                     created_at: {
                         gte: goal.created_at,
-                        // And before deadline if it exists
                         lte: goal.deadline || undefined
                     },
-                    type: "DEPOSIT", // Only count deposits (sales)
+                    type: "DEPOSIT",
                     status: "COMPLETED"
                 },
                 _sum: {
@@ -182,15 +203,15 @@ export async function getWorkerDashboard(
                 : 0;
         }
 
-        // 3. Latest transactions by worker
+        // 3. Latest transactions for this profile
         const transactions = await prisma.transaction.findMany({
-            where: { sender_id: userId },
+            where: { workerprofile_id: activeProfile.id },
             orderBy: { created_at: "desc" },
             take: 5
         });
 
         const kiosk = await prisma.kiosk.findFirst({
-            where: { id: user.worker_profile.kiosk_id },
+            where: { id: activeProfile.kiosk_id },
             select: {
                 name: true,
                 id: true

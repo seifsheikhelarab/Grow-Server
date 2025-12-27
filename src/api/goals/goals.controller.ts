@@ -13,11 +13,11 @@ import {
 
 /**
  * Set a goal for a worker.
- * @param {Request} req - The Express request object containing workerId and targetAmount in body.
+ * @param {Request} req - The Express request object containing workerId, targetAmount, kioskId, workerProfileId in body.
  * @param {Response} res - The Express response object.
  */
 export const setGoal = asyncHandler(async (req: Request, res: Response) => {
-    const { workerId, targetAmount } = req.body;
+    const { workerId, targetAmount, kioskId, workerProfileId } = req.body;
     const ownerId = req.user.id;
 
     const goal = await setWorkerGoal(
@@ -25,7 +25,9 @@ export const setGoal = asyncHandler(async (req: Request, res: Response) => {
         workerId,
         Number(targetAmount),
         req,
-        res
+        res,
+        kioskId,
+        workerProfileId
     );
     if (res.headersSent) return null;
     return ResponseHandler.success(res, "Goal set successfully", goal);
@@ -63,8 +65,14 @@ export const getWorkerStatus = asyncHandler(
     async (req: Request, res: Response) => {
         try {
             const workerId = req.user.id;
+            const { workerProfileId } = req.query;
 
-            const goals = await getGoalWorker(workerId, req, res);
+            const goals = await getGoalWorker(
+                workerId,
+                req,
+                res,
+                workerProfileId as string
+            );
 
             if (res.headersSent) return null;
 

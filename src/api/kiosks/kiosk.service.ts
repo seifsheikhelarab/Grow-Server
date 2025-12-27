@@ -10,6 +10,7 @@ import {
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
+import * as notificationService from "../notifications/notifications.service.js";
 
 /**
  * Create new kiosk.
@@ -75,6 +76,10 @@ export async function createKiosk(
         });
 
         logger.info(`Kiosk created: ${kiosk.id} by owner ${ownerId}`);
+
+        // Notify owner: Kiosk created
+        await notificationService.notifyOwnerKioskCreated(ownerId, name);
+
         return kiosk;
     } catch (err) {
         logger.error(`Error creating kiosk: ${err}`);
@@ -173,8 +178,8 @@ export async function inviteWorker(
         }
 
         // Check if already a worker at this kiosk
-        const existingProfile = await prisma.workerProfile.findUnique({
-            where: { user_id: worker.id }
+        const existingProfile = await prisma.workerProfile.findFirst({
+            where: { user_id: worker.id, kiosk_id: kioskId }
         });
 
         if (existingProfile && existingProfile.kiosk_id === kioskId) {
@@ -186,15 +191,9 @@ export async function inviteWorker(
             return { id: "", user_id: "", kiosk_id: "", name: "", status: "" };
         }
 
-        // Create or update worker profile
-        const profile = await prisma.workerProfile.upsert({
-            where: { user_id: worker.id },
-            update: {
-                kiosk_id: kioskId,
-                status: "PENDING_INVITE",
-                name
-            },
-            create: {
+        // Create worker profile for this kiosk
+        const profile = await prisma.workerProfile.create({
+            data: {
                 user_id: worker.id,
                 kiosk_id: kioskId,
                 status: "PENDING_INVITE",
@@ -203,6 +202,21 @@ export async function inviteWorker(
         });
 
         logger.info(`Worker invited: ${worker.phone} to kiosk ${kioskId}`);
+
+        // Notify owner: Invitation sent
+        await notificationService.notifyOwnerInvitationSent(
+            ownerId,
+            name,
+            kiosk.name
+        );
+
+        // Notify worker: New invitation
+        await notificationService.notifyWorkerNewInvitation(
+            worker.id,
+            kiosk.name,
+            "Owner"
+        );
+
         return profile;
     } catch (err) {
         logger.error(`Error inviting worker: ${err}`);
@@ -316,6 +330,26 @@ export async function acceptInvitation(
         logger.info(
             `Worker ${workerId} changed invitation status to ${action} to kiosk ${profile.kiosk_id}`
         );
+
+        // Get kiosk owner to notify
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: profile.kiosk_id },
+            include: { owner: true }
+        });
+
+        if (kiosk) {
+            const worker = await prisma.user.findUnique({
+                where: { id: workerId }
+            });
+            const workerName = worker?.full_name || "Worker";
+            await notificationService.notifyOwnerInvitationResponse(
+                kiosk.owner_id,
+                workerName,
+                kiosk.name,
+                action === "ACTIVE"
+            );
+        }
+
         return updated;
     } catch (err) {
         logger.error(`Error changing invitation status: ${err}`);
@@ -603,6 +637,14 @@ export async function removeWorker(
         });
 
         logger.info(`Worker ${workerId} removed from kiosk ${kioskId}`);
+
+        // Notify owner: Worker left kiosk
+        await notificationService.notifyOwnerWorkerLeft(
+            req.user!.id,
+            worker.name,
+            kiosk.name
+        );
+
         return updated;
     } catch (err) {
         logger.error(`Error removing worker: ${err}`);
@@ -678,12 +720,10 @@ export async function getKioskDetails(
             select: { amount_net: true, amount_gross: true }
         });
 
-        const workers = (
-            await prisma.workerProfile.findMany({
-                where: { kiosk_id: kioskId },
-                select: { name: true, status: true, user_id: true }
-            })
-        ).map((w) => ({ name: w.name, status: w.status, id: w.user_id }));
+        const workers = await prisma.workerProfile.findMany({
+            where: { kiosk_id: kioskId },
+            select: { name: true, status: true, user_id: true, id: true }
+        });
 
         const totalGross = netEarnings.reduce(
             (sum, d) => sum + Number(d.amount_gross),
@@ -876,8 +916,11 @@ export async function getWorkerDetails(
     res: Response
 ) {
     try {
-        const worker = await prisma.workerProfile.findUnique({
-            where: { user_id: workerId }
+        const worker = await prisma.workerProfile.findFirst({
+            where: {
+                user_id: workerId,
+                kiosk: { owner_id: ownerId }
+            }
         });
 
         const user = await prisma.user.findUnique({
@@ -976,6 +1019,10 @@ export async function deleteKiosk(
         logger.info(
             `Kiosk ${kioskId} and all related records deleted by owner ${ownerId}`
         );
+
+        // Notify owner: Kiosk deleted
+        await notificationService.notifyOwnerKioskDeleted(ownerId, kiosk.name);
+
         return true;
     } catch (error) {
         logger.error(`Error deleting kiosk: ${error}`);
@@ -996,6 +1043,7 @@ export async function deleteKiosk(
  */
 export async function getWorkerReport(
     workerId: string,
+    workerProfileId: string,
     month: number,
     year: number,
     req: Request,
@@ -1009,14 +1057,11 @@ export async function getWorkerReport(
         // 4. Get Total Commission for the Month
         const commissionAgg = await prisma.transaction.aggregate({
             where: {
-                sender_id: workerId,
+                workerprofile_id: workerProfileId,
                 created_at: {
                     gte: startOfMonth,
                     lte: endOfMonth
                 },
-                // Assuming commission is generated on active transactions,
-                // double check if status needs to be COMPLETED.
-                // Usually for reports COMPLETED is safer.
                 status: "COMPLETED",
                 type: "DEPOSIT"
             },
@@ -1033,7 +1078,7 @@ export async function getWorkerReport(
         // Fetch all transactions for this worker in the month
         const txs = await prisma.transaction.findMany({
             where: {
-                sender_id: workerId, // Assuming worker is the sender
+                workerprofile_id: workerProfileId,
                 created_at: {
                     gte: startOfMonth,
                     lte: endOfMonth
@@ -1082,6 +1127,40 @@ export async function getWorkerReport(
                 total_commission: totalCommission
             },
             worker_report: workerReport
+        };
+    } catch (error) {
+        logger.error(`Error generating kiosk reports: ${error}`);
+        errorHandler(error, req, res);
+        return null;
+    }
+}
+
+export async function getWorkerKiosks(
+    workerId: string,
+    req: Request,
+    res: Response
+) {
+    try {
+        const workerProfiles = await prisma.workerProfile.findMany({
+            where: {
+                user_id: workerId,
+                status: "ACTIVE"
+            },
+            include: {
+                kiosk: true
+            }
+        });
+
+        return {
+            kiosks: workerProfiles.map((workerProfile) => {
+                return {
+                    workerProfileId: workerProfile.id,
+                    kiosk: {
+                        name: workerProfile.kiosk.name,
+                        id: workerProfile.kiosk.id
+                    }
+                };
+            })
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);

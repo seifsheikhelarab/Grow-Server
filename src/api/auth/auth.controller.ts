@@ -65,7 +65,8 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     }
 
     ResponseHandler.success(res, "OTP verified successfully", {
-        token: result.token
+        token: result.token,
+        user: result.worker_profile
     });
 });
 
@@ -92,7 +93,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
         name: result.full_name,
         phone: result.phone,
         role: result.role,
-        token: result.token
+        token: result.token,
+        workerProfile: result.worker_profile
     });
 });
 
@@ -112,7 +114,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
         name: result.full_name,
         phone: result.phone,
         role: result.role,
-        token: result.token
+        token: result.token,
+        workerProfile: result.worker_profile
     });
 });
 
@@ -217,7 +220,8 @@ export const resetPassword = asyncHandler(
         );
 
         ResponseHandler.success(res, "Password reset successfully", {
-            token: result.token
+            token: result.token,
+            workerProfile: result.worker_profile
         });
     }
 );

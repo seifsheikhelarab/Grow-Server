@@ -9,6 +9,7 @@ import {
     AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
+import * as notificationService from "../notifications/notifications.service.js";
 
 /**
  * Constants for transaction limits
@@ -65,7 +66,7 @@ async function getTransactionSettings() {
 async function validateSender(senderId: string, req: Request, res: Response) {
     const user = await prisma.user.findUnique({
         where: { id: senderId },
-        include: { worker_profile: true }
+        include: { worker_profiles: true }
     });
 
     if (!user) {
@@ -102,12 +103,15 @@ async function validateSender(senderId: string, req: Request, res: Response) {
         );
     }
 
-    // Check if worker profile is active
-    if (user.role === "WORKER" && user.worker_profile) {
-        if (user.worker_profile.status !== "ACTIVE") {
+    // Check if worker has at least one active profile
+    if (user.role === "WORKER" && user.worker_profiles) {
+        const hasActiveProfile = user.worker_profiles.some(
+            (p) => p.status === "ACTIVE"
+        );
+        if (!hasActiveProfile) {
             errorHandler(
                 new BusinessLogicError(
-                    "Worker profile is not active",
+                    "Worker has no active profile",
                     ErrorCode.WORKER_NOT_ACTIVE
                 ),
                 req,
@@ -145,7 +149,7 @@ async function validateKiosk(
     // Verify sender is owner or worker of this kiosk
     const sender = await prisma.user.findUnique({
         where: { id: senderId },
-        include: { worker_profile: true }
+        include: { worker_profiles: true }
     });
 
     if (sender?.role === "OWNER" && kiosk.owner_id !== senderId) {
@@ -156,15 +160,17 @@ async function validateKiosk(
         );
     }
 
-    if (
-        sender?.role === "WORKER" &&
-        sender.worker_profile?.kiosk_id !== kioskId
-    ) {
-        errorHandler(
-            new AuthorizationError("You are not assigned to this kiosk"),
-            req,
-            res
+    if (sender?.role === "WORKER") {
+        const hasProfileForKiosk = sender.worker_profiles?.some(
+            (p) => p.kiosk_id === kioskId && p.status === "ACTIVE"
         );
+        if (!hasProfileForKiosk) {
+            errorHandler(
+                new AuthorizationError("You are not assigned to this kiosk"),
+                req,
+                res
+            );
+        }
     }
 
     return kiosk;
@@ -274,7 +280,8 @@ export async function sendPoints(
     senderId: string,
     receiverPhone: string,
     kioskId: string,
-    amount: number
+    amount: number,
+    workerprofileId?: string
 ) {
     try {
         // Validate sender
@@ -384,6 +391,7 @@ export async function sendPoints(
                     receiver_phone: receiverPhone,
                     receiver_id: receiverId,
                     kiosk_id: kioskId,
+                    workerprofile_id: workerprofileId || null,
                     amount_gross: amount,
                     amount_net: customerAmount,
                     commission: commission,
@@ -401,6 +409,24 @@ export async function sendPoints(
         });
 
         logger.info(`[TX] Transaction completed successfully`);
+
+        // Notify worker: Transaction completed
+        await notificationService.notifyWorkerTransaction(
+            senderId,
+            amount.toString(),
+            receiverPhone
+        );
+
+        // Notify owner: Transaction completed (if worker sent it)
+        if (sender.role === "WORKER") {
+            await notificationService.notifyOwnerTransaction(
+                kiosk.owner_id,
+                sender.full_name,
+                amount.toString(),
+                receiverPhone
+            );
+        }
+
         return result;
     } catch (err) {
         logger.error(`Error sending points: ${err}`);
@@ -426,13 +452,23 @@ export async function getTransactionHistory(
     limit: number = 20,
     offset: number = 0,
     req: Request,
-    res: Response
+    res: Response,
+    workerProfileId?: string
 ) {
     try {
+        const whereClause: any = {
+            OR: [{ sender_id: userId }, { receiver_id: userId }]
+        };
+
+        if (workerProfileId) {
+            whereClause.workerprofile_id = workerProfileId;
+            delete whereClause.OR;
+            whereClause.sender_id = userId;
+            whereClause.workerprofile_id = workerProfileId;
+        }
+
         const transactions = await prisma.transaction.findMany({
-            where: {
-                OR: [{ sender_id: userId }, { receiver_id: userId }]
-            },
+            where: whereClause,
             include: {
                 kiosk: {
                     select: {
@@ -447,9 +483,7 @@ export async function getTransactionHistory(
         });
 
         const total = await prisma.transaction.count({
-            where: {
-                OR: [{ sender_id: userId }, { receiver_id: userId }]
-            }
+            where: whereClause
         });
 
         return {
@@ -498,17 +532,24 @@ export async function getTransactionHistory(
 export async function getDailyStats(
     userId: string,
     req: Request,
-    res: Response
+    res: Response,
+    workerProfileId?: string
 ) {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const whereClause: any = {
+            sender_id: userId,
+            created_at: { gte: today }
+        };
+
+        if (workerProfileId) {
+            whereClause.workerprofile_id = workerProfileId;
+        }
+
         const stats = await prisma.transaction.aggregate({
-            where: {
-                sender_id: userId,
-                created_at: { gte: today }
-            },
+            where: whereClause,
             _count: true,
             _sum: {
                 amount_gross: true,

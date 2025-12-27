@@ -15,11 +15,13 @@ import apiRoutes from "./api/index.js";
 import swaggerSetup from "./utils/swagger.js";
 
 import { initDailyGoalsJob } from "./jobs/dailyGoals.job.js";
+import { initNotificationCleanupJob } from "./jobs/notificationCleanup.job.js";
 
 const app: Express = express();
 
 // Initialize Cron Jobs
 initDailyGoalsJob();
+initNotificationCleanupJob();
 
 // Body parser
 app.use(express.json({ limit: "10mb" }));

@@ -47,17 +47,19 @@ model User {
   admin_role    AdminRole? // Only if role is ADMIN
   is_active     Boolean    @default(true) //for deletion/suspension
   is_verified   Boolean    @default(false) //for verification
+  updated_at    DateTime   @updatedAt
   created_at    DateTime   @default(now())
 
   // Relations
-  wallet         Wallet?
-  owned_kiosks   Kiosk[]             @relation("OwnerRelation")
-  worker_profile WorkerProfile?
-  goals          Goal[]
-  redemptions    RedemptionRequest[]
-  audit_logs     AuditLog[]
+  wallet          Wallet?
+  owned_kiosks    Kiosk[]             @relation("OwnerRelation")
+  worker_profiles WorkerProfile[]
+  goals           Goal[]
+  redemptions     RedemptionRequest[]
+  audit_logs      AuditLog[]
 
-  sent_transactions Transaction[] @relation(name: "SenderRelation")
+  sent_transactions Transaction[]  @relation(name: "SenderRelation")
+  notifications     Notification[]
 }
 
 // ---------------- FINANCIAL MODELS ----------------
@@ -74,15 +76,16 @@ model Wallet {
 model ShadowWallet {
   phone        String   @id // Primary key is phone number
   balance      Decimal  @default(0.00) @db.Decimal(15, 2)
-  last_updated DateTime @default(now())
+  last_updated DateTime @updatedAt
 }
 
 model Transaction {
-  id             String  @id @default(uuid())
-  sender_id      String // Worker/Owner ID
-  receiver_phone String // Stored for history
-  receiver_id    String? // Null if sent to Shadow Wallet
-  kiosk_id       String
+  id               String  @id @default(uuid())
+  sender_id        String // Worker/Owner ID
+  receiver_phone   String // Stored for history
+  receiver_id      String? // Null if sent to Shadow Wallet
+  kiosk_id         String
+  workerprofile_id String?
 
   amount_gross Decimal @db.Decimal(10, 2) // e.g., 100.00 (Input)
   amount_net   Decimal @db.Decimal(10, 2) // e.g., 95.00 (User gets)
@@ -92,9 +95,11 @@ model Transaction {
   status            TxStatus         @default(COMPLETED)
   commission_status CommissionStatus @default(PAID) // PAID, PENDING, FORFEITED
   created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
 
-  kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
-  sender User @relation(fields: [sender_id], references: [id], name: "SenderRelation")
+  kiosk         Kiosk          @relation(fields: [kiosk_id], references: [id])
+  sender        User           @relation(fields: [sender_id], references: [id], name: "SenderRelation")
+  workerprofile WorkerProfile? @relation(fields: [workerprofile_id], references: [id])
 }
 
 enum CommissionStatus {
@@ -109,10 +114,11 @@ model RedemptionRequest {
   amount     Decimal  @db.Decimal(10, 2)
   method     String // "Vodafone Cash", "Instapay"
   details    String // Phone number or address
-  type       String @default("E-Wallet") // E-Wallet or Bank Transfer 
+  type       String   @default("E-Wallet") // E-Wallet or Bank Transfer 
   status     TxStatus @default(PENDING)
   admin_note String?
   created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   user User @relation(fields: [user_id], references: [id])
 }
@@ -122,8 +128,9 @@ model KioskDue {
   kiosk_id     String
   amount       Decimal  @db.Decimal(10, 2) // Amount owner owes Grow
   is_paid      Boolean  @default(false)
-  collected_by String? // Admin ID
+  collected_by String?
   created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
 }
@@ -131,27 +138,36 @@ model KioskDue {
 // ---------------- KIOSK LOGIC ----------------
 
 model Kiosk {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   owner_id   String
   name       String
   kiosk_type String
-  is_active  Boolean @default(true)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   owner        User            @relation("OwnerRelation", fields: [owner_id], references: [id])
   workers      WorkerProfile[]
   transactions Transaction[]
   dues         KioskDue[]
+
+  goals Goal[]
 }
 
 model WorkerProfile {
-  id       String @id @default(uuid())
-  user_id  String @unique
-  kiosk_id String
-  name     String @default("Worker")
-  status   String // PENDING_INVITE, ACTIVE, REJECTED
+  id         String   @id @default(uuid())
+  user_id    String
+  kiosk_id   String
+  name       String   @default("Worker")
+  status     String // PENDING_INVITE, ACTIVE, REJECTED
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   user  User  @relation(fields: [user_id], references: [id])
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
+
+  transactions Transaction[]
+  goals        Goal[]
 }
 
 // ---------------- GOALS ----------------
@@ -163,14 +179,19 @@ model Goal {
   target_amount Decimal   @db.Decimal(10, 2)
   type          String // SAVING, WORKER_TARGET
   deadline      DateTime?
+  kiosk_id      String
 
   owner_id     String?
   is_recurring Boolean @default(false)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt // Added for tracking updates
+  workerprofile_id String?
+  workerprofile    WorkerProfile? @relation(fields: [workerprofile_id], references: [id])
 
-  user User @relation(fields: [user_id], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user  User  @relation(fields: [user_id], references: [id])
+  kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
 }
 
 model Otp {
@@ -198,4 +219,34 @@ model AuditLog {
   created_at DateTime @default(now())
 
   admin User @relation(fields: [admin_id], references: [id])
+}
+
+// ---------------- NOTIFICATIONS ----------------
+
+enum NotificationType {
+  WORKER_INVITATION_SENT
+  WORKER_INVITATION_RESPONSE
+  REDEMPTION_REQUEST_NEW
+  REDEMPTION_REQUEST_PROCESSED
+  WORKER_REDEMPTION_CREATED
+  DUE_PENDING
+  DUE_PAID
+  WORKER_LEFT_KIOSK
+  USER_STATUS_CHANGED
+  KIOSK_STATUS_CHANGED
+  TRANSACTION_COMPLETED
+  KIOSK_CREATED
+  KIOSK_DELETED
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  user_id    String
+  title      String
+  message    String
+  type       NotificationType
+  read       Boolean          @default(false)
+  created_at DateTime         @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
 }

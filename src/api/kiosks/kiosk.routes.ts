@@ -20,8 +20,7 @@ router.use(authMiddleware);
 /**
  * POST /api/kiosks/
  * Create new kiosk (Owner only).
- */
-/**
+ *
  * GET /api/kiosks/
  * Get user's kiosks.
  */
@@ -85,23 +84,45 @@ router
  */
 router.get("/:kioskId/dues", roleGuard("OWNER"), kioskController.getDues);
 
+/**
+ * GET /api/kiosks/:kioskId
+ * Get kiosk details (Owner only).
+ */
 router
     .route("/:kioskId")
     .get(roleGuard("OWNER"), kioskController.kioskDetails)
     .delete(roleGuard("OWNER"), kioskController.deleteKiosk);
 
+/**
+ * GET /api/kiosks/:kioskId/reports
+ * Get kiosk reports (Owner only).
+ */
 router.get("/:kioskId/reports", roleGuard("OWNER"), kioskController.getReports);
 
+/**
+ * GET /api/kiosks/workers/:workerId
+ * Get worker details (Owner only).
+ */
 router.get(
     "/workers/:workerId",
     roleGuard("OWNER"),
     kioskController.getWorkerDetails
 );
 
+/**
+ * GET /api/kiosks/worker/report
+ * Get worker report (Worker only).
+ */
 router.get(
     "/worker/report",
     roleGuard("WORKER"),
     kioskController.getWorkerReport
+);
+
+router.get(
+    "/worker/kiosks",
+    roleGuard("WORKER"),
+    kioskController.getWorkerKiosks
 );
 
 export default router;

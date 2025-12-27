@@ -21,21 +21,57 @@ import type { Request, Response } from "express";
  * @param {Response} res - The Express response object.
  * @returns {Promise<Goal | null>} The created or updated goal.
  */
+/**
+ * Set a daily recurring goal for a worker.
+ * Owner must own the kiosk the worker is assigned to.
+ *
+ * @param {string} ownerId - The ID of the owner setting the goal.
+ * @param {string} workerId - The ID of the worker.
+ * @param {number} targetAmount - The target amount for the goal.
+ * @param {string} [kioskId] - The ID of the kiosk (optional but recommended for multi-kiosk).
+ * @param {string} [workerProfileId] - The ID of the worker profile (optional, overrides workerId/kioskId search).
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<Goal | null>} The created or updated goal.
+ */
 export async function setWorkerGoal(
     ownerId: string,
     workerId: string,
     targetAmount: number,
     req: Request,
-    res: Response
+    res: Response,
+    kioskId?: string,
+    workerProfileId?: string
 ): Promise<Goal | null> {
-    // 1. Verify Owner and Worker relationship
-    const workerProfile = await prisma.workerProfile.findUnique({
-        where: { user_id: workerId },
-        include: { kiosk: true }
-    });
+    // 1. Determine Worker Profile
+    let workerProfile = null;
+
+    if (workerProfileId) {
+        workerProfile = await prisma.workerProfile.findUnique({
+            where: { id: workerProfileId },
+            include: { kiosk: true }
+        });
+    } else if (kioskId) {
+        // Find profile for this worker in this kiosk
+        workerProfile = await prisma.workerProfile.findFirst({
+            where: {
+                user_id: workerId,
+                kiosk_id: kioskId,
+                status: "ACTIVE"
+            },
+            include: { kiosk: true }
+        });
+    } else {
+        // Fallback: Find first active profile (Legacy support)
+        // Danger: Arbitrary choice if multiple profiles exist.
+        workerProfile = await prisma.workerProfile.findFirst({
+            where: { user_id: workerId, status: "ACTIVE" },
+            include: { kiosk: true }
+        });
+    }
 
     if (!workerProfile) {
-        errorHandler(new NotFoundError("Worker not found"), req, res);
+        errorHandler(new NotFoundError("Worker profile not found"), req, res);
         return null;
     }
 
@@ -51,30 +87,22 @@ export async function setWorkerGoal(
     }
 
     // 2. Upsert Goal
-    // Strategy: Look for an existing recurring goal for this worker and update it, or create new.
+    // Strategy: Look for an existing recurring goal for this worker PROFILE and update it, or create new.
     const existingGoal = await prisma.goal.findFirst({
         where: {
             user_id: workerId,
+            workerprofile_id: workerProfile.id,
             is_recurring: true,
             type: "WORKER_TARGET"
         }
     });
 
     if (existingGoal) {
-        const updatedGoal = await prisma.goal.upsert({
+        const updatedGoal = await prisma.goal.update({
             where: { id: existingGoal.id },
-            update: {
+            data: {
                 target_amount: targetAmount,
                 owner_id: ownerId
-            },
-            create: {
-                user_id: workerId,
-                owner_id: ownerId,
-                title: "Daily Commission Target",
-                target_amount: targetAmount,
-                type: "WORKER_TARGET",
-                is_recurring: true,
-                deadline: null // Recurring has no fixed deadline, it happens daily
             }
         });
         return updatedGoal;
@@ -82,7 +110,9 @@ export async function setWorkerGoal(
         const newGoal = await prisma.goal.create({
             data: {
                 user_id: workerId,
+                workerprofile_id: workerProfile.id,
                 owner_id: ownerId,
+                kiosk_id: workerProfile.kiosk_id,
                 title: "Daily Commission Target",
                 target_amount: targetAmount,
                 type: "WORKER_TARGET",
@@ -143,16 +173,16 @@ export async function getKioskGoal(
         });
 
         if (!workers) {
-            errorHandler(new NotFoundError("Workers not found"), req, res);
-            return null;
+            return [];
         }
 
         const goals = [];
 
         for (const worker of workers) {
+            // Find goal specifically linked to this profile
             const goal = await prisma.goal.findFirst({
                 where: {
-                    user_id: worker.user_id,
+                    workerprofile_id: worker.id,
                     is_recurring: true,
                     type: "WORKER_TARGET"
                 },
@@ -165,7 +195,7 @@ export async function getKioskGoal(
 
             const achieved = await prisma.transaction.aggregate({
                 where: {
-                    sender_id: worker.user_id,
+                    workerprofile_id: worker.id, // Filter by profile ID
                     type: "DEPOSIT",
                     status: "COMPLETED",
                     commission_status: "PENDING",
@@ -229,18 +259,25 @@ export async function checkDailyGoals() {
         try {
             if (!goal.owner_id) continue;
 
+            const whereClause: any = {
+                sender_id: goal.user_id,
+                type: "DEPOSIT",
+                status: "COMPLETED",
+                commission_status: "PENDING",
+                created_at: {
+                    gte: todayStart,
+                    lte: todayEnd
+                }
+            };
+
+            // Check if goal is linked to worker profile (New Schema)
+            if (goal.workerprofile_id) {
+                whereClause.workerprofile_id = goal.workerprofile_id;
+            }
+
             // 2. Calculate PENDING Commission Earned Today
             const stats = await prisma.transaction.aggregate({
-                where: {
-                    sender_id: goal.user_id,
-                    type: "DEPOSIT",
-                    status: "COMPLETED",
-                    commission_status: "PENDING", // Only check pending ones
-                    created_at: {
-                        gte: todayStart,
-                        lte: todayEnd
-                    }
-                },
+                where: whereClause,
                 _sum: {
                     commission: true
                 }
@@ -252,7 +289,7 @@ export async function checkDailyGoals() {
             const target = Number(goal.target_amount);
 
             logger.info(
-                `[Goals] Worker ${goal.user_id}: Pending Commission ${pendingCommission}, Target ${target}`
+                `[Goals] Worker ${goal.user_id} (Profile: ${goal.workerprofile_id}): Pending Commission ${pendingCommission}, Target ${target}`
             );
 
             // 3. Evaluate
@@ -266,14 +303,20 @@ export async function checkDailyGoals() {
                     goal.owner_id,
                     pendingCommission,
                     todayStart,
-                    todayEnd
+                    todayEnd,
+                    goal.workerprofile_id || undefined
                 );
             } else {
                 // Goal Failed: Forfeit funds (Owner keeps them).
                 logger.info(
                     `[Goals] Worker ${goal.user_id} FAILED target. Forfeiting ${pendingCommission}.`
                 );
-                await forfeitCommission(goal.user_id, todayStart, todayEnd);
+                await forfeitCommission(
+                    goal.user_id,
+                    todayStart,
+                    todayEnd,
+                    goal.workerprofile_id || undefined
+                );
             }
         } catch (err) {
             logger.error(`[Goals] Error processing goal ${goal.id}: ${err}`);
@@ -296,7 +339,8 @@ async function releaseCommission(
     ownerId: string,
     amount: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    workerProfileId?: string
 ) {
     if (amount <= 0) return;
 
@@ -316,15 +360,21 @@ async function releaseCommission(
             data: { balance: { increment: amount } }
         });
 
+        const whereClause: any = {
+            sender_id: workerId,
+            type: "DEPOSIT",
+            status: "COMPLETED",
+            commission_status: "PENDING",
+            created_at: { gte: startDate, lte: endDate }
+        };
+
+        if (workerProfileId) {
+            whereClause.workerprofile_id = workerProfileId;
+        }
+
         // 2. Mark transactions as PAID
         await tx.transaction.updateMany({
-            where: {
-                sender_id: workerId,
-                type: "DEPOSIT",
-                status: "COMPLETED",
-                commission_status: "PENDING",
-                created_at: { gte: startDate, lte: endDate }
-            },
+            where: whereClause,
             data: { commission_status: "PAID" }
         });
     });
@@ -340,17 +390,24 @@ async function releaseCommission(
 async function forfeitCommission(
     workerId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    workerProfileId?: string
 ) {
+    const whereClause: any = {
+        sender_id: workerId,
+        type: "DEPOSIT",
+        status: "COMPLETED",
+        commission_status: "PENDING",
+        created_at: { gte: startDate, lte: endDate }
+    };
+
+    if (workerProfileId) {
+        whereClause.workerprofile_id = workerProfileId;
+    }
+
     // Just mark as FORFEITED. Funds explicitly remain with Owner (sent during transaction).
     await prisma.transaction.updateMany({
-        where: {
-            sender_id: workerId,
-            type: "DEPOSIT",
-            status: "COMPLETED",
-            commission_status: "PENDING",
-            created_at: { gte: startDate, lte: endDate }
-        },
+        where: whereClause,
         data: { commission_status: "FORFEITED" }
     });
 }
@@ -366,15 +423,21 @@ async function forfeitCommission(
 export async function getGoalWorker(
     workerId: string,
     req: Request,
-    res: Response
+    res: Response,
+    workerProfileId?: string
 ) {
     try {
+        const whereClause: any = {
+            user_id: workerId,
+            is_recurring: true,
+            type: "WORKER_TARGET"
+        };
+        if (workerProfileId) {
+            whereClause.workerprofile_id = workerProfileId;
+        }
+
         const goal = await prisma.goal.findFirst({
-            where: {
-                user_id: workerId,
-                is_recurring: true,
-                type: "WORKER_TARGET"
-            }
+            where: whereClause
         });
 
         if (!goal) {
@@ -399,17 +462,21 @@ export async function getGoalWorker(
             const dayEnd = new Date(date);
             dayEnd.setHours(23, 59, 59, 999);
 
+            const txWhere: any = {
+                sender_id: workerId,
+                type: "DEPOSIT",
+                status: "COMPLETED",
+                created_at: {
+                    gte: dayStart,
+                    lte: dayEnd
+                }
+            };
+            if (workerProfileId) {
+                txWhere.workerprofile_id = workerProfileId;
+            }
+
             const achieved = await prisma.transaction.aggregate({
-                where: {
-                    sender_id: workerId,
-                    type: "DEPOSIT",
-                    status: "COMPLETED",
-                    // commission_status: "PENDING", // REMOVED: We want all completed commissions regardless of status (PAID/FORFEITED/PENDING)
-                    created_at: {
-                        gte: dayStart,
-                        lte: dayEnd
-                    }
-                },
+                where: txWhere,
                 _sum: {
                     commission: true
                 }

@@ -44,8 +44,11 @@ export const getWorkerDashboard = asyncHandler(
             errorHandler(new Error("User ID not found in request"), req, res);
         }
 
+        const { workerProfileId } = req.query;
+
         const data = await dashboardService.getWorkerDashboard(
             userId,
+            workerProfileId as string,
             req,
             res
         );

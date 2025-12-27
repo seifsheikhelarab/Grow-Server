@@ -58,13 +58,14 @@ export const redeem = asyncHandler(async (req: Request, res: Response) => {
  */
 export const createGoal = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
-    const { title, target, type, deadline } = req.body;
+    const { title, target, type, kiosk_id, deadline } = req.body;
 
     const goal = await walletService.createGoal(
         userId,
         title,
         target,
         type,
+        kiosk_id,
         req,
         res,
         deadline ? new Date(deadline) : undefined

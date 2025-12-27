@@ -9,6 +9,7 @@ import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 import { Goal } from "@prisma/client";
+import * as notificationService from "../notifications/notifications.service.js";
 
 /**
  * Constants for transaction limits
@@ -224,6 +225,37 @@ export async function createRedemption(
         logger.info(
             `Redemption request created: ${redemption.id} for ${amount} points`
         );
+
+        // Get user info for notifications
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { full_name: true, role: true }
+        });
+
+        // Notify the worker/customer that their request was submitted
+        await notificationService.notifyWorkerRedemptionCreated(
+            userId,
+            amount.toString()
+        );
+
+        // If worker, notify their kiosk owner(s)
+        if (user?.role === "WORKER") {
+            const workerProfiles = await prisma.workerProfile.findMany({
+                where: { user_id: userId },
+                include: { kiosk: true }
+            });
+
+            for (const profile of workerProfiles) {
+                if (profile.kiosk) {
+                    await notificationService.notifyOwnerWorkerRedemption(
+                        profile.kiosk.owner_id,
+                        user.full_name,
+                        amount.toString()
+                    );
+                }
+            }
+        }
+
         return redemption;
     } catch (err) {
         logger.error(`Error creating redemption: ${err}`);
@@ -255,6 +287,7 @@ export async function createGoal(
     title: string,
     target_amount: number,
     type: string,
+    kiosk_id: string,
     req: Request,
     res: Response,
     deadline?: Date
@@ -277,7 +310,8 @@ export async function createGoal(
                 title,
                 target_amount: target_amount,
                 type,
-                deadline
+                deadline,
+                kiosk_id
             }
         });
 

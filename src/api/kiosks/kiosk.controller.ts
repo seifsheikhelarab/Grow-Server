@@ -322,7 +322,7 @@ export const deleteKiosk = asyncHandler(async (req: Request, res: Response) => {
 export const getWorkerReport = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;
-        const { month, year } = req.query;
+        const { month, year, workerProfileId } = req.query;
 
         if (!month || !year) {
             return ResponseHandler.error(
@@ -334,6 +334,7 @@ export const getWorkerReport = asyncHandler(
 
         const result = await kioskService.getWorkerReport(
             workerId,
+            String(workerProfileId),
             Number(month),
             Number(year),
             req,
@@ -345,6 +346,30 @@ export const getWorkerReport = asyncHandler(
         ResponseHandler.success(
             res,
             "Worker report retrieved successfully",
+            result
+        );
+        return result;
+    }
+);
+
+/**
+ * Get worker's kiosks.
+ *
+ * @param {Request} req - The Express request object containing month and year in query.
+ * @param {Response} res - The Express response object.
+ */
+export const getWorkerKiosks = asyncHandler(
+    async (req: Request, res: Response) => {
+        const workerId = req.user!.id;
+        console.log(workerId);
+
+        const result = await kioskService.getWorkerKiosks(workerId, req, res);
+
+        if (res.headersSent) return null;
+
+        ResponseHandler.success(
+            res,
+            "Worker kiosks retrieved successfully",
             result
         );
         return result;

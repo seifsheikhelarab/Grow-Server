@@ -76,12 +76,44 @@ export async function sendOtp(
  * @param {Response} res - The Express response object.
  * @returns {Promise<{ userExists: boolean; token: string }>} Result containing user existence status and token.
  */
+// Helper to retrieve worker profile
+async function getWorkerProfile(userId: string) {
+    const profile = await prisma.workerProfile.findFirst({
+        where: {
+            user_id: userId,
+            status: "ACTIVE"
+        },
+        include: {
+            kiosk: { select: { id: true, name: true } }
+        }
+    });
+
+    if (profile) {
+        return {
+            id: profile.id,
+            kiosk_id: profile.kiosk_id,
+            kiosk_name: profile.kiosk.name,
+            status: profile.status
+        };
+    }
+    return null;
+}
+
 export async function verifyOtp(
     phone: string,
     code: string,
     req: Request,
     res: Response
-): Promise<{ userExists: boolean; token: string }> {
+): Promise<{
+    userExists: boolean;
+    token: string;
+    worker_profile?: {
+        id: string;
+        kiosk_id: string;
+        kiosk_name: string;
+        status: string;
+    } | null;
+}> {
     try {
         // Find OTP record
         const otpRecord = await prisma.otp.findUnique({ where: { phone } });
@@ -152,8 +184,13 @@ export async function verifyOtp(
             opts
         );
 
+        let workerProfile = null;
+        if (user.role === "WORKER") {
+            workerProfile = await getWorkerProfile(user.id);
+        }
+
         logger.info(`OTP verified and user authenticated: ${phone}`);
-        return { userExists: true, token };
+        return { userExists: true, token, worker_profile: workerProfile };
     } catch (err) {
         logger.error(`Error verifying OTP: ${err}`);
         errorHandler(err, req, res);
@@ -184,6 +221,12 @@ export async function register(
     phone: string;
     role: string;
     token: string;
+    worker_profile?: {
+        id: string;
+        kiosk_id: string;
+        kiosk_name: string;
+        status: string;
+    } | null;
 }> {
     try {
         // //Check if temp auth is valid
@@ -268,13 +311,19 @@ export async function register(
             opts
         );
 
+        let workerProfile = null;
+        if (role === "WORKER") {
+            workerProfile = await getWorkerProfile(user.id);
+        }
+
         logger.info(`User registered successfully: ${phone} with role ${role}`);
         return {
             id: user.id,
             full_name: user.full_name,
             phone: user.phone,
             role: user.role,
-            token
+            token,
+            worker_profile: workerProfile
         };
     } catch (err) {
         logger.error(`Error registering user: ${err}`);
@@ -317,6 +366,12 @@ export async function login(
     phone: string;
     role: string;
     token: string;
+    worker_profile?: {
+        id: string;
+        kiosk_id: string;
+        kiosk_name: string;
+        status: string;
+    } | null;
 }> {
     try {
         const user = await prisma.user.findUnique({ where: { phone } });
@@ -351,6 +406,12 @@ export async function login(
             );
         }
 
+        // Get first active worker profile for WORKER role
+        let workerProfile = null;
+        if (user.role === "WORKER") {
+            workerProfile = await getWorkerProfile(user.id);
+        }
+
         // Generate auth token
         const opts: SignOptions = {
             expiresIn: (await config).JWT_EXPIRY as ms.StringValue
@@ -367,7 +428,8 @@ export async function login(
             id: user.id,
             phone: user.phone,
             role: user.role,
-            token
+            token,
+            worker_profile: workerProfile
         };
     } catch (err) {
         logger.error(`Error logging in: ${err}`);
@@ -529,7 +591,16 @@ export async function resetPassword(
     password: string,
     req: Request,
     res: Response
-): Promise<{ message: string; token: string }> {
+): Promise<{
+    message: string;
+    token: string;
+    worker_profile?: {
+        id: string;
+        kiosk_id: string;
+        kiosk_name: string;
+        status: string;
+    } | null;
+}> {
     try {
         // Find user by phone
         const user = await prisma.user.findUnique({ where: { phone } });
@@ -553,9 +624,15 @@ export async function resetPassword(
             opts
         );
 
+        let workerProfile = null;
+        if (user.role === "WORKER") {
+            workerProfile = await getWorkerProfile(user.id);
+        }
+
         return {
             message: "Password reset successfully",
-            token
+            token,
+            worker_profile: workerProfile
         };
     } catch (err) {
         logger.error(`Error resetting password: ${err}`);

@@ -9,7 +9,7 @@ import {
 import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import type { Request, Response } from "express";
-
+import * as notificationService from "../notifications/notifications.service.js";
 
 /**
  * Keys for system settings that can be configured by administrators.
@@ -239,6 +239,19 @@ export async function processRedemption(
         });
 
         logger.info(`Redemption ${action.toLowerCase()}: ${redemptionId}`);
+
+        // Notify the user about their redemption status
+        const user = await prisma.user.findUnique({
+            where: { id: redemption.user_id }
+        });
+        if (user) {
+            await notificationService.notifyWorkerRedemptionProcessed(
+                redemption.user_id,
+                action === "APPROVE",
+                redemption.amount.toString()
+            );
+        }
+
         return updated;
     } catch (err) {
         logger.error(`Error processing redemption: ${err}`);
@@ -311,6 +324,20 @@ export async function collectDue(dueId: string, req: Request, res: Response) {
         });
 
         logger.info(`Due collected: ${dueId}`);
+
+        // Notify owner: Due paid
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id: due.kiosk_id }
+        });
+        if (kiosk) {
+            await notificationService.notifyOwnerDuePaid(
+                kiosk.owner_id,
+                kiosk.name,
+                due.amount.toString(),
+                false // fully paid
+            );
+        }
+
         return updated;
     } catch (err) {
         logger.error(`Error collecting due: ${err}`);
@@ -867,6 +894,15 @@ export async function updateKioskStatus(
     res: Response
 ) {
     try {
+        const kiosk = await prisma.kiosk.findUnique({
+            where: { id }
+        });
+
+        if (!kiosk) {
+            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            return null;
+        }
+
         const updated = await prisma.kiosk.update({
             where: { id },
             data: { is_active }
@@ -875,6 +911,15 @@ export async function updateKioskStatus(
             is_active,
             reason
         });
+
+        // Notify owner: Kiosk status changed
+        const status = is_active ? "Activated" : "Suspended";
+        await notificationService.notifyOwnerKioskStatus(
+            kiosk.owner_id,
+            kiosk.name,
+            status
+        );
+
         return updated;
     } catch (err) {
         logger.error(`Error updating kiosk status: ${err}`);
@@ -927,7 +972,7 @@ export async function getWorkers(
             where.is_active = status === "active";
         }
         if (kioskId) {
-            where.worker_profile = { kiosk_id: kioskId };
+            where.worker_profiles = { some: { kiosk_id: kioskId } };
         }
 
         const [workers, total] = await Promise.all([
@@ -936,7 +981,7 @@ export async function getWorkers(
                 skip,
                 take: Number(limit),
                 include: {
-                    worker_profile: {
+                    worker_profiles: {
                         include: { kiosk: { select: { name: true } } }
                     },
                     wallet: { select: { balance: true } }
@@ -969,7 +1014,7 @@ export async function getWorkerDetails(
             where: { id },
             include: {
                 wallet: true,
-                worker_profile: { include: { kiosk: true } },
+                worker_profiles: { include: { kiosk: true } },
                 goals: true
             }
         });
@@ -997,7 +1042,25 @@ export async function updateWorkerStatus(
     adminId: string,
     note?: string
 ) {
-    return updateUserStatusHelper(id, status, adminId, note);
+    const result = await updateUserStatusHelper(id, status, adminId, note);
+
+    // Notify worker's kiosk owners about status change
+    const workerProfiles = await prisma.workerProfile.findMany({
+        where: { user_id: id },
+        include: { kiosk: true, user: true }
+    });
+
+    for (const profile of workerProfiles) {
+        if (profile.kiosk) {
+            await notificationService.notifyOwnerWorkerStatus(
+                profile.kiosk.owner_id,
+                profile.user.full_name,
+                status
+            );
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -1019,17 +1082,22 @@ export async function reassignWorker(
     try {
         const worker = await prisma.user.findUnique({
             where: { id },
-            include: { worker_profile: true }
+            include: { worker_profiles: true }
         });
-        if (!worker || !worker.worker_profile)
+
+        // Use the first profile for now (Legacy fix)
+        // Ideally admin should select WHICH profile to reassign
+        const profileToReassign = worker?.worker_profiles[0];
+
+        if (!worker || !profileToReassign)
             errorHandler(new Error("Worker profile not found"), req, res);
 
         const updated = await prisma.workerProfile.update({
-            where: { id: worker.worker_profile.id },
+            where: { id: profileToReassign.id },
             data: { kiosk_id: kioskId }
         });
         await logAdminAction(adminId, "REASSIGN_WORKER", id, {
-            from: worker.worker_profile.kiosk_id,
+            from: profileToReassign.kiosk_id,
             to: kioskId
         });
         return updated;
