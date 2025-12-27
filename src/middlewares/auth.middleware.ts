@@ -25,6 +25,15 @@ declare module "express-serve-static-core" {
     }
 }
 
+/**
+ * Temporary Auth Middleware (Deprecated)
+ * Used for initial testing, validates simple token structure.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - The Express next middleware function.
+ * @returns {Promise<void>}
+ */
 export const tempAuthMiddleware = async (
     req: Request,
     res: Response,

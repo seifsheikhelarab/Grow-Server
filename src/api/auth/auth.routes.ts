@@ -3,7 +3,7 @@ import * as authController from "./auth.controller.js";
 import {
     optionalAuthMiddleware,
     authMiddleware as authMiddlewareAlias,
-    tempAuthMiddleware,
+    tempAuthMiddleware
 } from "../../middlewares/auth.middleware.js";
 import {
     sendOtpSchema,
@@ -71,6 +71,11 @@ router.delete(
     authController.deleteAccount
 );
 
-router.post("/reset-password", authMiddlewareAlias, validateRequest(resetPasswordSchema), authController.resetPassword);
+router.post(
+    "/reset-password",
+    authMiddlewareAlias,
+    validateRequest(resetPasswordSchema),
+    authController.resetPassword
+);
 
 export default router;

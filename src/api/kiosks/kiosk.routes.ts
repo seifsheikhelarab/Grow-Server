@@ -85,14 +85,23 @@ router
  */
 router.get("/:kioskId/dues", roleGuard("OWNER"), kioskController.getDues);
 
-router.route("/:kioskId")
+router
+    .route("/:kioskId")
     .get(roleGuard("OWNER"), kioskController.kioskDetails)
     .delete(roleGuard("OWNER"), kioskController.deleteKiosk);
 
 router.get("/:kioskId/reports", roleGuard("OWNER"), kioskController.getReports);
 
-router.get("/workers/:workerId", roleGuard("OWNER"), kioskController.getWorkerDetails);
+router.get(
+    "/workers/:workerId",
+    roleGuard("OWNER"),
+    kioskController.getWorkerDetails
+);
 
-router.get("/worker/report", roleGuard("WORKER"), kioskController.getWorkerReport);
+router.get(
+    "/worker/report",
+    roleGuard("WORKER"),
+    kioskController.getWorkerReport
+);
 
 export default router;

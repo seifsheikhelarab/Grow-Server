@@ -10,7 +10,11 @@ import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import type { Request, Response } from "express";
 
-type SystemSettingKey =
+
+/**
+ * Keys for system settings that can be configured by administrators.
+ */
+export type SystemSettingKey =
     | "commission_rate"
     | "max_transaction_amount"
     | "max_daily_tx"
@@ -373,7 +377,7 @@ export async function getSystemSettings(req: Request, res: Response) {
 
 /**
  * Update system setting.
- * @param {string} key - The key of the setting to update.
+ * @param {SystemSettingKey} key - The key of the setting to update.
  * @param {boolean | string | number} value - The value of the setting to update.
  * @param {string} adminId - The ID of the admin performing the update.
  * @param {string} [description] - Optional description of the update.

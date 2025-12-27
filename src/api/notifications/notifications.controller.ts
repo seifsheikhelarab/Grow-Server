@@ -3,6 +3,12 @@ import { ResponseHandler } from "../../utils/response.js";
 import { asyncHandler } from "../../middlewares/error.middleware.js";
 import * as notificationService from "./notifications.service.js";
 
+/**
+ * Get owner notifications.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
 export const getOwnerNotifications = asyncHandler(
     async (req: Request, res: Response) => {
         const ownerId = req.user!.id;
@@ -21,6 +27,12 @@ export const getOwnerNotifications = asyncHandler(
     }
 );
 
+/**
+ * Get worker notifications.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
 export const getWorkerNotifications = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;

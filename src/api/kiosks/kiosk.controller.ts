@@ -26,13 +26,12 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
     ResponseHandler.created(res, "Kiosk created successfully", {
         id: kiosk.id,
         name: kiosk.name,
-        kiosk_type: kiosk.kiosk_type,
+        kiosk_type: kiosk.kiosk_type
     });
 });
 
 /**
  * Invite worker to kiosk.
- * @async
  * @param {Request} req - The Express request object containing kioskId and workerPhone in body.
  * @param {Response} res - The Express response object.
  */
@@ -65,7 +64,6 @@ export const inviteWorker = asyncHandler(
 
 /**
  * Get worker invitations.
- * @async
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
  */
@@ -202,46 +200,107 @@ export const removeWorker = asyncHandler(
     }
 );
 
-export const kioskDetails = asyncHandler(async (req: Request, res: Response) => {
-    const ownerId = req.user!.id;
-    const { kioskId } = req.params;
+/**
+ * Get kiosk details.
+ *
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
+ */
+export const kioskDetails = asyncHandler(
+    async (req: Request, res: Response) => {
+        const ownerId = req.user!.id;
+        const { kioskId } = req.params;
 
-    const result = await kioskService.getKioskDetails(kioskId, ownerId, req, res);
+        const result = await kioskService.getKioskDetails(
+            kioskId,
+            ownerId,
+            req,
+            res
+        );
 
-    if (res.headersSent) return;
+        if (res.headersSent) return;
 
-    ResponseHandler.success(res, "Kiosk details retrieved successfully", result);
-});
+        ResponseHandler.success(
+            res,
+            "Kiosk details retrieved successfully",
+            result
+        );
+    }
+);
 
+/**
+ * Get kiosk reports.
+ *
+ * @param {Request} req - The Express request object containing month and year in query.
+ * @param {Response} res - The Express response object.
+ */
 export const getReports = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
     const { kioskId } = req.params;
     const { month, year } = req.query;
 
     if (!month || !year) {
-        return ResponseHandler.error(res, "Month and year are required", ErrorCode.VALIDATION_ERROR);
+        return ResponseHandler.error(
+            res,
+            "Month and year are required",
+            ErrorCode.VALIDATION_ERROR
+        );
     }
 
-    const result = await kioskService.getKioskReports(kioskId, ownerId, Number(month), Number(year), req, res);
+    const result = await kioskService.getKioskReports(
+        kioskId,
+        ownerId,
+        Number(month),
+        Number(year),
+        req,
+        res
+    );
 
     if (res.headersSent) return null;
 
-    ResponseHandler.success(res, "Kiosk reports retrieved successfully", result);
+    ResponseHandler.success(
+        res,
+        "Kiosk reports retrieved successfully",
+        result
+    );
     return result;
 });
 
-export const getWorkerDetails = asyncHandler(async (req: Request, res: Response) => {
-    const ownerId = req.user!.id;
-    const { workerId } = req.params;
+/**
+ * Get worker details for kiosk context.
+ *
+ * @param {Request} req - The Express request object containing workerId in params.
+ * @param {Response} res - The Express response object.
+ */
+export const getWorkerDetails = asyncHandler(
+    async (req: Request, res: Response) => {
+        const ownerId = req.user!.id;
+        const { workerId } = req.params;
 
-    const result = await kioskService.getWorkerDetails(workerId, ownerId, req, res);
+        const result = await kioskService.getWorkerDetails(
+            workerId,
+            ownerId,
+            req,
+            res
+        );
 
-    if (res.headersSent) return null;
+        if (res.headersSent) return null;
 
-    ResponseHandler.success(res, "Worker details retrieved successfully", result);
-    return result;
-});
+        ResponseHandler.success(
+            res,
+            "Worker details retrieved successfully",
+            result
+        );
+        return result;
+    }
+);
 
+/**
+ * Delete a kiosk.
+ *
+ * @param {Request} req - The Express request object containing kioskId in params.
+ * @param {Response} res - The Express response object.
+ */
 export const deleteKiosk = asyncHandler(async (req: Request, res: Response) => {
     const ownerId = req.user!.id;
     const { kioskId } = req.params;
@@ -254,18 +313,40 @@ export const deleteKiosk = asyncHandler(async (req: Request, res: Response) => {
     return result;
 });
 
-export const getWorkerReport = asyncHandler(async (req: Request, res: Response) => {
-    const workerId = req.user!.id;
-    const { month, year } = req.query;
+/**
+ * Get worker's own report.
+ *
+ * @param {Request} req - The Express request object containing month and year in query.
+ * @param {Response} res - The Express response object.
+ */
+export const getWorkerReport = asyncHandler(
+    async (req: Request, res: Response) => {
+        const workerId = req.user!.id;
+        const { month, year } = req.query;
 
-    if (!month || !year) {
-        return ResponseHandler.error(res, "Month and year are required", ErrorCode.VALIDATION_ERROR);
+        if (!month || !year) {
+            return ResponseHandler.error(
+                res,
+                "Month and year are required",
+                ErrorCode.VALIDATION_ERROR
+            );
+        }
+
+        const result = await kioskService.getWorkerReport(
+            workerId,
+            Number(month),
+            Number(year),
+            req,
+            res
+        );
+
+        if (res.headersSent) return null;
+
+        ResponseHandler.success(
+            res,
+            "Worker report retrieved successfully",
+            result
+        );
+        return result;
     }
-
-    const result = await kioskService.getWorkerReport(workerId, Number(month), Number(year), req, res);
-
-    if (res.headersSent) return null;
-
-    ResponseHandler.success(res, "Worker report retrieved successfully", result);
-    return result;
-});
+);

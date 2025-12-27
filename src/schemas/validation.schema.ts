@@ -88,7 +88,7 @@ export const updateGoalSchema = z.object({
 /** Schema for creating a kiosk */
 export const createKioskSchema = z.object({
     name: z.string().min(3, "Kiosk name must be at least 3 characters"),
-    kiosk_type: z.string().min(3, "type required"),
+    kiosk_type: z.string().min(3, "type required")
 });
 
 /** Schema for inviting a worker */
@@ -96,7 +96,7 @@ export const inviteWorkerSchema = z.object({
     workerPhone: z
         .string()
         .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    name: z.string().min(3, "Name must be at least 3 characters"),
+    name: z.string().min(3, "Name must be at least 3 characters")
 });
 
 /** Schema for invitation response */
@@ -197,7 +197,7 @@ export const adjustBalanceSchema = z.object({
 
 export const adminCreateKioskSchema = z.object({
     name: z.string().min(3),
-    ownerPhone: z.string().regex(/^\+?[0-9]{10,15}$/),
+    ownerPhone: z.string().regex(/^\+?[0-9]{10,15}$/)
 });
 
 export const updateKioskStatusSchema = z.object({
@@ -217,5 +217,5 @@ export const setGoalSchema = z.object({
 // Profile Schemas
 
 export const updateProfileSchema = z.object({
-    full_name: z.string().min(2, "Name must be at least 2 chars"),
-})
+    full_name: z.string().min(2, "Name must be at least 2 chars")
+});

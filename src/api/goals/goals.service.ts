@@ -1,6 +1,11 @@
 import { errorHandler } from "./../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js"; // Adjust path if needed
-import { NotFoundError, AuthorizationError, ResponseHandler, ErrorCode } from "../../utils/response.js";
+import {
+    NotFoundError,
+    AuthorizationError,
+    ResponseHandler,
+    ErrorCode
+} from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { Goal } from "@prisma/client";
 import type { Request, Response } from "express";
@@ -8,6 +13,13 @@ import type { Request, Response } from "express";
 /**
  * Set a daily recurring goal for a worker.
  * Owner must own the kiosk the worker is assigned to.
+ *
+ * @param {string} ownerId - The ID of the owner setting the goal.
+ * @param {string} workerId - The ID of the worker.
+ * @param {number} targetAmount - The target amount for the goal.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<Goal | null>} The created or updated goal.
  */
 export async function setWorkerGoal(
     ownerId: string,
@@ -84,11 +96,20 @@ export async function setWorkerGoal(
 
 /**
  * Get the current active goal for a kiosk.
+ *
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} ownerId - The ID of the owner.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object[] | null>} List of goals and their status.
  */
-export async function getKioskGoal(kioskId: string, ownerId: string, req: Request, res: Response) {
-
+export async function getKioskGoal(
+    kioskId: string,
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
     try {
-
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
 
@@ -106,10 +127,15 @@ export async function getKioskGoal(kioskId: string, ownerId: string, req: Reques
         }
 
         if (kiosk.owner_id !== ownerId) {
-            errorHandler(new AuthorizationError("You are not authorized to access this kiosk"), req, res);
+            errorHandler(
+                new AuthorizationError(
+                    "You are not authorized to access this kiosk"
+                ),
+                req,
+                res
+            );
             return null;
         }
-
 
         const workers = await prisma.workerProfile.findMany({
             where: { kiosk_id: kioskId },
@@ -156,7 +182,8 @@ export async function getKioskGoal(kioskId: string, ownerId: string, req: Reques
             const commission = Number(achieved._sum.commission);
             const targetAmount = Number(goal.target_amount);
 
-            const status = commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+            const status =
+                commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
 
             goals.push({
                 id: goal.id,
@@ -165,7 +192,6 @@ export async function getKioskGoal(kioskId: string, ownerId: string, req: Reques
                 worker_id: goal.user_id,
                 progress: Number(achieved._sum.commission),
                 status
-
             });
         }
 
@@ -174,12 +200,12 @@ export async function getKioskGoal(kioskId: string, ownerId: string, req: Reques
         errorHandler(error, req, res);
         return null;
     }
-
 }
 
 /**
  * Core Logic: Check Daily Goals.
  * Should be run at the end of the day (e.g. 23:59).
+ * Iterates through all active recurring goals and releases/forfeits commissions.
  */
 export async function checkDailyGoals() {
     logger.info("[Goals] Starting daily goal check...");
@@ -256,6 +282,15 @@ export async function checkDailyGoals() {
     logger.info("[Goals] Daily check completed.");
 }
 
+/**
+ * Release commission to worker.
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {string} ownerId - The ID of the owner.
+ * @param {number} amount - The amount to release.
+ * @param {Date} startDate - The start date of the period.
+ * @param {Date} endDate - The end date of the period.
+ */
 async function releaseCommission(
     workerId: string,
     ownerId: string,
@@ -295,6 +330,13 @@ async function releaseCommission(
     });
 }
 
+/**
+ * Forfeit commission (remains with owner).
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {Date} startDate - The start date of the period.
+ * @param {Date} endDate - The end date of the period.
+ */
 async function forfeitCommission(
     workerId: string,
     startDate: Date,
@@ -313,7 +355,19 @@ async function forfeitCommission(
     });
 }
 
-export async function getGoalWorker(workerId: string, req: Request, res: Response) {
+/**
+ * Get goal status for a worker.
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object[]>} History of goal performance for the last 7 days.
+ */
+export async function getGoalWorker(
+    workerId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const goal = await prisma.goal.findFirst({
             where: {
@@ -324,7 +378,11 @@ export async function getGoalWorker(workerId: string, req: Request, res: Respons
         });
 
         if (!goal) {
-            return ResponseHandler.error(res, "Goal not found", ErrorCode.RESOURCE_NOT_FOUND);
+            return ResponseHandler.error(
+                res,
+                "Goal not found",
+                ErrorCode.RESOURCE_NOT_FOUND
+            );
         }
 
         const history = [];
@@ -358,10 +416,11 @@ export async function getGoalWorker(workerId: string, req: Request, res: Respons
             });
 
             const commission = Number(achieved._sum.commission || 0);
-            const status = commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+            const status =
+                commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
 
             history.push({
-                date: dayStart.toISOString().split('T')[0], // YYYY-MM-DD
+                date: dayStart.toISOString().split("T")[0], // YYYY-MM-DD
                 commission,
                 targetAmount,
                 status
@@ -371,11 +430,27 @@ export async function getGoalWorker(workerId: string, req: Request, res: Respons
         return history; // Returns array of 7 items
     } catch (error) {
         errorHandler(error, req, res);
-        return ResponseHandler.error(res, "Failed to retrieve goal", ErrorCode.INTERNAL_ERROR);
+        return ResponseHandler.error(
+            res,
+            "Failed to retrieve goal",
+            ErrorCode.INTERNAL_ERROR
+        );
     }
 }
 
-export async function getKioskGoals(kioskId: string, req: Request, res: Response) {
+/**
+ * Get aggregated goals for a kiosk.
+ *
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ commission: number; targetAmount: number; status: string }>} Aggregated goal status.
+ */
+export async function getKioskGoals(
+    kioskId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
@@ -399,7 +474,10 @@ export async function getKioskGoals(kioskId: string, req: Request, res: Response
             }
         });
 
-        const totalTarget = goals.reduce((acc, curr) => acc + Number(curr.target_amount), 0);
+        const totalTarget = goals.reduce(
+            (acc, curr) => acc + Number(curr.target_amount),
+            0
+        );
 
         const achieved = await prisma.transaction.aggregate({
             where: {
@@ -417,7 +495,9 @@ export async function getKioskGoals(kioskId: string, req: Request, res: Response
             }
         });
 
-        const commission = achieved._sum.commission ? achieved._sum.commission.toNumber() : 0;
+        const commission = achieved._sum.commission
+            ? achieved._sum.commission.toNumber()
+            : 0;
 
         let status = "NOT_ACHIEVED";
         if (goals.length > 0 && commission >= totalTarget) {
@@ -431,6 +511,10 @@ export async function getKioskGoals(kioskId: string, req: Request, res: Response
         };
     } catch (error) {
         errorHandler(error, req, res);
-        return ResponseHandler.error(res, "Failed to retrieve goals", ErrorCode.INTERNAL_ERROR);
+        return ResponseHandler.error(
+            res,
+            "Failed to retrieve goals",
+            ErrorCode.INTERNAL_ERROR
+        );
     }
 }

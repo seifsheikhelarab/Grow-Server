@@ -166,38 +166,58 @@ export const deleteAccount = asyncHandler(
     }
 );
 
+/**
+ * Initiate forgot password flow.
+ *
+ * @param {Request} req - The Express request object containing phone in body.
+ * @param {Response} res - The Express response object.
+ */
+export const forgotPassword = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { phone } = req.body;
 
-export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { phone } = req.body;
+        const result = await authService.forgotPassword(phone, req, res);
 
-    const result = await authService.forgotPassword(phone, req, res);
+        ResponseHandler.success(res, "OTP sent successfully", {
+            message: result.message,
+            token: result.token
+        });
+    }
+);
 
-    ResponseHandler.success(res, "OTP sent successfully", {
-        message: result.message,
-        token: result.token
-    });
-});
+/**
+ * Reset password with new password.
+ *
+ * @param {Request} req - The Express request object containing password in body.
+ * @param {Response} res - The Express response object.
+ */
+export const resetPassword = asyncHandler(
+    async (req: Request, res: Response) => {
+        const { password } = req.body;
 
-export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-    const { password } = req.body;
+        const phone = req.user?.phone;
 
-    const phone = req.user?.phone;
+        if (!phone) {
+            errorHandler(
+                new AuthenticationError(
+                    "User not authenticated",
+                    ErrorCode.UNAUTHORIZED_ACCESS
+                ),
+                req,
+                res
+            );
+            return;
+        }
 
-    if (!phone) {
-        errorHandler(
-            new AuthenticationError(
-                "User not authenticated",
-                ErrorCode.UNAUTHORIZED_ACCESS
-            ),
+        const result = await authService.resetPassword(
+            phone,
+            password,
             req,
             res
         );
-        return;
+
+        ResponseHandler.success(res, "Password reset successfully", {
+            token: result.token
+        });
     }
-
-    const result = await authService.resetPassword(phone, password, req, res);
-
-    ResponseHandler.success(res, "Password reset successfully", {
-        token: result.token
-    });
-});
+);

@@ -3,7 +3,19 @@ import logger from "../../utils/logger.js";
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 
-export async function getOwnerNotifications(ownerId: string, req: Request, res: Response) {
+/**
+ * Get notifications for an owner.
+ *
+ * @param {string} ownerId - The ID of the owner.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object[]>} List of notifications.
+ */
+export async function getOwnerNotifications(
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
     try {
         const kiosks = await prisma.kiosk.findMany({
             where: {
@@ -16,15 +28,14 @@ export async function getOwnerNotifications(ownerId: string, req: Request, res: 
             return [];
         }
 
-        const kioskIds = kiosks.map(k => k.id);
-
+        const kioskIds = kiosks.map((k) => k.id);
 
         const transactions = await prisma.transaction.findMany({
             where: {
                 kiosk_id: { in: kioskIds }
             },
             include: {
-                sender: true,
+                sender: true
             },
             orderBy: {
                 created_at: "desc"
@@ -32,7 +43,7 @@ export async function getOwnerNotifications(ownerId: string, req: Request, res: 
             take: 10
         });
 
-        const notifications = transactions.map(t => {
+        const notifications = transactions.map((t) => {
             return {
                 body: `${t.sender.full_name} sent ${t.amount_gross} to ${t.receiver_phone} on ${t.created_at.toLocaleString()}`,
                 type: "Transaction",
@@ -49,6 +60,14 @@ export async function getOwnerNotifications(ownerId: string, req: Request, res: 
     }
 }
 
+/**
+ * Get notifications for a worker.
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object[]>} List of notifications.
+ */
 export async function getWorkerNotifications(
     workerId: string,
     req: Request,
@@ -65,7 +84,7 @@ export async function getWorkerNotifications(
             take: 10
         });
 
-        const notifications = transactions.map(t => {
+        const notifications = transactions.map((t) => {
             return {
                 body: `You sent ${t.amount_gross} to ${t.receiver_phone} on ${t.created_at.toLocaleString()}`,
                 type: "Transaction",

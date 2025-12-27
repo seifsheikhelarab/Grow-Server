@@ -17,7 +17,8 @@ import { Request, Response } from "express";
  * @param {string} ownerId - The ID of the owner.
  * @param {string} name - The name of the kiosk.
  * @param {string} kiosk_type - The type of the kiosk.
- * @param {string} location - The location of the kiosk.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
  * @returns {Promise<object>} The created kiosk.
  */
 export async function createKiosk(
@@ -26,7 +27,7 @@ export async function createKiosk(
     kiosk_type: string,
     req: Request,
     res: Response
-): Promise<{ id: string; name: string; kiosk_type: string; }> {
+): Promise<{ id: string; name: string; kiosk_type: string }> {
     try {
         const existingKiosk = await prisma.kiosk.findFirst({
             where: {
@@ -69,7 +70,7 @@ export async function createKiosk(
             data: {
                 owner_id: ownerId,
                 name,
-                kiosk_type,
+                kiosk_type
             }
         });
 
@@ -103,7 +104,13 @@ export async function inviteWorker(
     name: string,
     req: Request,
     res: Response
-): Promise<{ id: string; user_id: string; name: string; kiosk_id: string; status: string }> {
+): Promise<{
+    id: string;
+    user_id: string;
+    name: string;
+    kiosk_id: string;
+    status: string;
+}> {
     try {
         // Verify kiosk ownership
         const kiosk = await prisma.kiosk.findUnique({
@@ -626,8 +633,6 @@ export async function getKioskDetails(
     res: Response
 ) {
     try {
-
-
         const kiosk = await prisma.kiosk.findUnique({
             where: { id: kioskId }
         });
@@ -651,26 +656,44 @@ export async function getKioskDetails(
         }
 
         const dues = await prisma.kioskDue.findMany({
-            where: { kiosk_id: kioskId, created_at: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) }, is_paid: false },
+            where: {
+                kiosk_id: kioskId,
+                created_at: {
+                    gte: new Date(new Date().setDate(new Date().getDate() - 30))
+                },
+                is_paid: false
+            },
             orderBy: { created_at: "desc" },
             select: { amount: true }
         });
 
         const netEarnings = await prisma.transaction.findMany({
-            where: { kiosk_id: kioskId, created_at: { gte: new Date(new Date().setDate(new Date().getDate() - 30)) } },
+            where: {
+                kiosk_id: kioskId,
+                created_at: {
+                    gte: new Date(new Date().setDate(new Date().getDate() - 30))
+                }
+            },
             orderBy: { created_at: "desc" },
             select: { amount_net: true, amount_gross: true }
         });
 
-        const workers = (await prisma.workerProfile.findMany({
-            where: { kiosk_id: kioskId },
-            select: { name: true, status: true, user_id: true }
-        })).map((w) => ({ name: w.name, status: w.status, id: w.user_id }));
+        const workers = (
+            await prisma.workerProfile.findMany({
+                where: { kiosk_id: kioskId },
+                select: { name: true, status: true, user_id: true }
+            })
+        ).map((w) => ({ name: w.name, status: w.status, id: w.user_id }));
 
-
-        const totalGross = netEarnings.reduce((sum, d) => sum + Number(d.amount_gross), 0);
+        const totalGross = netEarnings.reduce(
+            (sum, d) => sum + Number(d.amount_gross),
+            0
+        );
         const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
-        const totalNetEarnings = netEarnings.reduce((sum, d) => sum + Number(d.amount_net), 0);
+        const totalNetEarnings = netEarnings.reduce(
+            (sum, d) => sum + Number(d.amount_net),
+            0
+        );
 
         return {
             kiosk,
@@ -797,7 +820,7 @@ export async function getKioskReports(
                 week1: 0, // Days 1-7
                 week2: 0, // Days 8-14
                 week3: 0, // Days 15-21
-                week4: 0  // Days 22-End
+                week4: 0 // Days 22-End
             };
 
             for (const tx of txs) {
@@ -814,19 +837,22 @@ export async function getKioskReports(
                 worker_id: worker.user_id,
                 worker_name: worker.name,
                 weekly_gross: weeks,
-                total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
+                total_gross:
+                    weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
             });
         }
 
         return {
-            month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            month: startOfMonth.toLocaleString("default", {
+                month: "long",
+                year: "numeric"
+            }),
             summary: {
                 total_dues: totalDues,
                 total_commission: totalCommission
             },
             worker_reports: workerReports
         };
-
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
         errorHandler(error, req, res);
@@ -834,6 +860,15 @@ export async function getKioskReports(
     }
 }
 
+/**
+ * Get worker details including recent transactions.
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {string} ownerId - The ID of the owner (for auth check).
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} Worker details and transactions.
+ */
 export async function getWorkerDetails(
     workerId: string,
     ownerId: string,
@@ -850,7 +885,11 @@ export async function getWorkerDetails(
         });
 
         const transactions = await prisma.transaction.findMany({
-            where: { sender_id: workerId, status: "COMPLETED", type: "DEPOSIT" },
+            where: {
+                sender_id: workerId,
+                status: "COMPLETED",
+                type: "DEPOSIT"
+            },
             select: {
                 amount_gross: true,
                 created_at: true
@@ -877,6 +916,15 @@ export async function getWorkerDetails(
     }
 }
 
+/**
+ * Delete a kiosk and all associated data.
+ *
+ * @param {string} kioskId - The ID of the kiosk.
+ * @param {string} ownerId - The ID of the owner.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<boolean>} True if deleted successfully.
+ */
 export async function deleteKiosk(
     kioskId: string,
     ownerId: string,
@@ -921,11 +969,13 @@ export async function deleteKiosk(
 
             // 4. Finally, delete the Kiosk
             await tx.kiosk.delete({
-                where: { id: kioskId },
+                where: { id: kioskId }
             });
         });
 
-        logger.info(`Kiosk ${kioskId} and all related records deleted by owner ${ownerId}`);
+        logger.info(
+            `Kiosk ${kioskId} and all related records deleted by owner ${ownerId}`
+        );
         return true;
     } catch (error) {
         logger.error(`Error deleting kiosk: ${error}`);
@@ -934,7 +984,16 @@ export async function deleteKiosk(
     }
 }
 
-
+/**
+ * Generate monthly report for a worker.
+ *
+ * @param {string} workerId - The ID of the worker.
+ * @param {number} month - The month number (1-12).
+ * @param {number} year - The year.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object>} Monthly report data.
+ */
 export async function getWorkerReport(
     workerId: string,
     month: number,
@@ -943,11 +1002,9 @@ export async function getWorkerReport(
     res: Response
 ) {
     try {
-
         // 2. Define Time Range (Current Month)
         const startOfMonth = new Date(year, month - 1, 1);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-
 
         // 4. Get Total Commission for the Month
         const commissionAgg = await prisma.transaction.aggregate({
@@ -973,7 +1030,6 @@ export async function getWorkerReport(
             where: { id: workerId }
         });
 
-
         // Fetch all transactions for this worker in the month
         const txs = await prisma.transaction.findMany({
             where: {
@@ -997,7 +1053,7 @@ export async function getWorkerReport(
             week1: 0, // Days 1-7
             week2: 0, // Days 8-14
             week3: 0, // Days 15-21
-            week4: 0  // Days 22-End
+            week4: 0 // Days 22-End
         };
 
         for (const tx of txs) {
@@ -1017,15 +1073,16 @@ export async function getWorkerReport(
             total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
         };
 
-
         return {
-            month: startOfMonth.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            month: startOfMonth.toLocaleString("default", {
+                month: "long",
+                year: "numeric"
+            }),
             summary: {
                 total_commission: totalCommission
             },
             worker_report: workerReport
         };
-
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
         errorHandler(error, req, res);

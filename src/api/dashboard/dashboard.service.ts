@@ -128,7 +128,7 @@ export async function getWorkerDashboard(
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { wallet: true, worker_profile:true }
+            include: { wallet: true, worker_profile: true }
         });
 
         if (!user) {
@@ -144,8 +144,6 @@ export async function getWorkerDashboard(
             );
             return null;
         }
-
-
 
         // 1. Total points collected by worker (Wallet Balance)
         const totalPoints = Number(user.wallet.balance);
@@ -203,11 +201,11 @@ export async function getWorkerDashboard(
             totalPoints,
             goal: goal
                 ? {
-                    title: goal.title,
-                    current: currentAmount,
-                    target: Number(goal.target_amount),
-                    deadline: goal.deadline
-                }
+                      title: goal.title,
+                      current: currentAmount,
+                      target: Number(goal.target_amount),
+                      deadline: goal.deadline
+                  }
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,
@@ -218,8 +216,8 @@ export async function getWorkerDashboard(
             })),
             kiosk: {
                 id: kiosk?.id || null,
-                name: kiosk?.name || null,
-            },
+                name: kiosk?.name || null
+            }
         };
     } catch (error) {
         logger.error("Error fetching worker dashboard data:", error);

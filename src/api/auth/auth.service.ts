@@ -466,11 +466,11 @@ export async function deleteAccount(
 }
 
 /**
- * Forgot password
- * @param phone
- * @param req
- * @param res
- * @returns
+ * Initiate forgot password flow.
+ * @param {string} phone - The phone number.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ message: string; token: string }>} Result containing message and token.
  */
 export async function forgotPassword(
     phone: string,
@@ -517,12 +517,12 @@ export async function forgotPassword(
 }
 
 /**
- * Reset password
- * @param phone
- * @param password
- * @param req
- * @param res
- * @returns
+ * Reset password.
+ * @param {string} phone - The phone number.
+ * @param {string} password - The new password.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ message: string; token: string }>} Result containing message and token.
  */
 export async function resetPassword(
     phone: string,
@@ -534,13 +534,8 @@ export async function resetPassword(
         // Find user by phone
         const user = await prisma.user.findUnique({ where: { phone } });
         if (!user) {
-            errorHandler(
-                new AuthenticationError("User not found"),
-                req,
-                res
-            );
+            errorHandler(new AuthenticationError("User not found"), req, res);
         }
-
 
         // Update password
         await prisma.user.update({
