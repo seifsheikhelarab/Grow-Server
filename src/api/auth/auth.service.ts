@@ -42,7 +42,7 @@ export async function sendOtp(
             create: { phone, code, expiresAt }
         });
 
-        // await sendSMS(phone, code);
+        await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration
@@ -553,7 +553,7 @@ export async function forgotPassword(
             create: { phone, code, expiresAt }
         });
 
-        // await sendSMS(phone, code);
+        await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration
@@ -695,7 +695,7 @@ export async function resendOtp(
         });
 
         logger.info(`Resending OTP to ${phone}: ${code}`);
-        // await sendSMS(phone, otpRecord.code);
+        await sendSMS(phone, code);
 
         return {
             message: "OTP sent successfully",
