@@ -42,7 +42,7 @@ export async function sendOtp(
             create: { phone, code, expiresAt }
         });
 
-        await sendSMS(phone, code);
+        // await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration
@@ -553,7 +553,7 @@ export async function forgotPassword(
             create: { phone, code, expiresAt }
         });
 
-        await sendSMS(phone, code);
+        // await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration
@@ -639,6 +639,73 @@ export async function resetPassword(
         errorHandler(err, req, res);
         return {
             message: "Error resetting password",
+            token: ""
+        };
+    }
+}
+
+/**
+ * Resend OTP.
+ * @param {string} phone - The phone number.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<{ message: string; token: string }>} Result containing message and token.
+ */
+export async function resendOtp(
+    phone: string,
+    req: Request,
+    res: Response
+): Promise<{ message: string; token: string }> {
+    try {
+        // Find OTP record
+        const otpRecord = await prisma.otp.findUnique({ where: { phone } });
+
+        if (!otpRecord) {
+            errorHandler(
+                new NotFoundError("OTP not found or expired"),
+                req,
+                res
+            );
+            return { message: "OTP not found or expired", token: "" };
+        }
+
+        // Delete used OTP
+        await prisma.otp.delete({ where: { phone } });
+
+        // Generate temporary token for registration
+        const opts: SignOptions = { expiresIn: "30m" };
+        const tempToken = jwt.sign(
+            { phone, tempAuth: true },
+            (await config).JWT_SECRET as string,
+            opts
+        );
+
+        // Create New OTP Record
+        // Generate 4-digit OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        // Expiry: 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        // Save to database
+        await prisma.otp.upsert({
+            where: { phone },
+            update: { code, expiresAt },
+            create: { phone, code, expiresAt }
+        });
+
+        logger.info(`Resending OTP to ${phone}: ${code}`);
+        // await sendSMS(phone, otpRecord.code);
+
+        return {
+            message: "OTP sent successfully",
+            token: tempToken
+        };
+    } catch (err) {
+        logger.error(`Error sending OTP: ${err}`);
+        errorHandler(err, req, res);
+        return {
+            message: "Error sending OTP",
             token: ""
         };
     }

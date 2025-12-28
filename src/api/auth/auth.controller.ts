@@ -28,6 +28,32 @@ export const sendOtp = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
+ *  Resend OTP
+ */
+export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
+    const phone = req.user?.phone;
+
+    if (!phone) {
+        errorHandler(
+            new AuthenticationError(
+                "User not authenticated",
+                ErrorCode.UNAUTHORIZED_ACCESS
+            ),
+            req,
+            res
+        );
+        return;
+    }
+
+    const result = await authService.resendOtp(phone, req, res);
+
+    ResponseHandler.success(res, "OTP sent successfully", {
+        message: result.message,
+        token: result.token
+    });
+});
+
+/**
  * Verify OTP and authenticate user.
  *
  * @param {Request} req - The Express request object containing phone and code in body.
@@ -52,6 +78,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 
     const result = await authService.verifyOtp(phone, code, req, res);
 
+    if (res.headersSent) return null;
     if (!result.userExists || !result.token) {
         errorHandler(
             new AuthenticationError(
