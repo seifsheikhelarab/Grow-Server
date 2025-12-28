@@ -42,7 +42,7 @@ export async function sendOtp(
             create: { phone, code, expiresAt }
         });
 
-        // await sendSMS(phone, code);
+        await sendSMS(phone, code);
         logger.info(`OTP sent to ${phone}: ${code}`);
 
         // Generate temporary token for registration

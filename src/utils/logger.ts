@@ -25,7 +25,8 @@ dotenv.config({ quiet: true });
 // } else {
 const logger = pino({
     level: process.env.LOG_LEVEL || "info",
-    timestamp: false
+    timestamp: false,
+    base: undefined
 });
 // }
 
