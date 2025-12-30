@@ -217,5 +217,6 @@ export const setGoalSchema = z.object({
 // Profile Schemas
 
 export const updateProfileSchema = z.object({
-    full_name: z.string().min(2, "Name must be at least 2 chars")
+    full_name: z.string().min(2, "Name must be at least 2 chars").optional(),
+    name: z.string().min(2, "Name must be at least 2 chars").optional()
 });

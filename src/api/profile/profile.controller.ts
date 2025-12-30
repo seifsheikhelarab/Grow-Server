@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import * as profileService from "./profile.service.js";
-import { ResponseHandler } from "../../utils/response.js";
-import { asyncHandler } from "../../middlewares/error.middleware.js";
+import { BusinessLogicError, ErrorCode, ResponseHandler } from "../../utils/response.js";
+import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
 
 /**
  * Get profile.
@@ -29,13 +29,16 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
  */
 export const updateProfile = asyncHandler(
     async (req: Request, res: Response) => {
-        console.log(req.body);
         const userId = req.user!.id;
-        const { full_name } = req.body;
+        const { full_name, name } = req.body;
+
+        if (!name && !full_name) {
+            errorHandler(new BusinessLogicError("Name is required",ErrorCode.VALIDATION_ERROR),req,res)
+        }
 
         const profile = await profileService.updateProfile(
             userId,
-            full_name,
+            full_name || name,
             req,
             res
         );

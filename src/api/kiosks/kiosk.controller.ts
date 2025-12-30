@@ -365,7 +365,6 @@ export const getWorkerReport = asyncHandler(
 export const getWorkerKiosks = asyncHandler(
     async (req: Request, res: Response) => {
         const workerId = req.user!.id;
-        console.log(workerId);
 
         const result = await kioskService.getWorkerKiosks(workerId, req, res);
 

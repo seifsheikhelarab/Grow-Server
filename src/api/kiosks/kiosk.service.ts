@@ -927,17 +927,66 @@ export async function getWorkerDetails(
             where: { id: workerId }
         });
 
-        const transactions = await prisma.transaction.findMany({
+        const goal = await prisma.goal.findFirst({
             where: {
-                sender_id: workerId,
-                status: "COMPLETED",
-                type: "DEPOSIT"
-            },
-            select: {
-                amount_gross: true,
-                created_at: true
+                user_id: workerId,
+                workerprofile_id: worker.id,
+                is_recurring: true,
+                type: "WORKER_TARGET"
             }
         });
+
+        const goals = [];
+        const targetAmount = goal ? Number(goal.target_amount) : 0;
+
+        // Iterate for the last 7 days (including today)
+        for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+
+            const dayStart = new Date(date);
+            dayStart.setHours(0, 0, 0, 0);
+
+            const dayEnd = new Date(date);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            if (!goal) {
+                goals.push({
+                    date: dayStart.toISOString().split("T")[0],
+                    commission: 0,
+                    targetAmount: 0,
+                    status: "NOT_ACHIEVED"
+                });
+                continue;
+            }
+
+            const achieved = await prisma.transaction.aggregate({
+                where: {
+                    sender_id: workerId,
+                    workerprofile_id: worker.id,
+                    type: "DEPOSIT",
+                    status: "COMPLETED",
+                    created_at: {
+                        gte: dayStart,
+                        lte: dayEnd
+                    }
+                },
+                _sum: {
+                    commission: true
+                }
+            });
+
+            const commission = Number(achieved._sum.commission || 0);
+            const status =
+                commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+
+            goals.push({
+                date: dayStart.toISOString().split("T")[0],
+                commission,
+                targetAmount,
+                status
+            });
+        }
 
         if (!worker) {
             errorHandler(new NotFoundError("Worker not found"), req, res);
@@ -945,12 +994,11 @@ export async function getWorkerDetails(
         }
 
         return {
-            // ...worker,
-            // user,
             id: user.id,
             name: worker.name,
             phone: user.phone,
-            transactions
+            role: "Worker",
+            goals
         };
     } catch (error) {
         logger.error(`Error getting worker details: ${error}`);
@@ -1157,8 +1205,13 @@ export async function getWorkerReport(
         const workerReport = {
             worker_id: workerId,
             worker_name: worker?.full_name || "Unknown",
-            weekly_gross: weeks,
-            total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
+            weekly_gross: {
+                week1: Number(weeks.week1.toFixed(0)),
+                week2: Number(weeks.week2.toFixed(0)),
+                week3: Number(weeks.week3.toFixed(0)),
+                week4: Number(weeks.week4.toFixed(0))
+            },
+            total_gross: Number((weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4).toFixed(0))
         };
 
         return {

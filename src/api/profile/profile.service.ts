@@ -37,14 +37,6 @@ export async function getProfile(userId: string, req: Request, res: Response) {
             }
         });
 
-        const balance = await prisma.wallet.findUnique({
-            where: {
-                user_id: userId
-            }
-        });
-
-        const totalNet = await getTotalNetByAllWorkers(userId, req, res);
-
         if (!user) {
             errorHandler(
                 new BusinessLogicError(
@@ -57,7 +49,31 @@ export async function getProfile(userId: string, req: Request, res: Response) {
             return null;
         }
 
-        return { user, balance: balance?.balance || 0, totalNet };
+
+        const balance = await prisma.wallet.findUnique({
+            where: {
+                user_id: userId
+            }
+        });
+
+        const totalNet = await getTotalNetByAllWorkers(userId, req, res);
+
+        const kiosks = await prisma.kiosk.findMany({
+            where: {
+                owner_id: userId
+            }
+        });
+
+        const numberOfWorkers = await prisma.workerProfile.count({
+            where: {
+                kiosk_id: {
+                    in: kiosks.map((kiosk) => kiosk.id)
+                }
+            }
+        })
+
+
+        return { user, balance: balance?.balance || 0, totalNet, numberOfWorkers };
     } catch (error) {
         errorHandler(error as Error, req, res);
         return null;
