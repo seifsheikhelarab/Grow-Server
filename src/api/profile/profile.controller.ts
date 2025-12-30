@@ -29,6 +29,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
  */
 export const updateProfile = asyncHandler(
     async (req: Request, res: Response) => {
+        console.log(req.body);
         const userId = req.user!.id;
         const { full_name } = req.body;
 

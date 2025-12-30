@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import logger from "./utils/logger.js";
+// import logger from "./utils/logger.js";
 
 /**
  * Singleton Prisma Client.
@@ -28,12 +28,12 @@ if (!global.prismaInstance) {
     });
 
     // Log database queries in development
-    if (process.env.NODE_ENV === "development") {
-        prisma.$on("query", (e) => {
-            logger.debug(`Query: ${e.query}`);
-            logger.debug(`Duration: ${e.duration}ms`);
-        });
-    }
+    // if (process.env.NODE_ENV === "development") {
+    //     prisma.$on("query", (e) => {
+    //         logger.debug(`Query: ${e.query}`);
+    //         logger.debug(`Duration: ${e.duration}ms`);
+    //     });
+    // }
 
     global.prismaInstance = prisma;
 } else {

@@ -246,7 +246,7 @@ export async function getWorkerInvitations(
 ) {
     try {
         const invitations = await prisma.workerProfile.findMany({
-            where: { user_id: workerId },
+            where: { user_id: workerId, status: "PENDING_INVITE" },
             include: {
                 kiosk: {
                     include: {
@@ -728,12 +728,12 @@ export async function getKioskDetails(
         const totalGross = netEarnings.reduce(
             (sum, d) => sum + Number(d.amount_gross),
             0
-        );
+        ).toFixed(0);
         const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
         const totalNetEarnings = netEarnings.reduce(
             (sum, d) => sum + Number(d.amount_net),
             0
-        );
+        ).toFixed(0);
 
         return {
             kiosk,
@@ -1043,13 +1043,56 @@ export async function deleteKiosk(
  */
 export async function getWorkerReport(
     workerId: string,
-    workerProfileId: string,
+    workerProfileId: string | undefined,
     month: number,
     year: number,
     req: Request,
     res: Response
 ) {
     try {
+        let targetProfileId = workerProfileId;
+
+        if (!targetProfileId || targetProfileId === "undefined") {
+            const activeProfile = await prisma.workerProfile.findFirst({
+                where: {
+                    user_id: workerId,
+                    status: "ACTIVE"
+                }
+            });
+
+            if (activeProfile) {
+                targetProfileId = activeProfile.id;
+            } else {
+                const startOfMonth = new Date(year, month - 1, 1);
+                // Fetch worker name for consistent response
+                const worker = await prisma.user.findUnique({
+                    where: { id: workerId },
+                    select: { full_name: true }
+                });
+
+                return {
+                    month: startOfMonth.toLocaleString("default", {
+                        month: "long",
+                        year: "numeric"
+                    }),
+                    summary: {
+                        total_commission: 0
+                    },
+                    worker_report: {
+                        worker_id: workerId,
+                        worker_name: worker?.full_name || "Unknown",
+                        weekly_gross: {
+                            week1: 0,
+                            week2: 0,
+                            week3: 0,
+                            week4: 0
+                        },
+                        total_gross: 0
+                    }
+                };
+            }
+        }
+
         // 2. Define Time Range (Current Month)
         const startOfMonth = new Date(year, month - 1, 1);
         const endOfMonth = new Date(year, month, 0, 23, 59, 59);
@@ -1057,7 +1100,7 @@ export async function getWorkerReport(
         // 4. Get Total Commission for the Month
         const commissionAgg = await prisma.transaction.aggregate({
             where: {
-                workerprofile_id: workerProfileId,
+                workerprofile_id: targetProfileId,
                 created_at: {
                     gte: startOfMonth,
                     lte: endOfMonth
@@ -1078,7 +1121,7 @@ export async function getWorkerReport(
         // Fetch all transactions for this worker in the month
         const txs = await prisma.transaction.findMany({
             where: {
-                workerprofile_id: workerProfileId,
+                workerprofile_id: targetProfileId,
                 created_at: {
                     gte: startOfMonth,
                     lte: endOfMonth
@@ -1113,7 +1156,7 @@ export async function getWorkerReport(
 
         const workerReport = {
             worker_id: workerId,
-            worker_name: worker.full_name,
+            worker_name: worker?.full_name || "Unknown",
             weekly_gross: weeks,
             total_gross: weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4
         };

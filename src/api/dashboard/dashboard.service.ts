@@ -21,8 +21,8 @@ export async function getOwnerDashboard(
     kiosks: Array<{
         id: string;
         name: string;
-        points: number;
-        dues: number;
+        points: string;
+        dues: string;
     }>;
 } | null> {
     try {
@@ -78,8 +78,8 @@ export async function getOwnerDashboard(
             return {
                 id: kiosk.id,
                 name: kiosk.name,
-                points,
-                dues
+                points: points.toFixed(0),
+                dues: dues.toFixed(0)
             };
         });
 
@@ -107,16 +107,15 @@ export async function getWorkerDashboard(
     req: Request,
     res: Response
 ): Promise<{
-    totalPoints: number;
+    totalPoints: string;
     goal: {
         title: string;
         current: number;
         target: number;
-        deadline: Date | null;
     } | null;
     transactions: Array<{
         id: string;
-        amount: number;
+        amount: string;
         type: string;
         status: string;
         created_at: Date;
@@ -127,6 +126,13 @@ export async function getWorkerDashboard(
     };
 }> | null {
     try {
+
+        const dayStart = new Date();
+        dayStart.setHours(0, 0, 0, 0);
+
+        const dayEnd = new Date();
+        dayEnd.setHours(23, 59, 59, 999);
+
         const user = await prisma.user.findUnique({
             where: { id: userId },
             include: { wallet: true, worker_profiles: true }
@@ -149,13 +155,13 @@ export async function getWorkerDashboard(
         // Get the active worker profile (use provided ID or find first active)
         let activeProfile = null;
         if (workerProfileId) {
-            activeProfile = user.worker_profiles?.find(
-                (p) => p.id === workerProfileId
-            );
+            activeProfile = prisma.workerProfile.findUnique({
+                where: { id: workerProfileId }
+            });
         } else {
-            activeProfile = user.worker_profiles?.find(
-                (p) => p.status === "ACTIVE"
-            );
+            activeProfile = prisma.workerProfile.findFirst({
+                where: { status: "ACTIVE" }
+            });
         }
 
         if (!activeProfile) {
@@ -188,18 +194,19 @@ export async function getWorkerDashboard(
                 where: {
                     workerprofile_id: activeProfile.id,
                     created_at: {
-                        gte: goal.created_at,
-                        lte: goal.deadline || undefined
+                        gte: dayStart,
+                        lte: dayEnd
                     },
                     type: "DEPOSIT",
                     status: "COMPLETED"
                 },
                 _sum: {
-                    amount_gross: true
+                    commission: true
                 }
             });
-            currentAmount = result._sum.amount_gross
-                ? Number(result._sum.amount_gross)
+
+            currentAmount = result._sum.commission
+                ? Number(result._sum.commission)
                 : 0;
         }
 
@@ -219,18 +226,17 @@ export async function getWorkerDashboard(
         });
 
         return {
-            totalPoints,
+            totalPoints: totalPoints.toFixed(0),
             goal: goal
                 ? {
-                      title: goal.title,
-                      current: currentAmount,
-                      target: Number(goal.target_amount),
-                      deadline: goal.deadline
-                  }
+                    title: goal.title,
+                    current: currentAmount,
+                    target: Number(goal.target_amount),
+                }
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,
-                amount: Number(tx.amount_gross),
+                amount: Number(tx.amount_gross).toFixed(0),
                 type: tx.type,
                 status: tx.status,
                 created_at: tx.created_at

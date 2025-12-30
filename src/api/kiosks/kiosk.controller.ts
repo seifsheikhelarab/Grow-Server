@@ -324,19 +324,19 @@ export const getWorkerReport = asyncHandler(
         const workerId = req.user!.id;
         const { month, year, workerProfileId } = req.query;
 
-        if (!month || !year) {
-            return ResponseHandler.error(
-                res,
-                "Month and year are required",
-                ErrorCode.VALIDATION_ERROR
-            );
-        }
+        const now = new Date();
+        const queryMonth = month ? Number(month) : now.getMonth() + 1;
+        const queryYear = year ? Number(year) : now.getFullYear();
+        const profileId =
+            workerProfileId && workerProfileId !== "undefined"
+                ? String(workerProfileId)
+                : undefined;
 
         const result = await kioskService.getWorkerReport(
             workerId,
-            String(workerProfileId),
-            Number(month),
-            Number(year),
+            profileId,
+            queryMonth,
+            queryYear,
             req,
             res
         );

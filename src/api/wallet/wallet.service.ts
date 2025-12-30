@@ -15,7 +15,7 @@ import * as notificationService from "../notifications/notifications.service.js"
  * Constants for transaction limits
  */
 const REDEMPTION_FEE = 5;
-const MIN_REDEMPTION_AMOUNT = 30;
+const MIN_REDEMPTION_AMOUNT = 10;
 
 /**
  * Get user's wallet balance.
