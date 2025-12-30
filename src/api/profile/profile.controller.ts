@@ -32,6 +32,8 @@ export const updateProfile = asyncHandler(
         const userId = req.user!.id;
         const { full_name, name } = req.body;
 
+        console.log(req.body)
+
         if (!name && !full_name) {
             errorHandler(new BusinessLogicError("Name is required",ErrorCode.VALIDATION_ERROR),req,res)
         }
