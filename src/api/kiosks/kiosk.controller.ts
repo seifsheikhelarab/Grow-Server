@@ -325,8 +325,12 @@ export const getWorkerReport = asyncHandler(
         const { month, year, workerProfileId } = req.query;
 
         const now = new Date();
-        const queryMonth = month ? Number(month) : now.getMonth() + 1;
-        const queryYear = year ? Number(year) : now.getFullYear();
+        const parsedMonth = Number(month);
+        const parsedYear = Number(year);
+
+        const queryMonth = !isNaN(parsedMonth) && parsedMonth > 0 ? parsedMonth : now.getMonth() + 1;
+        const queryYear = !isNaN(parsedYear) && parsedYear > 0 ? parsedYear : now.getFullYear();
+
         const profileId =
             workerProfileId && workerProfileId !== "undefined"
                 ? String(workerProfileId)
