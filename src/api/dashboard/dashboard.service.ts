@@ -155,11 +155,11 @@ export async function getWorkerDashboard(
         // Get the active worker profile (use provided ID or find first active)
         let activeProfile = null;
         if (workerProfileId) {
-            activeProfile = prisma.workerProfile.findUnique({
+            activeProfile = await prisma.workerProfile.findUnique({
                 where: { id: workerProfileId }
             });
         } else {
-            activeProfile = prisma.workerProfile.findFirst({
+            activeProfile = await prisma.workerProfile.findFirst({
                 where: { status: "ACTIVE" }
             });
         }
