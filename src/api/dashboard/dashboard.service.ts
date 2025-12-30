@@ -21,8 +21,8 @@ export async function getOwnerDashboard(
     kiosks: Array<{
         id: string;
         name: string;
-        points: string;
-        dues: string;
+        points: number;
+        dues: number;
     }>;
 } | null> {
     try {
@@ -78,8 +78,8 @@ export async function getOwnerDashboard(
             return {
                 id: kiosk.id,
                 name: kiosk.name,
-                points: points.toFixed(0),
-                dues: dues.toFixed(0)
+                points: Number(points.toFixed(0)),
+                dues: Number(dues.toFixed(0))
             };
         });
 
@@ -107,7 +107,7 @@ export async function getWorkerDashboard(
     req: Request,
     res: Response
 ): Promise<{
-    totalPoints: string;
+    totalPoints: number;
     goal: {
         title: string;
         current: number;
@@ -115,7 +115,7 @@ export async function getWorkerDashboard(
     } | null;
     transactions: Array<{
         id: string;
-        amount: string;
+        amount: number;
         type: string;
         status: string;
         created_at: Date;
@@ -226,7 +226,7 @@ export async function getWorkerDashboard(
         });
 
         return {
-            totalPoints: totalPoints.toFixed(0),
+            totalPoints: Number(totalPoints.toFixed(0)),
             goal: goal
                 ? {
                     title: goal.title,
@@ -236,7 +236,7 @@ export async function getWorkerDashboard(
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,
-                amount: Number(tx.amount_gross).toFixed(0),
+                amount: Number(tx.amount_gross.toFixed(0)),
                 type: tx.type,
                 status: tx.status,
                 created_at: tx.created_at
