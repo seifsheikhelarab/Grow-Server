@@ -883,6 +883,7 @@ export async function getKioskReports(
         }
 
         return {
+            name: kiosk.name,
             month: startOfMonth.toLocaleString("default", {
                 month: "long",
                 year: "numeric"

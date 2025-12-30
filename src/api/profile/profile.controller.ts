@@ -30,17 +30,11 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 export const updateProfile = asyncHandler(
     async (req: Request, res: Response) => {
         const userId = req.user!.id;
-        const { full_name, name } = req.body;
-
-        console.log(req.body)
-
-        if (!name && !full_name) {
-            errorHandler(new BusinessLogicError("Name is required",ErrorCode.VALIDATION_ERROR),req,res)
-        }
-
+        const { full_name } = req.body;
+        
         const profile = await profileService.updateProfile(
             userId,
-            full_name || name,
+            full_name,
             req,
             res
         );
