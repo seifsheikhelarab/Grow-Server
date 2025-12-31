@@ -328,8 +328,14 @@ export const getWorkerReport = asyncHandler(
         const parsedMonth = Number(month);
         const parsedYear = Number(year);
 
-        const queryMonth = !isNaN(parsedMonth) && parsedMonth > 0 ? parsedMonth : now.getMonth() + 1;
-        const queryYear = !isNaN(parsedYear) && parsedYear > 0 ? parsedYear : now.getFullYear();
+        const queryMonth =
+            !isNaN(parsedMonth) && parsedMonth > 0
+                ? parsedMonth
+                : now.getMonth() + 1;
+        const queryYear =
+            !isNaN(parsedYear) && parsedYear > 0
+                ? parsedYear
+                : now.getFullYear();
 
         const profileId =
             workerProfileId && workerProfileId !== "undefined"

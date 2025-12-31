@@ -126,7 +126,6 @@ export async function getWorkerDashboard(
     };
 }> | null {
     try {
-
         const dayStart = new Date();
         dayStart.setHours(0, 0, 0, 0);
 
@@ -229,10 +228,10 @@ export async function getWorkerDashboard(
             totalPoints: Number(totalPoints.toFixed(0)),
             goal: goal
                 ? {
-                    title: goal.title,
-                    current: currentAmount,
-                    target: Number(goal.target_amount),
-                }
+                      title: goal.title,
+                      current: currentAmount,
+                      target: Number(goal.target_amount)
+                  }
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,

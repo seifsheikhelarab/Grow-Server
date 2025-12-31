@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { setGoal, getGoal, getWorkerStatus, removeGoal } from "./goals.controller.js";
+import {
+    setGoal,
+    getGoal,
+    getWorkerStatus,
+    removeGoal
+} from "./goals.controller.js";
 import {
     authMiddleware,
     roleGuard

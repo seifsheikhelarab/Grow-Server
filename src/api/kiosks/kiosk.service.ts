@@ -729,19 +729,17 @@ export async function getKioskDetails(
             }
         });
 
-        const totalGross = netEarnings.reduce(
-            (sum, d) => sum + Number(d.amount_gross),
-            0
-        ).toFixed(0);
+        const totalGross = netEarnings
+            .reduce((sum, d) => sum + Number(d.amount_gross), 0)
+            .toFixed(0);
         const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
-        const totalNetEarnings = netEarnings.reduce(
-            (sum, d) => sum + Number(d.amount_net),
-            0
-        ).toFixed(0);
+        const totalNetEarnings = netEarnings
+            .reduce((sum, d) => sum + Number(d.amount_net), 0)
+            .toFixed(0);
 
         const balance = await prisma.wallet.findFirst({
             where: { user_id: ownerId }
-        })
+        });
 
         return {
             kiosk,
@@ -958,14 +956,16 @@ export async function getWorkerDetails(
                     type: "WORKER_TARGET",
                     created_at: { lte: dayEnd }
                 },
-                orderBy: { created_at: 'desc' }
+                orderBy: { created_at: "desc" }
             });
 
             let dailyTarget = 0;
             let status = "NOT_ACHIEVED";
 
             if (dailyGoal) {
-                const wasArchivedBeforeDay = dailyGoal.status === "ARCHIVED" && dailyGoal.updated_at < dayStart;
+                const wasArchivedBeforeDay =
+                    dailyGoal.status === "ARCHIVED" &&
+                    dailyGoal.updated_at < dayStart;
                 if (!wasArchivedBeforeDay) {
                     dailyTarget = Number(dailyGoal.target_amount);
                 }
@@ -990,7 +990,8 @@ export async function getWorkerDetails(
             const commission = Number(achieved._sum.commission || 0);
 
             if (dailyTarget > 0) {
-                status = commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
+                status =
+                    commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
             } else {
                 status = "NOT_SET";
             }
@@ -1226,7 +1227,11 @@ export async function getWorkerReport(
                 week3: Number(weeks.week3.toFixed(0)),
                 week4: Number(weeks.week4.toFixed(0))
             },
-            total_gross: Number((weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4).toFixed(0))
+            total_gross: Number(
+                (weeks.week1 + weeks.week2 + weeks.week3 + weeks.week4).toFixed(
+                    0
+                )
+            )
         };
 
         return {

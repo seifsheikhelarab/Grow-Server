@@ -11,11 +11,10 @@ import { asyncHandler } from "../../middlewares/error.middleware.js";
  */
 export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
     const senderId = req.user!.id;
+
     const { phone, amount, kioskId, workerProfileId } = req.body;
 
     const result = await transactionService.sendPoints(
-        req,
-        res,
         senderId,
         phone,
         kioskId,
@@ -55,9 +54,7 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
     const result = await transactionService.getTransactionHistory(
         userId,
         limit,
-        offset,
-        req,
-        res
+        offset
     );
 
     ResponseHandler.paginated(
@@ -80,7 +77,7 @@ export const getDailyStats = asyncHandler(
     async (req: Request, res: Response) => {
         const userId = req.user!.id;
 
-        const stats = await transactionService.getDailyStats(userId, req, res);
+        const stats = await transactionService.getDailyStats(userId);
 
         ResponseHandler.success(
             res,

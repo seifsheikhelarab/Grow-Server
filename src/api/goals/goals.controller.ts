@@ -26,7 +26,7 @@ export const setGoal = asyncHandler(async (req: Request, res: Response) => {
         Number(targetAmount),
         req,
         res,
-        kioskId,
+        kioskId
     );
     if (res.headersSent) return null;
     return ResponseHandler.success(res, "Goal set successfully", goal);
@@ -95,8 +95,11 @@ export const removeGoal = asyncHandler(async (req: Request, res: Response) => {
         const result = await deleteKioskGoal(kioskId, ownerId, req, res);
 
         if (res.headersSent) return null;
-        return ResponseHandler.success(res, "Goal removed successfully", result);
-
+        return ResponseHandler.success(
+            res,
+            "Goal removed successfully",
+            result
+        );
     } catch (error) {
         errorHandler(error, req, res);
         if (res.headersSent) return null;

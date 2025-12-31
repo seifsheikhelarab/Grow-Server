@@ -49,7 +49,6 @@ export async function getProfile(userId: string, req: Request, res: Response) {
             return null;
         }
 
-
         const balance = await prisma.wallet.findUnique({
             where: {
                 user_id: userId
@@ -70,10 +69,14 @@ export async function getProfile(userId: string, req: Request, res: Response) {
                     in: kiosks.map((kiosk) => kiosk.id)
                 }
             }
-        })
+        });
 
-
-        return { user, balance: balance?.balance || 0, totalNet, numberOfWorkers };
+        return {
+            user,
+            balance: balance?.balance || 0,
+            totalNet,
+            numberOfWorkers
+        };
     } catch (error) {
         errorHandler(error as Error, req, res);
         return null;

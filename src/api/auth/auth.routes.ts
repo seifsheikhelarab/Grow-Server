@@ -26,11 +26,7 @@ router.post(
     authController.sendOtp
 );
 
-router.post(
-    "/resend-otp",
-    tempAuthMiddleware,
-    authController.resendOtp
-)
+router.post("/resend-otp", tempAuthMiddleware, authController.resendOtp);
 
 /**
  * POST /api/auth/verify-otp

@@ -15,13 +15,12 @@ export async function setKioskGoal(
     targetAmount: number,
     req: Request,
     res: Response,
-    kioskId: string,
+    kioskId: string
 ): Promise<Goal | null> {
-
     const kiosk = await prisma.kiosk.findFirst({
         where: { id: kioskId, owner_id: ownerId, is_active: true },
         include: { workers: true }
-    })
+    });
 
     if (!kiosk) {
         errorHandler(new NotFoundError("Kiosk not found"), req, res);
@@ -402,7 +401,7 @@ export async function getGoalWorker(
         let profileId = workerProfileId;
 
         // If profile not provided, find active profile? Or just iterate all?
-        // User asked "view past goals". 
+        // User asked "view past goals".
         // We will look for goals associated with the Kiosk of the worker.
 
         if (!profileId) {
@@ -448,7 +447,7 @@ export async function getGoalWorker(
                     type: "WORKER_TARGET",
                     created_at: { lte: dayEnd }
                 },
-                orderBy: { created_at: 'desc' }
+                orderBy: { created_at: "desc" }
             });
 
             // Check if this goal was actually valid for this day?
@@ -460,7 +459,8 @@ export async function getGoalWorker(
             let status = "NOT_SET";
 
             if (goal) {
-                const wasArchivedBeforeDay = goal.status === "ARCHIVED" && goal.updated_at < dayStart;
+                const wasArchivedBeforeDay =
+                    goal.status === "ARCHIVED" && goal.updated_at < dayStart;
                 // If the goal is "ARCHIVED" and "updated_at" is older than dayStart, then this goal was dead before this day.
                 // We need to check if there was another goal?
                 // But since we order by created_at desc, if the latest is dead, then preceding ones are also presumably dead/superseded.
@@ -492,7 +492,8 @@ export async function getGoalWorker(
             const commission = Number(achieved._sum.commission || 0);
 
             if (dailyTarget > 0) {
-                status = commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
+                status =
+                    commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
             }
 
             history.push({
@@ -517,10 +518,10 @@ export async function getGoalWorker(
 /**
  * Delete (Archive) the goal for a kiosk.
  *
- * @param kioskId 
- * @param ownerId 
- * @param req 
- * @param res 
+ * @param kioskId
+ * @param ownerId
+ * @param req
+ * @param res
  */
 export async function deleteKioskGoal(
     kioskId: string,
@@ -530,7 +531,7 @@ export async function deleteKioskGoal(
 ) {
     const kiosk = await prisma.kiosk.findFirst({
         where: { id: kioskId, owner_id: ownerId, is_active: true }
-    })
+    });
 
     if (!kiosk || kiosk.owner_id !== ownerId) {
         errorHandler(new AuthorizationError("Unauthorized"), req, res);

@@ -20,8 +20,8 @@ export const validateRequest = (
                 source === "body"
                     ? req.body
                     : source === "query"
-                        ? req.query
-                        : req.params;
+                      ? req.query
+                      : req.params;
 
             const result = schema.safeParse(data);
 

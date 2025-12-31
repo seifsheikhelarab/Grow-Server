@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
 import * as profileService from "./profile.service.js";
-import { BusinessLogicError, ErrorCode, ResponseHandler } from "../../utils/response.js";
-import { asyncHandler, errorHandler } from "../../middlewares/error.middleware.js";
+import {
+    BusinessLogicError,
+    ErrorCode,
+    ResponseHandler
+} from "../../utils/response.js";
+import {
+    asyncHandler,
+    errorHandler
+} from "../../middlewares/error.middleware.js";
 
 /**
  * Get profile.
@@ -31,7 +38,7 @@ export const updateProfile = asyncHandler(
     async (req: Request, res: Response) => {
         const userId = req.user!.id;
         const { full_name } = req.body;
-        
+
         const profile = await profileService.updateProfile(
             userId,
             full_name,

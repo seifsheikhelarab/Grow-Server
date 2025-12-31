@@ -21,8 +21,7 @@ export const verifyOtpSchema = z.object({
 export const registerSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     full_name: z.string().min(2, "Full name required"),
-    password: z
-        .string(),
+    password: z.string(),
     role: z.enum(["CUSTOMER", "WORKER", "OWNER"])
 });
 
