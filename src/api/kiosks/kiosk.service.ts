@@ -739,9 +739,14 @@ export async function getKioskDetails(
             0
         ).toFixed(0);
 
+        const balance = await prisma.wallet.findFirst({
+            where: { user_id: ownerId }
+        })
+
         return {
             kiosk,
             summary: {
+                balance: balance.balance.toFixed(0),
                 total_gross: totalGross.toString(),
                 total_dues: totalDue.toString(),
                 net_earnings: totalNetEarnings.toString(),
