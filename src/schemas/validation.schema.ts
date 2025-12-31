@@ -205,7 +205,7 @@ export const reassignWorkerSchema = z.object({
 });
 
 export const setGoalSchema = z.object({
-    workerId: z.string().uuid(),
+    kioskId: z.string().uuid(),
     targetAmount: z.number().int().positive("Target amount must be positive")
 });
 

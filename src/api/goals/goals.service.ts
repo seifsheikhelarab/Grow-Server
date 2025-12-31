@@ -10,75 +10,28 @@ import logger from "../../utils/logger.js";
 import { Goal } from "@prisma/client";
 import type { Request, Response } from "express";
 
-/**
- * Set a daily recurring goal for a worker.
- * Owner must own the kiosk the worker is assigned to.
- *
- * @param {string} ownerId - The ID of the owner setting the goal.
- * @param {string} workerId - The ID of the worker.
- * @param {number} targetAmount - The target amount for the goal.
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- * @returns {Promise<Goal | null>} The created or updated goal.
- */
-/**
- * Set a daily recurring goal for a worker.
- * Owner must own the kiosk the worker is assigned to.
- *
- * @param {string} ownerId - The ID of the owner setting the goal.
- * @param {string} workerId - The ID of the worker.
- * @param {number} targetAmount - The target amount for the goal.
- * @param {string} [kioskId] - The ID of the kiosk (optional but recommended for multi-kiosk).
- * @param {string} [workerProfileId] - The ID of the worker profile (optional, overrides workerId/kioskId search).
- * @param {Request} req - The Express request object.
- * @param {Response} res - The Express response object.
- * @returns {Promise<Goal | null>} The created or updated goal.
- */
-export async function setWorkerGoal(
+export async function setKioskGoal(
     ownerId: string,
-    workerId: string,
     targetAmount: number,
     req: Request,
     res: Response,
-    kioskId?: string,
-    workerProfileId?: string
+    kioskId: string,
 ): Promise<Goal | null> {
-    // 1. Determine Worker Profile
-    let workerProfile = null;
 
-    if (workerProfileId) {
-        workerProfile = await prisma.workerProfile.findUnique({
-            where: { id: workerProfileId },
-            include: { kiosk: true }
-        });
-    } else if (kioskId) {
-        // Find profile for this worker in this kiosk
-        workerProfile = await prisma.workerProfile.findFirst({
-            where: {
-                user_id: workerId,
-                kiosk_id: kioskId,
-                status: "ACTIVE"
-            },
-            include: { kiosk: true }
-        });
-    } else {
-        // Fallback: Find first active profile (Legacy support)
-        // Danger: Arbitrary choice if multiple profiles exist.
-        workerProfile = await prisma.workerProfile.findFirst({
-            where: { user_id: workerId, status: "ACTIVE" },
-            include: { kiosk: true }
-        });
-    }
+    const kiosk = await prisma.kiosk.findFirst({
+        where: { id: kioskId, owner_id: ownerId, is_active: true },
+        include: { workers: true }
+    })
 
-    if (!workerProfile) {
-        errorHandler(new NotFoundError("Worker profile not found"), req, res);
+    if (!kiosk) {
+        errorHandler(new NotFoundError("Kiosk not found"), req, res);
         return null;
     }
 
-    if (workerProfile.kiosk.owner_id !== ownerId) {
+    if (kiosk.owner_id !== ownerId) {
         errorHandler(
             new AuthorizationError(
-                "You can only set goals for your own workers"
+                "You are not authorized to access this kiosk"
             ),
             req,
             res
@@ -86,42 +39,38 @@ export async function setWorkerGoal(
         return null;
     }
 
-    // 2. Upsert Goal
-    // Strategy: Look for an existing recurring goal for this worker PROFILE and update it, or create new.
+    // 1. Archive Existing Active Goal
     const existingGoal = await prisma.goal.findFirst({
         where: {
-            user_id: workerId,
-            workerprofile_id: workerProfile.id,
-            is_recurring: true,
+            kiosk_id: kioskId,
+            status: "ACTIVE",
             type: "WORKER_TARGET"
         }
     });
 
     if (existingGoal) {
-        const updatedGoal = await prisma.goal.update({
+        await prisma.goal.update({
             where: { id: existingGoal.id },
             data: {
-                target_amount: targetAmount,
-                owner_id: ownerId
+                status: "ARCHIVED"
             }
         });
-        return updatedGoal;
-    } else {
-        const newGoal = await prisma.goal.create({
-            data: {
-                user_id: workerId,
-                workerprofile_id: workerProfile.id,
-                owner_id: ownerId,
-                kiosk_id: workerProfile.kiosk_id,
-                title: "Daily Commission Target",
-                target_amount: targetAmount,
-                type: "WORKER_TARGET",
-                is_recurring: true,
-                deadline: null // Recurring has no fixed deadline, it happens daily
-            }
-        });
-        return newGoal;
     }
+
+    const newGoal = await prisma.goal.create({
+        data: {
+            owner_id: ownerId,
+            kiosk_id: kioskId,
+            title: "هدف يومي",
+            target_amount: targetAmount,
+            type: "WORKER_TARGET",
+            is_recurring: true,
+            status: "ACTIVE",
+            deadline: null
+        }
+    });
+
+    return newGoal;
 }
 
 /**
@@ -167,6 +116,15 @@ export async function getKioskGoal(
             return null;
         }
 
+        // Fetch the single ACTIVE goal for this Kiosk
+        const goal = await prisma.goal.findFirst({
+            where: {
+                kiosk_id: kioskId,
+                status: "ACTIVE",
+                type: "WORKER_TARGET"
+            }
+        });
+
         const workers = await prisma.workerProfile.findMany({
             where: { kiosk_id: kioskId },
             include: { user: true }
@@ -179,19 +137,18 @@ export async function getKioskGoal(
         const goals = [];
 
         for (const worker of workers) {
-            // Find goal specifically linked to this profile
-            const goal = await prisma.goal.findFirst({
-                where: {
-                    workerprofile_id: worker.id,
-                    is_recurring: true,
-                    type: "WORKER_TARGET"
-                },
-                include: {
-                    user: true
-                }
-            });
-
-            if (!goal) continue;
+            if (!goal) {
+                // Return structure with 0/null if no goal is set
+                goals.push({
+                    id: null,
+                    target_amount: 0,
+                    worker_name: worker.user.full_name,
+                    worker_id: worker.user_id,
+                    progress: 0,
+                    status: "NOT_SET"
+                });
+                continue;
+            }
 
             const achieved = await prisma.transaction.aggregate({
                 where: {
@@ -209,7 +166,7 @@ export async function getKioskGoal(
                 }
             });
 
-            const commission = Number(achieved._sum.commission);
+            const commission = Number(achieved._sum.commission || 0);
             const targetAmount = Number(goal.target_amount);
 
             const status =
@@ -218,9 +175,9 @@ export async function getKioskGoal(
             goals.push({
                 id: goal.id,
                 target_amount: goal.target_amount,
-                worker_name: goal.user.full_name,
-                worker_id: goal.user_id,
-                progress: Number(achieved._sum.commission),
+                worker_name: worker.user.full_name,
+                worker_id: worker.user_id,
+                progress: commission,
                 status
             });
         }
@@ -240,12 +197,22 @@ export async function getKioskGoal(
 export async function checkDailyGoals() {
     logger.info("[Goals] Starting daily goal check...");
 
-    // 1. Get all active recurring goals
+    // 1. Get all active recurring goals (Kiosk-wide)
     const goals = await prisma.goal.findMany({
         where: {
             is_recurring: true,
             type: "WORKER_TARGET",
-            owner_id: { not: null }
+            status: "ACTIVE", // Only active goals
+            kiosk_id: { not: null }
+        },
+        include: {
+            kiosk: {
+                include: {
+                    workers: {
+                        where: { status: "ACTIVE" }
+                    }
+                }
+            }
         }
     });
 
@@ -257,66 +224,67 @@ export async function checkDailyGoals() {
 
     for (const goal of goals) {
         try {
-            if (!goal.owner_id) continue;
+            if (!goal.owner_id || !goal.kiosk) continue;
 
-            const whereClause: any = {
-                sender_id: goal.user_id,
-                type: "DEPOSIT",
-                status: "COMPLETED",
-                commission_status: "PENDING",
-                created_at: {
-                    gte: todayStart,
-                    lte: todayEnd
-                }
-            };
-
-            // Check if goal is linked to worker profile (New Schema)
-            if (goal.workerprofile_id) {
-                whereClause.workerprofile_id = goal.workerprofile_id;
-            }
-
-            // 2. Calculate PENDING Commission Earned Today
-            const stats = await prisma.transaction.aggregate({
-                where: whereClause,
-                _sum: {
-                    commission: true
-                }
-            });
-
-            const pendingCommission = stats._sum.commission
-                ? Number(stats._sum.commission)
-                : 0;
             const target = Number(goal.target_amount);
 
-            logger.info(
-                `[Goals] Worker ${goal.user_id} (Profile: ${goal.workerprofile_id}): Pending Commission ${pendingCommission}, Target ${target}`
-            );
+            // Iterate through each active worker in the kiosk
+            for (const worker of goal.kiosk.workers) {
+                const whereClause: any = {
+                    sender_id: worker.user_id,
+                    type: "DEPOSIT",
+                    status: "COMPLETED",
+                    commission_status: "PENDING",
+                    created_at: {
+                        gte: todayStart,
+                        lte: todayEnd
+                    },
+                    // Ensure we check transactions for this specific worker profile
+                    workerprofile_id: worker.id
+                };
 
-            // 3. Evaluate
-            if (pendingCommission >= target) {
-                // Goal Met: Release funds to Worker.
+                // 2. Calculate PENDING Commission Earned Today for this worker
+                const stats = await prisma.transaction.aggregate({
+                    where: whereClause,
+                    _sum: {
+                        commission: true
+                    }
+                });
+
+                const pendingCommission = stats._sum.commission
+                    ? Number(stats._sum.commission)
+                    : 0;
+
                 logger.info(
-                    `[Goals] Worker ${goal.user_id} MET target. Releasing ${pendingCommission}.`
+                    `[Goals] Kiosk ${goal.kiosk_id} - Worker ${worker.user_id} (Profile: ${worker.id}): Pending Commission ${pendingCommission}, Target ${target}`
                 );
-                await releaseCommission(
-                    goal.user_id,
-                    goal.owner_id,
-                    pendingCommission,
-                    todayStart,
-                    todayEnd,
-                    goal.workerprofile_id || undefined
-                );
-            } else {
-                // Goal Failed: Forfeit funds (Owner keeps them).
-                logger.info(
-                    `[Goals] Worker ${goal.user_id} FAILED target. Forfeiting ${pendingCommission}.`
-                );
-                await forfeitCommission(
-                    goal.user_id,
-                    todayStart,
-                    todayEnd,
-                    goal.workerprofile_id || undefined
-                );
+
+                // 3. Evaluate
+                if (pendingCommission >= target) {
+                    // Goal Met: Release funds to Worker.
+                    logger.info(
+                        `[Goals] Worker ${worker.user_id} MET target. Releasing ${pendingCommission}.`
+                    );
+                    await releaseCommission(
+                        worker.user_id,
+                        goal.owner_id,
+                        pendingCommission,
+                        todayStart,
+                        todayEnd,
+                        worker.id
+                    );
+                } else {
+                    // Goal Failed: Forfeit funds (Owner keeps them).
+                    logger.info(
+                        `[Goals] Worker ${worker.user_id} FAILED target. Forfeiting ${pendingCommission}.`
+                    );
+                    await forfeitCommission(
+                        worker.user_id,
+                        todayStart,
+                        todayEnd,
+                        worker.id
+                    );
+                }
             }
         } catch (err) {
             logger.error(`[Goals] Error processing goal ${goal.id}: ${err}`);
@@ -424,32 +392,37 @@ export async function getGoalWorker(
     workerId: string,
     req: Request,
     res: Response,
+    kioskIdIfFiltered?: string, // Added argument for flexibility if needed, or derived
     workerProfileId?: string
 ) {
     try {
-        const whereClause: any = {
-            user_id: workerId,
-            is_recurring: true,
-            type: "WORKER_TARGET"
-        };
-        if (workerProfileId) {
-            whereClause.workerprofile_id = workerProfileId;
+        // Need to find which Kiosk(s) this worker belongs to, or use profileId
+        // The goal is now linked to Kiosk, not directly to User (mostly).
+
+        let profileId = workerProfileId;
+
+        // If profile not provided, find active profile? Or just iterate all?
+        // User asked "view past goals". 
+        // We will look for goals associated with the Kiosk of the worker.
+
+        if (!profileId) {
+            const profile = await prisma.workerProfile.findFirst({
+                where: { user_id: workerId } // Just grabbing one for now if not specified
+            });
+            if (profile) profileId = profile.id;
         }
 
-        const goal = await prisma.goal.findFirst({
-            where: whereClause
+        if (!profileId) return []; // No profile found
+
+        const profile = await prisma.workerProfile.findUnique({
+            where: { id: profileId }
         });
 
-        if (!goal) {
-            return ResponseHandler.error(
-                res,
-                "Goal not found",
-                ErrorCode.RESOURCE_NOT_FOUND
-            );
-        }
+        if (!profile) return [];
+
+        const kioskId = profile.kiosk_id;
 
         const history = [];
-        const targetAmount = Number(goal.target_amount);
 
         // Iterate for the last 7 days (including today)
         for (let i = 0; i < 7; i++) {
@@ -462,8 +435,45 @@ export async function getGoalWorker(
             const dayEnd = new Date(date);
             dayEnd.setHours(23, 59, 59, 999);
 
+            // Find the goal that was ACTIVE on this day.
+            // Conditions:
+            // 1. created_at <= dayEnd
+            // 2. status = ACTIVE OR (status=ARCHIVED/ended and updated_at >= dayStart)
+            // Ideally we need 'ended_at' but using 'updated_at' for ARCHIVED approximates it.
+            // Better: Find the LATEST goal created BEFORE dayEnd.
+
+            const goal = await prisma.goal.findFirst({
+                where: {
+                    kiosk_id: kioskId,
+                    type: "WORKER_TARGET",
+                    created_at: { lte: dayEnd }
+                },
+                orderBy: { created_at: 'desc' }
+            });
+
+            // Check if this goal was actually valid for this day?
+            // If the goal we found was ARCHIVED before this day started, then there was NO goal (or we should find the one before it).
+            // But 'findFirst ordered by desc created_at' gets the most recent goal started before end of that day.
+            // If that goal was archived BEFORE dayStart, then it wasn't active on dayStart.
+
+            let dailyTarget = 0;
+            let status = "NOT_SET";
+
+            if (goal) {
+                const wasArchivedBeforeDay = goal.status === "ARCHIVED" && goal.updated_at < dayStart;
+                // If the goal is "ARCHIVED" and "updated_at" is older than dayStart, then this goal was dead before this day.
+                // We need to check if there was another goal?
+                // But since we order by created_at desc, if the latest is dead, then preceding ones are also presumably dead/superseded.
+                // Actually superseding goals would have newer created_at.
+                // So if the latest created goal (before dayEnd) was killed before dayStart, then there was no active goal.
+
+                if (!wasArchivedBeforeDay) {
+                    dailyTarget = Number(goal.target_amount);
+                }
+            }
+
             const txWhere: any = {
-                sender_id: workerId,
+                workerprofile_id: profileId,
                 type: "DEPOSIT",
                 status: "COMPLETED",
                 created_at: {
@@ -471,9 +481,6 @@ export async function getGoalWorker(
                     lte: dayEnd
                 }
             };
-            if (workerProfileId) {
-                txWhere.workerprofile_id = workerProfileId;
-            }
 
             const achieved = await prisma.transaction.aggregate({
                 where: txWhere,
@@ -483,18 +490,20 @@ export async function getGoalWorker(
             });
 
             const commission = Number(achieved._sum.commission || 0);
-            const status =
-                commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+
+            if (dailyTarget > 0) {
+                status = commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
+            }
 
             history.push({
                 date: dayStart.toISOString().split("T")[0], // YYYY-MM-DD
                 commission,
-                targetAmount,
+                targetAmount: dailyTarget,
                 status
             });
         }
 
-        return history; // Returns array of 7 items
+        return history;
     } catch (error) {
         errorHandler(error, req, res);
         return ResponseHandler.error(
@@ -503,6 +512,44 @@ export async function getGoalWorker(
             ErrorCode.INTERNAL_ERROR
         );
     }
+}
+
+/**
+ * Delete (Archive) the goal for a kiosk.
+ *
+ * @param kioskId 
+ * @param ownerId 
+ * @param req 
+ * @param res 
+ */
+export async function deleteKioskGoal(
+    kioskId: string,
+    ownerId: string,
+    req: Request,
+    res: Response
+) {
+    const kiosk = await prisma.kiosk.findFirst({
+        where: { id: kioskId, owner_id: ownerId, is_active: true }
+    })
+
+    if (!kiosk || kiosk.owner_id !== ownerId) {
+        errorHandler(new AuthorizationError("Unauthorized"), req, res);
+        return null;
+    }
+
+    // Archive current active goal
+    await prisma.goal.updateMany({
+        where: {
+            kiosk_id: kioskId,
+            status: "ACTIVE",
+            type: "WORKER_TARGET"
+        },
+        data: {
+            status: "ARCHIVED"
+        }
+    });
+
+    return { message: "Goal removed" };
 }
 
 /**

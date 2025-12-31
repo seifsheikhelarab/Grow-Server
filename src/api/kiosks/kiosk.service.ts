@@ -722,7 +722,11 @@ export async function getKioskDetails(
 
         const workers = await prisma.workerProfile.findMany({
             where: { kiosk_id: kioskId },
-            select: { name: true, status: true, user_id: true, id: true }
+            include: {
+                user: {
+                    select: { full_name: true }
+                }
+            }
         });
 
         const totalGross = netEarnings.reduce(
@@ -741,7 +745,12 @@ export async function getKioskDetails(
                 total_gross: totalGross.toString(),
                 total_dues: totalDue.toString(),
                 net_earnings: totalNetEarnings.toString(),
-                workers
+                workers: workers.map((w) => ({
+                    name: w.user.full_name,
+                    status: w.status,
+                    user_id: w.user_id,
+                    id: w.id
+                }))
             }
         };
     } catch (err) {
@@ -787,25 +796,21 @@ export async function getKioskReports(
             return null;
         }
 
-        // 2. Define Time Range (Current Month)
-        const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
-
-        // 3. Get Total Dues for the Month
-        const duesAgg = await prisma.kioskDue.aggregate({
+        const totalDues = await prisma.kioskDue.aggregate({
             where: {
                 kiosk_id: kioskId,
-                created_at: {
-                    gte: startOfMonth,
-                    lte: endOfMonth
-                },
                 is_paid: false
             },
             _sum: {
                 amount: true
             }
         });
-        const totalDues = Number(duesAgg._sum.amount || 0);
+
+        const totalDuesAmount = Number(totalDues._sum.amount || 0);
+
+        // 2. Define Time Range (Current Month)
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
         // 4. Get Total Commission for the Month
         const commissionAgg = await prisma.transaction.aggregate({
@@ -867,10 +872,10 @@ export async function getKioskReports(
                 const day = tx.created_at.getDate();
                 const amount = Number(tx.amount_gross) || 0;
 
-                if (day <= 7) weeks.week1 += amount;
-                else if (day <= 14) weeks.week2 += amount;
-                else if (day <= 21) weeks.week3 += amount;
-                else weeks.week4 += amount;
+                if (day <= 7) weeks.week1 += Math.round(amount);
+                else if (day <= 14) weeks.week2 += Math.round(amount);
+                else if (day <= 21) weeks.week3 += Math.round(amount);
+                else weeks.week4 += Math.round(amount);
             }
 
             workerReports.push({
@@ -889,8 +894,8 @@ export async function getKioskReports(
                 year: "numeric"
             }),
             summary: {
-                total_dues: totalDues,
-                total_commission: totalCommission
+                total_dues: Math.round(totalDuesAmount),
+                total_commission: Math.round(totalCommission)
             },
             worker_reports: workerReports
         };
@@ -928,17 +933,7 @@ export async function getWorkerDetails(
             where: { id: workerId }
         });
 
-        const goal = await prisma.goal.findFirst({
-            where: {
-                user_id: workerId,
-                workerprofile_id: worker.id,
-                is_recurring: true,
-                type: "WORKER_TARGET"
-            }
-        });
-
         const goals = [];
-        const targetAmount = goal ? Number(goal.target_amount) : 0;
 
         // Iterate for the last 7 days (including today)
         for (let i = 0; i < 7; i++) {
@@ -951,14 +946,24 @@ export async function getWorkerDetails(
             const dayEnd = new Date(date);
             dayEnd.setHours(23, 59, 59, 999);
 
-            if (!goal) {
-                goals.push({
-                    date: dayStart.toISOString().split("T")[0],
-                    commission: 0,
-                    targetAmount: 0,
-                    status: "NOT_ACHIEVED"
-                });
-                continue;
+            // Find the goal that was ACTIVE on this day.
+            const dailyGoal = await prisma.goal.findFirst({
+                where: {
+                    kiosk_id: worker.kiosk_id,
+                    type: "WORKER_TARGET",
+                    created_at: { lte: dayEnd }
+                },
+                orderBy: { created_at: 'desc' }
+            });
+
+            let dailyTarget = 0;
+            let status = "NOT_ACHIEVED";
+
+            if (dailyGoal) {
+                const wasArchivedBeforeDay = dailyGoal.status === "ARCHIVED" && dailyGoal.updated_at < dayStart;
+                if (!wasArchivedBeforeDay) {
+                    dailyTarget = Number(dailyGoal.target_amount);
+                }
             }
 
             const achieved = await prisma.transaction.aggregate({
@@ -978,13 +983,17 @@ export async function getWorkerDetails(
             });
 
             const commission = Number(achieved._sum.commission || 0);
-            const status =
-                commission >= targetAmount ? "ACHIEVED" : "NOT_ACHIEVED";
+
+            if (dailyTarget > 0) {
+                status = commission >= dailyTarget ? "ACHIEVED" : "NOT_ACHIEVED";
+            } else {
+                status = "NOT_SET";
+            }
 
             goals.push({
                 date: dayStart.toISOString().split("T")[0],
                 commission,
-                targetAmount,
+                targetAmount: dailyTarget,
                 status
             });
         }

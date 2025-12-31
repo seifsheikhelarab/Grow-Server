@@ -223,19 +223,19 @@ async function main() {
         });
     }
 
-    // Worker target goals
-    for (const { user: worker, kiosk, profile } of workers.slice(0, 10)) { // Increase coverage
-        const owner = owners.find(o => kiosks.some(k => k.id === kiosk.id && k.owner_id === o.id));
+    // Kiosk target goals (applied to all workers in kiosk)
+    for (const kiosk of kiosks) {
+        const owner = owners.find(o => o.id === kiosk.owner_id);
         await prisma.goal.create({
             data: {
-                user_id: worker.id,
-                workerprofile_id: profile.id,
+                // user_id left null as it applies to kiosk
                 owner_id: owner?.id,
                 kiosk_id: kiosk.id,
                 title: "Daily Commission Target",
                 target_amount: faker.number.float({ min: 50, max: 200, fractionDigits: 2 }),
                 type: "WORKER_TARGET",
-                is_recurring: true
+                is_recurring: true,
+                status: "ACTIVE"
             }
         });
     }

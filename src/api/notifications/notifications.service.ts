@@ -193,12 +193,11 @@ export async function notifyOwnerInvitationSent(
 ) {
     return createNotification(
         ownerId,
-        "Invitation Sent",
-        `Invitation sent to ${workerName} for kiosk "${kioskName}".`,
+        "تم ارسال دعوة",
+        `تم ارسال دعوة ل ${workerName} ل "${kioskName}".`,
         "WORKER_INVITATION_SENT"
     );
 }
-
 /**
  * Notify owner: Worker accepted/declined invitation.
  */
@@ -208,11 +207,11 @@ export async function notifyOwnerInvitationResponse(
     kioskName: string,
     accepted: boolean
 ) {
-    const action = accepted ? "accepted" : "declined";
+    const action = accepted ? "قبول" : "رفض";
     return createNotification(
         ownerId,
-        `Invitation ${accepted ? "Accepted" : "Declined"}`,
-        `${workerName} has ${action} the invitation to join "${kioskName}".`,
+        `تم ${accepted ? "قبول" : "رفض"} دعوة`,
+        `${workerName} ${action} دعوة ل "${kioskName}".`,
         "WORKER_INVITATION_RESPONSE"
     );
 }
@@ -227,8 +226,8 @@ export async function notifyOwnerNewRedemption(
 ) {
     return createNotification(
         ownerId,
-        "New Redemption Request",
-        `${userName} has requested a redemption of ${amount} points.`,
+        "طلب سحب جديد",
+        `${userName} طلب سحب ${amount} نقطة.`,
         "REDEMPTION_REQUEST_NEW"
     );
 }
@@ -242,11 +241,10 @@ export async function notifyOwnerRedemptionProcessed(
     approved: boolean,
     amount: string
 ) {
-    const status = approved ? "approved" : "declined";
     return createNotification(
         ownerId,
-        `Redemption ${approved ? "Approved" : "Declined"}`,
-        `Redemption request of ${amount} points for ${userName} has been ${status}.`,
+        `تم ${approved ? "قبول" : "رفض"} طلب سحب`,
+        `تم ${approved ? "قبول" : "رفض"} طلب سحب ${amount} نقطة ل ${userName}.`,
         "REDEMPTION_REQUEST_PROCESSED"
     );
 }
@@ -261,8 +259,8 @@ export async function notifyOwnerWorkerRedemption(
 ) {
     return createNotification(
         ownerId,
-        "Worker Redemption Request",
-        `Your worker ${workerName} has requested a redemption of ${amount} points.`,
+        "طلب سحب من عامل",
+        `${workerName} طلب سحب ${amount} نقطة.`,
         "WORKER_REDEMPTION_CREATED"
     );
 }
@@ -278,8 +276,8 @@ export async function notifyOwnerDuePending(
 ) {
     return createNotification(
         ownerId,
-        "Due Payment Pending",
-        `Due of ${amount} points for kiosk "${kioskName}" has been pending for ${daysPending} days.`,
+        "مستحقات معلقة",
+        `مستحقات معلقة ل "${kioskName}" لفترة ${daysPending} يومًا.`,
         "DUE_PENDING"
     );
 }
@@ -293,11 +291,11 @@ export async function notifyOwnerDuePaid(
     amount: string,
     partial: boolean
 ) {
-    const status = partial ? "partially paid" : "fully paid";
+    const status = partial ? "جزئيا" : "بشكل كامل";
     return createNotification(
         ownerId,
-        `Due ${partial ? "Partially" : "Fully"} Paid`,
-        `Due of ${amount} points for kiosk "${kioskName}" has been ${status}.`,
+        `تم سداد مستحقات ${status}`,
+        `تم دفع ${amount} نقطة ل "${kioskName}" ${status}.`,
         "DUE_PAID"
     );
 }
@@ -312,8 +310,8 @@ export async function notifyOwnerWorkerLeft(
 ) {
     return createNotification(
         ownerId,
-        "Worker Left Kiosk",
-        `${workerName} has left kiosk "${kioskName}".`,
+        "عامل غادر الكشك",
+        `${workerName} غادر "${kioskName}".`,
         "WORKER_LEFT_KIOSK"
     );
 }
@@ -329,7 +327,7 @@ export async function notifyOwnerWorkerStatus(
     return createNotification(
         ownerId,
         `Worker ${status}`,
-        `Your worker ${workerName} has been ${status.toLowerCase()}.`,
+        `${workerName} ${status.toLowerCase()}.`,
         "USER_STATUS_CHANGED"
     );
 }
@@ -344,8 +342,8 @@ export async function notifyOwnerKioskStatus(
 ) {
     return createNotification(
         ownerId,
-        `Kiosk ${status}`,
-        `Your kiosk "${kioskName}" has been ${status.toLowerCase()}.`,
+        `الكشك ${status}`,
+        `${kioskName} ${status.toLowerCase()}.`,
         "KIOSK_STATUS_CHANGED"
     );
 }
@@ -361,8 +359,8 @@ export async function notifyOwnerTransaction(
 ) {
     return createNotification(
         ownerId,
-        "Transaction Completed",
-        `${senderName} sent ${amount} points to ${receiverPhone}.`,
+        "تم إتمام المعاملة",
+        `${senderName} ارسل ${amount} نقطة إلى ${receiverPhone}.`,
         "TRANSACTION_COMPLETED"
     );
 }
@@ -376,8 +374,8 @@ export async function notifyOwnerKioskCreated(
 ) {
     return createNotification(
         ownerId,
-        "Kiosk Created",
-        `Kiosk "${kioskName}" has been added successfully.`,
+        "تم إضافة الكشك",
+        `"${kioskName}" تم إضافة الكشك بنجاح.`,
         "KIOSK_CREATED"
     );
 }
@@ -391,8 +389,8 @@ export async function notifyOwnerKioskDeleted(
 ) {
     return createNotification(
         ownerId,
-        "Kiosk Deleted",
-        `Kiosk "${kioskName}" has been deleted.`,
+        "تم حذف الكشك",
+        `"${kioskName}" تم حذف الكشك بنجاح.`,
         "KIOSK_DELETED"
     );
 }
@@ -411,8 +409,8 @@ export async function notifyWorkerNewInvitation(
 ) {
     return createNotification(
         workerId,
-        "New Kiosk Invitation",
-        `${ownerName} has invited you to join kiosk "${kioskName}".`,
+        "تم دعوة جديدة",
+        `${ownerName} دعاك ل "${kioskName}".`,
         "WORKER_INVITATION_SENT"
     );
 }
@@ -426,8 +424,8 @@ export async function notifyWorkerRedemptionCreated(
 ) {
     return createNotification(
         workerId,
-        "Redemption Request Submitted",
-        `Your redemption request for ${amount} points has been submitted.`,
+        "تم طلب سحب جديد",
+        `طلب سحب ${amount} نقطة تم.`,
         "REDEMPTION_REQUEST_NEW"
     );
 }
@@ -440,11 +438,11 @@ export async function notifyWorkerRedemptionProcessed(
     approved: boolean,
     amount: string
 ) {
-    const status = approved ? "approved" : "declined";
+    const status = approved ? "تم قبوله" : "تم رفضه";
     return createNotification(
         workerId,
-        `Redemption ${approved ? "Approved" : "Declined"}`,
-        `Your redemption request for ${amount} points has been ${status}.`,
+        `${approved ? "تم قبول" : "تم رفض"} طلب سحب`,
+        `طلب سحب ${amount} نقطة ${status}.`,
         "REDEMPTION_REQUEST_PROCESSED"
     );
 }
@@ -459,8 +457,8 @@ export async function notifyWorkerTransaction(
 ) {
     return createNotification(
         workerId,
-        "Transaction Completed",
-        `You sent ${amount} points to ${receiverPhone}.`,
+        "تم إتمام المعاملة",
+        `تم إتمام المعاملة ${amount} نقطة إلى ${receiverPhone}.`,
         "TRANSACTION_COMPLETED"
     );
 }

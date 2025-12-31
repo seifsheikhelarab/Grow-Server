@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { setGoal, getGoal, getWorkerStatus } from "./goals.controller.js";
+import { setGoal, getGoal, getWorkerStatus, removeGoal } from "./goals.controller.js";
 import {
     authMiddleware,
     roleGuard
@@ -20,6 +20,9 @@ router.post(
 
 // Get Goal: Owner
 router.get("/:kioskId", authMiddleware, roleGuard("OWNER"), getGoal);
+
+// Remove Goal: Owner
+router.delete("/:kioskId", authMiddleware, roleGuard("OWNER"), removeGoal);
 
 // Get Worker Goals: Worker
 router.get("/", authMiddleware, roleGuard("WORKER"), getWorkerStatus);

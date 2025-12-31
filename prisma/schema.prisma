@@ -167,31 +167,28 @@ model WorkerProfile {
   kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
 
   transactions Transaction[]
-  goals        Goal[]
 }
 
 // ---------------- GOALS ----------------
 
 model Goal {
   id            String    @id @default(uuid())
-  user_id       String
+  user_id       String?
   title         String
   target_amount Decimal   @db.Decimal(10, 2)
   type          String // SAVING, WORKER_TARGET
+  status        String    @default("ACTIVE") // ACTIVE, ARCHIVED
   deadline      DateTime?
-  kiosk_id      String
+  kiosk_id      String?
 
   owner_id     String?
   is_recurring Boolean @default(false)
 
-  workerprofile_id String?
-  workerprofile    WorkerProfile? @relation(fields: [workerprofile_id], references: [id])
-
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user  User  @relation(fields: [user_id], references: [id])
-  kiosk Kiosk @relation(fields: [kiosk_id], references: [id])
+  user  User?  @relation(fields: [user_id], references: [id])
+  kiosk Kiosk? @relation(fields: [kiosk_id], references: [id])
 }
 
 model Otp {

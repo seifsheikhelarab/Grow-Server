@@ -35,7 +35,7 @@ export async function getBalance(userId: string, req: Request, res: Response) {
             errorHandler(new NotFoundError("Wallet not found"), req, res);
         }
 
-        return wallet.balance.toNumber
+        return wallet.balance.toNumber()
             ? wallet.balance.toNumber()
             : Number(wallet.balance);
     } catch (err) {
@@ -463,6 +463,28 @@ export async function editGoal(
         }
 
         logger.info(`Edited goal ${id} for user ${userId}`);
+        // If WORKER_TARGET, we must preserve history by archiving the old one and creating a new one
+        if (goal.type === "WORKER_TARGET") {
+            await prisma.goal.update({
+                where: { id },
+                data: { status: "ARCHIVED" }
+            });
+
+            return await prisma.goal.create({
+                data: {
+                    owner_id: goal.owner_id,
+                    kiosk_id: goal.kiosk_id,
+                    user_id: goal.user_id,
+                    title,
+                    target_amount: target,
+                    type,
+                    deadline,
+                    status: "ACTIVE",
+                    is_recurring: goal.is_recurring // Preserve recurrence setting
+                }
+            });
+        }
+
         return await prisma.goal.update({
             where: { id },
             data: { title, target_amount: target, type, deadline }

@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import {
-    setWorkerGoal,
+    setKioskGoal,
     getKioskGoal,
     getGoalWorker,
-    getKioskGoals
+    getKioskGoals,
+    deleteKioskGoal
 } from "./goals.service.js";
 import { ResponseHandler } from "../../utils/response.js";
 import {
@@ -17,17 +18,15 @@ import {
  * @param {Response} res - The Express response object.
  */
 export const setGoal = asyncHandler(async (req: Request, res: Response) => {
-    const { workerId, targetAmount, kioskId, workerProfileId } = req.body;
+    const { targetAmount, kioskId } = req.body;
     const ownerId = req.user.id;
 
-    const goal = await setWorkerGoal(
+    const goal = await setKioskGoal(
         ownerId,
-        workerId,
         Number(targetAmount),
         req,
         res,
         kioskId,
-        workerProfileId
     );
     if (res.headersSent) return null;
     return ResponseHandler.success(res, "Goal set successfully", goal);
@@ -84,3 +83,23 @@ export const getWorkerStatus = asyncHandler(
         }
     }
 );
+
+/**
+ * Remove (archive) goal for a kiosk.
+ */
+export const removeGoal = asyncHandler(async (req: Request, res: Response) => {
+    try {
+        const { kioskId } = req.params;
+        const ownerId = req.user.id;
+
+        const result = await deleteKioskGoal(kioskId, ownerId, req, res);
+
+        if (res.headersSent) return null;
+        return ResponseHandler.success(res, "Goal removed successfully", result);
+
+    } catch (error) {
+        errorHandler(error, req, res);
+        if (res.headersSent) return null;
+        return ResponseHandler.error(res, "Failed to remove goal", error);
+    }
+});
