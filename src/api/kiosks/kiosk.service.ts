@@ -619,7 +619,7 @@ export async function removeWorker(
         }
 
         const worker = await prisma.workerProfile.findUnique({
-            where: { id: workerId }
+            where: { user_id: workerId }
         });
 
         if (!worker) {

@@ -22,17 +22,14 @@ export const registerSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
     full_name: z.string().min(2, "Full name required"),
     password: z
-        .string()
-        .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters"),
+        .string(),
     role: z.enum(["CUSTOMER", "WORKER", "OWNER"])
 });
 
 /** Schema for user login */
 export const loginSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Invalid phone number format"),
-    password: z
-        .string()
-        .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")
+    password: z.string()
 });
 
 export const forgotPasswordSchema = z.object({
@@ -40,9 +37,7 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-    password: z
-        .string()
-        .regex(/^[a-zA-Z0-9]{8,}$/, "Password must be at least 8 characters")
+    password: z.string()
 });
 
 /**
