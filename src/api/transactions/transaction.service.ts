@@ -227,14 +227,25 @@ export async function sendPoints(
     senderId: string,
     receiverPhone: string,
     kioskId: string,
-    amount: number,
-    workerprofileId?: string
+    amount: number
 ) {
     // Validate sender
     const sender = await validateSender(senderId);
 
     // Validate kiosk
     const kiosk = await validateKiosk(kioskId, senderId);
+
+    // Deduce worker profile if sender is a worker
+    let workerProfileId: string | null = null;
+    if (sender.role === "WORKER") {
+        const activeProfile = sender.worker_profiles.find(
+            (p) => p.kiosk_id === kioskId && p.status === "ACTIVE"
+        );
+        // validateKiosk already ensures that if the sender is a WORKER, they have an active profile for this kiosk.
+        if (activeProfile) {
+            workerProfileId = activeProfile.id;
+        }
+    }
 
     // Get settings
     const settings = await getTransactionSettings();
@@ -300,11 +311,12 @@ export async function sendPoints(
 
         // Handle Commission
         if (commissionStatus === "PAID") {
-            // No Goal: Pay Worker immediately
+            // No Goal: Pay Worker immediately and send 
             await tx.wallet.update({
                 where: { user_id: senderId },
                 data: { balance: { increment: commission } }
             });
+
             logger.info(
                 `[TX] Added ${commission} commission to sender (Worker)`
             );
@@ -335,7 +347,7 @@ export async function sendPoints(
                 receiver_phone: receiverPhone,
                 receiver_id: receiverId,
                 kiosk_id: kioskId,
-                workerprofile_id: workerprofileId || null,
+                workerprofile_id: workerProfileId || null,
                 amount_gross: amount,
                 amount_net: customerAmount,
                 commission: commission,
