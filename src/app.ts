@@ -19,9 +19,15 @@ import { initNotificationCleanupJob } from "./jobs/notificationCleanup.job.js";
 
 const app: Express = express();
 
-// Initialize Cron Jobs
-initDailyGoalsJob();
-initNotificationCleanupJob();
+// Initialize node-cron jobs only when NOT running on Vercel.
+// Vercel uses HTTP-triggered crons defined in vercel.json instead.
+if (!process.env.VERCEL) {
+    initDailyGoalsJob();
+    initNotificationCleanupJob();
+    logger.info("[Cron] Node-cron jobs initialized (non-Vercel environment)");
+} else {
+    logger.info("[Cron] Skipping node-cron (Vercel uses HTTP crons)");
+}
 
 // Body parser
 app.use(express.json({ limit: "10mb" }));

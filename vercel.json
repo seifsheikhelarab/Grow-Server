@@ -1,0 +1,12 @@
+{
+    "crons": [
+        {
+            "path": "/api/v1/cron/daily-goals",
+            "schedule": "59 23 * * *"
+        },
+        {
+            "path": "/api/v1/cron/notification-cleanup",
+            "schedule": "5 0 * * *"
+        }
+    ]
+}
