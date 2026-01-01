@@ -53,6 +53,8 @@ export const getWorkerDashboard = asyncHandler(
             res
         );
 
+        if (res.headersSent) return;
+
         ResponseHandler.success(
             res,
             "Worker dashboard data retrieved successfully",

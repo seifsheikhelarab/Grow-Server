@@ -187,7 +187,7 @@ async function checkConstraints(
     // Constraint 1: Amount <= maxTransactionAmount
     if (amount > maxTransactionAmount) {
         errorHandler(new BusinessLogicError(
-            `Transaction amount cannot exceed ${maxTransactionAmount}`,
+            `Amount exceeds the limit. You can send up to ${maxTransactionAmount} points per transaction.`,
             ErrorCode.INVALID_TRANSACTION_AMOUNT,
             { max: maxTransactionAmount, requested: amount }
         ), req, res);
@@ -208,7 +208,7 @@ async function checkConstraints(
 
     if (dailyTxsToCustomer >= maxDailyTxToCustomer) {
         errorHandler(new BusinessLogicError(
-            `Daily transaction limit to this customer (${maxDailyTxToCustomer}) exceeded`,
+            `Daily limit reached for this customer. You can only send ${maxDailyTxToCustomer} transactions to the same person per day.`,
             ErrorCode.DAILY_TX_TO_USER_LIMIT,
             { max: maxDailyTxToCustomer, current: dailyTxsToCustomer }
         ), req, res);
@@ -227,7 +227,7 @@ async function checkConstraints(
 
     if (totalDailyTxs >= maxDailyTxPerWorker) {
         errorHandler(new BusinessLogicError(
-            `Daily transaction limit (${maxDailyTxPerWorker}) exceeded`,
+            `Daily sending limit reached. You can perform up to ${maxDailyTxPerWorker} transactions per day.`,
             ErrorCode.DAILY_LIMIT_EXCEEDED,
             { max: maxDailyTxPerWorker, current: totalDailyTxs }
         ), req, res);

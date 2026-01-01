@@ -126,6 +126,19 @@ export async function getWorkerDashboard(
     };
 }> | null {
     try {
+
+
+        const workerprofile = await prisma.workerProfile.findFirst({
+            where: {
+                id: workerProfileId
+            }
+        })
+
+        if (workerprofile.user_id !== userId) {
+            errorHandler(new Error("You're Not assigned to this kiosk"), req, res)
+            return null;
+        }
+
         const dayStart = new Date();
         dayStart.setHours(0, 0, 0, 0);
 
