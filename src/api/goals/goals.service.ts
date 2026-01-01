@@ -434,13 +434,6 @@ export async function getGoalWorker(
             const dayEnd = new Date(date);
             dayEnd.setHours(23, 59, 59, 999);
 
-            // Find the goal that was ACTIVE on this day.
-            // Conditions:
-            // 1. created_at <= dayEnd
-            // 2. status = ACTIVE OR (status=ARCHIVED/ended and updated_at >= dayStart)
-            // Ideally we need 'ended_at' but using 'updated_at' for ARCHIVED approximates it.
-            // Better: Find the LATEST goal created BEFORE dayEnd.
-
             const goal = await prisma.goal.findFirst({
                 where: {
                     kiosk_id: kioskId,
@@ -449,23 +442,12 @@ export async function getGoalWorker(
                 },
                 orderBy: { created_at: "desc" }
             });
-
-            // Check if this goal was actually valid for this day?
-            // If the goal we found was ARCHIVED before this day started, then there was NO goal (or we should find the one before it).
-            // But 'findFirst ordered by desc created_at' gets the most recent goal started before end of that day.
-            // If that goal was archived BEFORE dayStart, then it wasn't active on dayStart.
-
             let dailyTarget = 0;
             let status = "NOT_SET";
 
             if (goal) {
                 const wasArchivedBeforeDay =
                     goal.status === "ARCHIVED" && goal.updated_at < dayStart;
-                // If the goal is "ARCHIVED" and "updated_at" is older than dayStart, then this goal was dead before this day.
-                // We need to check if there was another goal?
-                // But since we order by created_at desc, if the latest is dead, then preceding ones are also presumably dead/superseded.
-                // Actually superseding goals would have newer created_at.
-                // So if the latest created goal (before dayEnd) was killed before dayStart, then there was no active goal.
 
                 if (!wasArchivedBeforeDay) {
                     dailyTarget = Number(goal.target_amount);
@@ -504,7 +486,10 @@ export async function getGoalWorker(
             });
         }
 
-        return history;
+        return {
+            current: history[0],
+            history: history.splice(1)
+        };
     } catch (error) {
         errorHandler(error, req, res);
         return ResponseHandler.error(
