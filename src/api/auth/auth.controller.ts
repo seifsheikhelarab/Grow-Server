@@ -239,16 +239,8 @@ export const resetPassword = asyncHandler(
             return;
         }
 
-        const result = await authService.resetPassword(
-            phone,
-            password,
-            req,
-            res
-        );
+        await authService.resetPassword(phone, password, req, res);
 
-        ResponseHandler.success(res, "Password reset successfully", {
-            token: result.token,
-            workerProfile: result.worker_profile
-        });
+        ResponseHandler.success(res, "Password reset successfully");
     }
 );
