@@ -51,7 +51,7 @@ export const getGoal = asyncHandler(async (req: Request, res: Response) => {
     } catch (error) {
         errorHandler(error, req, res);
         if (res.headersSent) return null;
-        return ResponseHandler.error(res, "Failed to retrieve goal", error);
+        return ResponseHandler.error(res, "حدث خطأ أثناء استرجاع الهدف", error);
     }
 });
 
@@ -80,7 +80,7 @@ export const getWorkerStatus = asyncHandler(
         } catch (error) {
             errorHandler(error, req, res);
             if (res.headersSent) return null;
-            return ResponseHandler.error(res, "Failed to retrieve goal", error);
+            return ResponseHandler.error(res, "حدث خطأ أثناء استرجاع الهدف", error);
         }
     }
 );
@@ -104,6 +104,6 @@ export const removeGoal = asyncHandler(async (req: Request, res: Response) => {
     } catch (error) {
         errorHandler(error, req, res);
         if (res.headersSent) return null;
-        return ResponseHandler.error(res, "Failed to remove goal", error);
+        return ResponseHandler.error(res, "حدث خطأ أثناء حذف الهدف", error);
     }
 });

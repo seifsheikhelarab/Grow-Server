@@ -36,7 +36,7 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
     if (!phone) {
         errorHandler(
             new AuthenticationError(
-                "User not authenticated",
+                "المستخدم غير مسجل",
                 ErrorCode.UNAUTHORIZED_ACCESS
             ),
             req,
@@ -67,7 +67,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     if (!phone) {
         errorHandler(
             new AuthenticationError(
-                "User not authenticated",
+                "المستخدم غير مسجل",
                 ErrorCode.UNAUTHORIZED_ACCESS
             ),
             req,
@@ -82,7 +82,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     if (!result.userExists || !result.token) {
         errorHandler(
             new AuthenticationError(
-                "User does not exist",
+                "المستخدم غير موجود",
                 ErrorCode.INVALID_TOKEN
             ),
             req,
@@ -179,7 +179,7 @@ export const deleteAccount = asyncHandler(
             // Should be caught by auth middleware
             errorHandler(
                 new AuthenticationError(
-                    "User not authenticated",
+                    "المستخدم غير مسجل",
                     ErrorCode.UNAUTHORIZED_ACCESS
                 ),
                 req,
@@ -230,7 +230,7 @@ export const resetPassword = asyncHandler(
         if (!phone) {
             errorHandler(
                 new AuthenticationError(
-                    "User not authenticated",
+                    "المستخدم غير مسجل",
                     ErrorCode.UNAUTHORIZED_ACCESS
                 ),
                 req,

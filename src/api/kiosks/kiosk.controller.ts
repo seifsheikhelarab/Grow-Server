@@ -242,7 +242,7 @@ export const getReports = asyncHandler(async (req: Request, res: Response) => {
     if (!month || !year) {
         return ResponseHandler.error(
             res,
-            "Month and year are required",
+            "الشهر والسنة مطلوبة",
             ErrorCode.VALIDATION_ERROR
         );
     }

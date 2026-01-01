@@ -59,9 +59,9 @@ export async function sendOtp(
         };
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
-        errorHandler(err, req, res);
+        errorHandler(new Error("حدث خطأ أثناء إرسال رمز التحقق لمرة واحدة"), req, res);
         return {
-            message: "Error sending OTP",
+            message: "حدث خطأ أثناء إرسال رمز التحقق لمرة واحدة",
             token: ""
         };
     }
@@ -120,7 +120,7 @@ export async function verifyOtp(
 
         if (!otpRecord) {
             errorHandler(
-                new NotFoundError("OTP not found or expired"),
+                new NotFoundError("لم يتم العثور على رمز التحقق لمرة واحدة أو انتهت صلاحيته"),
                 req,
                 res
             );
@@ -130,7 +130,7 @@ export async function verifyOtp(
         if (otpRecord.expiresAt < new Date()) {
             await prisma.otp.delete({ where: { phone } });
             errorHandler(
-                new AuthenticationError("OTP expired", ErrorCode.OTP_EXPIRED),
+                new AuthenticationError("انتهت صلاحية رمز التحقق لمرة واحدة", ErrorCode.OTP_EXPIRED),
                 req,
                 res
             );
@@ -139,7 +139,7 @@ export async function verifyOtp(
 
         if (otpRecord.code !== code) {
             errorHandler(
-                new AuthenticationError("Invalid OTP", ErrorCode.INVALID_OTP),
+                new AuthenticationError("رمز التحقق لمرة واحدة غير صحيح", ErrorCode.INVALID_OTP),
                 req,
                 res
             );
@@ -162,7 +162,7 @@ export async function verifyOtp(
 
         if (!user.is_active) {
             errorHandler(
-                new AuthenticationError("User account is inactive"),
+                new AuthenticationError("حساب المستخدم غير نشط", ErrorCode.INVALID_TOKEN),
                 req,
                 res
             );
@@ -193,7 +193,7 @@ export async function verifyOtp(
         return { userExists: true, token, worker_profile: workerProfile };
     } catch (err) {
         logger.error(`Error verifying OTP: ${err}`);
-        errorHandler(err, req, res);
+        errorHandler(new Error("حدث خطأ أثناء التحقق من رمز التحقق لمرة واحدة"), req, res);
         return { userExists: false, token: "" };
     }
 }
@@ -229,21 +229,12 @@ export async function register(
     } | null;
 }> {
     try {
-        // //Check if temp auth is valid
-        // const tempAuth = req.user;
-        // if (!tempAuth || tempAuth.phone !== phone) {
-        //     errorHandler(
-        //         new AuthenticationError("Invalid temporary token"),
-        //         req,
-        //         res
-        //     );
-        // }
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { phone } });
         if (existingUser && existingUser.password_hash) {
             errorHandler(
-                new ConflictError("User already exists with this phone number"),
+                new ConflictError("مستخدم موجود بالفعل بهذا الرقم الهاتفي"),
                 req,
                 res
             );
@@ -329,7 +320,7 @@ export async function register(
         logger.error(`Error registering user: ${err}`);
         errorHandler(
             new AppError(
-                "Error registering user",
+                "خطأ في تسجيل المستخدم",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -378,7 +369,7 @@ export async function login(
 
         if (!user || !user.password_hash) {
             errorHandler(
-                new AuthenticationError("Invalid phone or password"),
+                new AuthenticationError("رقم هاتف أو كلمة مرور غير صحيحة"),
                 req,
                 res
             );
@@ -386,7 +377,7 @@ export async function login(
 
         if (!user.is_active) {
             errorHandler(
-                new AuthenticationError("User account is inactive"),
+                new AuthenticationError("حساب المستخدم غير نشط", ErrorCode.INVALID_TOKEN),
                 req,
                 res
             );
@@ -400,7 +391,7 @@ export async function login(
 
         if (!isPasswordValid) {
             errorHandler(
-                new AuthenticationError("Invalid phone or password"),
+                new AuthenticationError("رقم هاتف أو كلمة مرور غير صحيحة"),
                 req,
                 res
             );
@@ -434,7 +425,7 @@ export async function login(
     } catch (err) {
         logger.error(`Error logging in: ${err}`);
         errorHandler(
-            new AppError("Error logging in", 500, ErrorCode.INTERNAL_ERROR),
+            new AppError("حدث خطأ أثناء تسجيل الدخول", 500, ErrorCode.INTERNAL_ERROR),
             req,
             res
         );
@@ -479,7 +470,7 @@ export async function verifyToken(
         if (err.name === "TokenExpiredError") {
             errorHandler(
                 new AuthenticationError(
-                    "Token expired",
+                    "انتهت صلاحية الرمز المميز",
                     ErrorCode.TOKEN_EXPIRED
                 ),
                 req,
@@ -488,7 +479,7 @@ export async function verifyToken(
             return { id: "", full_name: "", phone: "", role: "" };
         }
         errorHandler(
-            new AuthenticationError("Invalid token", ErrorCode.INVALID_TOKEN),
+            new AuthenticationError("رمز غير صالح", ErrorCode.INVALID_TOKEN),
             req,
             res
         );
@@ -517,7 +508,7 @@ export async function deleteAccount(
         logger.error(`Error deleting account: ${err}`);
         errorHandler(
             new AppError(
-                "Error deleting account",
+                "حدث خطأ أثناء حذف الحساب",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -565,14 +556,14 @@ export async function forgotPassword(
         );
 
         return {
-            message: "OTP sent successfully",
+            message: "تم إرسال رمز التحقق لمرة واحدة بنجاح",
             token: tempToken
         };
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
         errorHandler(err, req, res);
         return {
-            message: "Error sending OTP",
+            message: "حدث خطأ أثناء إرسال رمز التحقق لمرة واحدة",
             token: ""
         };
     }
@@ -605,7 +596,7 @@ export async function resetPassword(
         // Find user by phone
         const user = await prisma.user.findUnique({ where: { phone } });
         if (!user) {
-            errorHandler(new AuthenticationError("User not found"), req, res);
+            errorHandler(new AuthenticationError("لم يتم العثور على المستخدم"), req, res);
         }
 
         // Update password
@@ -638,7 +629,7 @@ export async function resetPassword(
         logger.error(`Error resetting password: ${err}`);
         errorHandler(err, req, res);
         return {
-            message: "Error resetting password",
+            message: "خطأ في إعادة تعيين كلمة المرور",
             token: ""
         };
     }
@@ -662,11 +653,11 @@ export async function resendOtp(
 
         if (!otpRecord) {
             errorHandler(
-                new NotFoundError("OTP not found or expired"),
+                new NotFoundError("لم يتم العثور على رمز التحقق لمرة واحدة أو انتهت صلاحيته"),
                 req,
                 res
             );
-            return { message: "OTP not found or expired", token: "" };
+            return { message: "لم يتم العثور على رمز التحقق لمرة واحدة أو انتهت صلاحيته", token: "" };
         }
 
         // Delete used OTP
@@ -698,14 +689,14 @@ export async function resendOtp(
         await sendSMS(phone, code);
 
         return {
-            message: "OTP sent successfully",
+            message: "تم إرسال رمز التحقق لمرة واحدة بنجاح",
             token: tempToken
         };
     } catch (err) {
         logger.error(`Error sending OTP: ${err}`);
         errorHandler(err, req, res);
         return {
-            message: "Error sending OTP",
+            message: "حدث خطأ أثناء إرسال رمز التحقق لمرة واحدة",
             token: ""
         };
     }

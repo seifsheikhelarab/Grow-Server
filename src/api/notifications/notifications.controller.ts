@@ -74,7 +74,7 @@ export const markNotificationAsRead = asyncHandler(
         if (!result) {
             ResponseHandler.error(
                 res,
-                "Notification not found",
+                "لم يتم العثور على الإشعار",
                 "NOT_FOUND",
                 404
             );

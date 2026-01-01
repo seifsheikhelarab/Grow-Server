@@ -32,14 +32,14 @@ export async function getOwnerDashboard(
         });
 
         if (!user) {
-            errorHandler(new NotFoundError("User not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على المستخدم"), req, res);
             return null;
         }
 
         if (!user.wallet) {
             // Should catch this edge case if wallet is missing
             errorHandler(
-                new NotFoundError("Wallet not found for user"),
+                new NotFoundError("لم يتم العثور على المحفظة للمستخدم"),
                 req,
                 res
             );
@@ -89,7 +89,7 @@ export async function getOwnerDashboard(
         };
     } catch (error) {
         logger.error("Error fetching owner dashboard data:", error);
-        errorHandler(new error(), req, res);
+        errorHandler(new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"), req, res);
         return null;
     }
 }
@@ -138,13 +138,13 @@ export async function getWorkerDashboard(
         });
 
         if (!user) {
-            errorHandler(new NotFoundError("User not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على المستخدم"), req, res);
             return null;
         }
 
         if (!user.wallet) {
             errorHandler(
-                new NotFoundError("Wallet not found for user"),
+                new NotFoundError("لم يتم العثور على المحفظة للمستخدم"),
                 req,
                 res
             );
@@ -165,7 +165,7 @@ export async function getWorkerDashboard(
 
         if (!activeProfile) {
             errorHandler(
-                new NotFoundError("No active worker profile found"),
+                new NotFoundError("لم يتم العثور على ملف العملاء النشط"),
                 req,
                 res
             );
@@ -247,7 +247,7 @@ export async function getWorkerDashboard(
         };
     } catch (error) {
         logger.error("Error fetching worker dashboard data:", error);
-        errorHandler(new error(), req, res);
+        errorHandler(new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"), req, res);
         return null;
     }
 }

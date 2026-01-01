@@ -17,14 +17,14 @@ export const getOwnerDashboard = asyncHandler(
 
         // Safety check mostly for TS, middleware should catch unauthed
         if (!userId) {
-            errorHandler(new Error("User ID not found in request"), req, res);
+            errorHandler(new Error("لم يتم العثور على ID المستخدم في طلب"), req, res);
         }
 
         const data = await dashboardService.getOwnerDashboard(userId, req, res);
 
         ResponseHandler.success(
             res,
-            "Owner dashboard data retrieved successfully",
+            "تم استرجاع بيانات لوحة التحكم بنجاح",
             data
         );
     }
@@ -41,7 +41,7 @@ export const getWorkerDashboard = asyncHandler(
         const userId = req.user?.id;
 
         if (!userId) {
-            errorHandler(new Error("User ID not found in request"), req, res);
+            errorHandler(new Error("لم يتم العثور على ID المستخدم في طلب"), req, res);
         }
 
         const { workerProfileId } = req.query;

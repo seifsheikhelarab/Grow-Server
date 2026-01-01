@@ -23,14 +23,14 @@ export async function setKioskGoal(
     });
 
     if (!kiosk) {
-        errorHandler(new NotFoundError("Kiosk not found"), req, res);
+        errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
         return null;
     }
 
     if (kiosk.owner_id !== ownerId) {
         errorHandler(
             new AuthorizationError(
-                "You are not authorized to access this kiosk"
+                "أنت غير مصرح لك بالوصول إلى هذا الكشك"
             ),
             req,
             res
@@ -100,14 +100,14 @@ export async function getKioskGoal(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
             return null;
         }
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
                 new AuthorizationError(
-                    "You are not authorized to access this kiosk"
+                    "أنت غير مصرح لك بالوصول إلى هذا الكشك"
                 ),
                 req,
                 res
@@ -183,7 +183,8 @@ export async function getKioskGoal(
 
         return goals;
     } catch (error) {
-        errorHandler(error, req, res);
+        errorHandler(new Error("حدث خطأ أثناء الحصول على هدف الكشك"), req, res);
+        logger.error(error)
         return null;
     }
 }
@@ -496,10 +497,11 @@ export async function getGoalWorker(
             history: history.splice(1)
         };
     } catch (error) {
-        errorHandler(error, req, res);
+        errorHandler(new Error("حدث خطأ أثناء الحصول على هدف"), req, res);
+        logger.error(error)
         return ResponseHandler.error(
             res,
-            "Failed to retrieve goal",
+            "حدث خطأ أثناء الحصول على هدف",
             ErrorCode.INTERNAL_ERROR
         );
     }
@@ -524,7 +526,7 @@ export async function deleteKioskGoal(
     });
 
     if (!kiosk || kiosk.owner_id !== ownerId) {
-        errorHandler(new AuthorizationError("Unauthorized"), req, res);
+        errorHandler(new AuthorizationError("غير مصرح"), req, res);
         return null;
     }
 
@@ -615,10 +617,11 @@ export async function getKioskGoals(
             status
         };
     } catch (error) {
-        errorHandler(error, req, res);
+        errorHandler(new Error("حدث خطأ أثناء الحصول على هدف الكشك"), req, res);
+        logger.error(error)
         return ResponseHandler.error(
             res,
-            "Failed to retrieve goals",
+            "حدث خطأ أثناء الحصول على هدف الكشك",
             ErrorCode.INTERNAL_ERROR
         );
     }

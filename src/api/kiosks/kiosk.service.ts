@@ -39,7 +39,7 @@ export async function createKiosk(
 
         if (existingKiosk) {
             errorHandler(
-                new ConflictError("Kiosk with this name already exists"),
+                new ConflictError("يوجد بالفعل كشك بهذا الاسم"),
                 req,
                 res
             );
@@ -58,7 +58,7 @@ export async function createKiosk(
         if (maxKiosks > 0 && kiosks.length >= maxKiosks) {
             errorHandler(
                 new BusinessLogicError(
-                    "You have reached the maximum number of kiosks",
+                    "لقد وصلت إلى الحد الأقصى لعدد الأكشاك",
                     ErrorCode.KIOSK_NOT_APPROVED
                 ),
                 req,
@@ -84,7 +84,7 @@ export async function createKiosk(
     } catch (err) {
         logger.error(`Error creating kiosk: ${err}`);
         errorHandler(
-            new AppError("Error creating kiosk", 500, ErrorCode.INTERNAL_ERROR),
+            new AppError("حدث خطأ أثناء إنشاء الكشك", 500, ErrorCode.INTERNAL_ERROR),
             req,
             res
         );
@@ -124,7 +124,7 @@ export async function inviteWorker(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("Kiosk not found or not approved"),
+                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
                 req,
                 res
             );
@@ -133,7 +133,7 @@ export async function inviteWorker(
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -168,7 +168,7 @@ export async function inviteWorker(
         if (worker.role !== "WORKER") {
             errorHandler(
                 new BusinessLogicError(
-                    "User must be a worker",
+                    "يجب أن يكون المستخدم عاملاً",
                     ErrorCode.ROLE_NOT_ALLOWED
                 ),
                 req,
@@ -184,7 +184,7 @@ export async function inviteWorker(
 
         if (existingProfile && existingProfile.kiosk_id === kioskId) {
             errorHandler(
-                new ConflictError("Worker is already assigned to this kiosk"),
+                new ConflictError("تم بالفعل تعيين عامل لهذا الكشك"),
                 req,
                 res
             );
@@ -222,7 +222,7 @@ export async function inviteWorker(
         logger.error(`Error inviting worker: ${err}`);
         errorHandler(
             new AppError(
-                "Error inviting worker",
+                "خطأ في دعوة العامل",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -270,7 +270,7 @@ export async function getWorkerInvitations(
         logger.error(`Error getting worker invitations: ${err}`);
         errorHandler(
             new AppError(
-                "Error getting worker invitations",
+                "خطأ في الحصول على دعوات العامل",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -308,7 +308,7 @@ export async function acceptInvitation(
 
         if (!profile) {
             errorHandler(
-                new NotFoundError("Worker invitation not found"),
+                new NotFoundError("لم يتم العثور على دعوة العامل"),
                 req,
                 res
             );
@@ -355,7 +355,7 @@ export async function acceptInvitation(
         logger.error(`Error changing invitation status: ${err}`);
         errorHandler(
             new AppError(
-                "Error changing invitation status",
+                "حدث خطأ أثناء تغيير حالة الدعوة",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -389,7 +389,7 @@ export async function getKioskWorkers(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("Kiosk not found or not approved"),
+                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
                 req,
                 res
             );
@@ -398,7 +398,7 @@ export async function getKioskWorkers(
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -426,7 +426,7 @@ export async function getKioskWorkers(
         logger.error(`Error getting kiosk workers: ${err}`);
         errorHandler(
             new AppError(
-                "Error getting kiosk workers",
+                "حدث خطأ أثناء الحصول على عامل",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -460,7 +460,7 @@ export async function getKioskDues(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("Kiosk not found or not approved"),
+                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
                 req,
                 res
             );
@@ -477,7 +477,7 @@ export async function getKioskDues(
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -518,7 +518,7 @@ export async function getKioskDues(
         logger.error(`Error getting kiosk dues: ${err}`);
         errorHandler(
             new AppError(
-                "Error getting kiosk dues",
+                "حدث خطأ أثناء الحصول على رسوم الكشك",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -569,7 +569,7 @@ export async function getUserKiosks(
         logger.error(`Error getting user kiosks: ${err}`);
         errorHandler(
             new AppError(
-                "Error getting user kiosks",
+                "خطأ في الحصول على أكشاك المستخدم",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -602,7 +602,7 @@ export async function removeWorker(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("Kiosk not found or not approved"),
+                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
                 req,
                 res
             );
@@ -611,7 +611,7 @@ export async function removeWorker(
 
         if (kiosk.owner_id !== req.user!.id) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -623,7 +623,7 @@ export async function removeWorker(
         });
 
         if (!worker) {
-            errorHandler(new NotFoundError("Worker not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على العامل"), req, res);
             return null;
         }
 
@@ -650,7 +650,7 @@ export async function removeWorker(
         logger.error(`Error removing worker: ${err}`);
         errorHandler(
             new AppError(
-                "Error removing worker",
+                "حدث خطأ أثناء إزالة العامل",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -681,7 +681,7 @@ export async function getKioskDetails(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("Kiosk not found or not approved"),
+                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
                 req,
                 res
             );
@@ -690,7 +690,7 @@ export async function getKioskDetails(
 
         if (ownerId !== kiosk.owner_id) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -760,7 +760,7 @@ export async function getKioskDetails(
         logger.error(`Error getting kiosk details: ${err}`);
         errorHandler(
             new AppError(
-                "Error getting kiosk details",
+                "حدث خطأ أثناء الحصول على تفاصيل الكشك",
                 500,
                 ErrorCode.INTERNAL_ERROR
             ),
@@ -786,13 +786,13 @@ export async function getKioskReports(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
             return null;
         }
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -890,12 +890,19 @@ export async function getKioskReports(
             });
         }
 
+        const balance = await prisma.wallet.findUnique({
+            where: {
+                user_id: ownerId
+            }
+        })
+
         return {
             name: kiosk.name,
             month: startOfMonth.toLocaleString("default", {
                 month: "long",
                 year: "numeric"
             }),
+            balance: balance?.balance || 0,
             summary: {
                 total_dues: Math.round(totalDuesAmount),
                 total_commission: Math.round(totalCommission)
@@ -904,7 +911,7 @@ export async function getKioskReports(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(error, req, res);
+        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
         return null;
     }
 }
@@ -1005,7 +1012,7 @@ export async function getWorkerDetails(
         }
 
         if (!worker) {
-            errorHandler(new NotFoundError("Worker not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على العامل"), req, res);
             return null;
         }
 
@@ -1018,7 +1025,7 @@ export async function getWorkerDetails(
         };
     } catch (error) {
         logger.error(`Error getting worker details: ${error}`);
-        errorHandler(error, req, res);
+        errorHandler(new AppError("حدث خطأ أثناء الحصول على تفاصيل العامل", 500, ErrorCode.INTERNAL_ERROR), req, res);
         return null;
     }
 }
@@ -1046,13 +1053,13 @@ export async function deleteKiosk(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("Kiosk not found"), req, res);
+            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
             return null;
         }
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError("You are not the owner of this kiosk"),
+                new AuthorizationError("أنت لست مالك هذا الكشك"),
                 req,
                 res
             );
@@ -1070,7 +1077,7 @@ export async function deleteKiosk(
         if (unpaidDues) {
             errorHandler(
                 new BusinessLogicError(
-                    "Cannot delete kiosk with unpaid dues. Please settle all dues first.",
+                    "لا يمكن حذف الكشك مع رسوم غير مدفوعة. يرجى دفع جميع الرسوم أولاً.",
                     ErrorCode.KIOSK_HAS_UNPAID_DUES
                 ),
                 req,
@@ -1112,7 +1119,7 @@ export async function deleteKiosk(
         return true;
     } catch (error) {
         logger.error(`Error deleting kiosk: ${error}`);
-        errorHandler(error, req, res);
+        errorHandler(new AppError("حدث خطأ أثناء حذف الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
         return null;
     }
 }
@@ -1268,7 +1275,7 @@ export async function getWorkerReport(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(error, req, res);
+        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
         return null;
     }
 }
@@ -1302,7 +1309,7 @@ export async function getWorkerKiosks(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(error, req, res);
+        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
         return null;
     }
 }
