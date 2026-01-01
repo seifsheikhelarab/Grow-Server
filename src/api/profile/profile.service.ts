@@ -55,7 +55,7 @@ export async function getProfile(userId: string, req: Request, res: Response) {
             }
         });
 
-        const totalNet = await getTotalNetByAllWorkers(userId, req, res);
+        const totalNet = await getTotalNetByAllWorkers(userId);
 
         const kiosks = await prisma.kiosk.findMany({
             where: {
@@ -131,7 +131,7 @@ export async function updateProfile(
             }
         });
 
-        const totalNet = await getTotalNetByAllWorkers(userId, req, res);
+        const totalNet = await getTotalNetByAllWorkers(userId);
 
         if (!user) {
             errorHandler(
