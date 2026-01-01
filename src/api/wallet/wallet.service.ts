@@ -33,6 +33,7 @@ export async function getBalance(userId: string, req: Request, res: Response) {
 
         if (!wallet) {
             errorHandler(new NotFoundError("Wallet not found"), req, res);
+            return 0;
         }
 
         return wallet.balance.toNumber()
@@ -75,6 +76,7 @@ export async function deductPoints(
 
         if (!wallet) {
             errorHandler(new NotFoundError("Wallet not found"), req, res);
+            return;
         }
 
         if (wallet.balance.toNumber() < amount) {
@@ -87,6 +89,7 @@ export async function deductPoints(
                 req,
                 res
             );
+            return;
         }
 
         await prisma.wallet.update({
@@ -131,6 +134,7 @@ export async function addPoints(
 
         if (!wallet) {
             errorHandler(new NotFoundError("Wallet not found"), req, res);
+            return;
         }
 
         await prisma.wallet.update({
@@ -180,6 +184,7 @@ export async function createRedemption(
                 req,
                 res
             );
+            return null;
         }
 
         const wallet = await prisma.wallet.findUnique({
@@ -188,6 +193,7 @@ export async function createRedemption(
 
         if (!wallet) {
             errorHandler(new NotFoundError("Wallet not found"), req, res);
+            return null;
         }
 
         if (wallet.balance.toNumber() < amount) {
@@ -199,6 +205,7 @@ export async function createRedemption(
                 req,
                 res
             );
+            return null;
         }
 
         // Create redemption request within transaction
@@ -449,6 +456,7 @@ export async function editGoal(
 
         if (!goal) {
             errorHandler(new NotFoundError("Goal not found"), req, res);
+            return null;
         }
 
         if (goal.owner_id !== userId) {
@@ -460,6 +468,7 @@ export async function editGoal(
                 req,
                 res
             );
+            return null;
         }
 
         logger.info(`Edited goal ${id} for user ${userId}`);
