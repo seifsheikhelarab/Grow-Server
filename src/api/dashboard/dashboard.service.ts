@@ -32,7 +32,11 @@ export async function getOwnerDashboard(
         });
 
         if (!user) {
-            errorHandler(new NotFoundError("لم يتم العثور على المستخدم"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على المستخدم"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -89,7 +93,11 @@ export async function getOwnerDashboard(
         };
     } catch (error) {
         logger.error("Error fetching owner dashboard data:", error);
-        errorHandler(new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"), req, res);
+        errorHandler(
+            new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"),
+            req,
+            res
+        );
         return null;
     }
 }
@@ -126,16 +134,18 @@ export async function getWorkerDashboard(
     };
 }> | null {
     try {
-
-
         const workerprofile = await prisma.workerProfile.findFirst({
             where: {
                 id: workerProfileId
             }
-        })
+        });
 
         if (workerprofile.user_id !== userId) {
-            errorHandler(new Error("You're Not assigned to this kiosk"), req, res)
+            errorHandler(
+                new Error("You're Not assigned to this kiosk"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -151,7 +161,11 @@ export async function getWorkerDashboard(
         });
 
         if (!user) {
-            errorHandler(new NotFoundError("لم يتم العثور على المستخدم"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على المستخدم"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -260,7 +274,11 @@ export async function getWorkerDashboard(
         };
     } catch (error) {
         logger.error("Error fetching worker dashboard data:", error);
-        errorHandler(new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"), req, res);
+        errorHandler(
+            new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"),
+            req,
+            res
+        );
         return null;
     }
 }

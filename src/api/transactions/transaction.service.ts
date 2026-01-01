@@ -1,4 +1,4 @@
-import { errorHandler } from './../../middlewares/error.middleware.js';
+import { errorHandler } from "./../../middlewares/error.middleware.js";
 
 import prisma from "../../prisma.js";
 import {
@@ -8,7 +8,7 @@ import {
     ErrorCode
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 import * as notificationService from "../notifications/notifications.service.js";
 
 /**
@@ -75,25 +75,35 @@ async function validateSender(senderId: string, req: Request, res: Response) {
     }
 
     if (!user.is_active) {
-        errorHandler(new BusinessLogicError(
-            "User account is not active",
-            ErrorCode.WORKER_NOT_ACTIVE
-        ), req, res);
+        errorHandler(
+            new BusinessLogicError(
+                "User account is not active",
+                ErrorCode.WORKER_NOT_ACTIVE
+            ),
+            req,
+            res
+        );
         return null;
     }
 
     if (!user.is_verified) {
-        errorHandler(new BusinessLogicError(
-            "User account is not verified",
-            ErrorCode.WORKER_NOT_ACTIVE
-        ), req, res);
+        errorHandler(
+            new BusinessLogicError(
+                "User account is not verified",
+                ErrorCode.WORKER_NOT_ACTIVE
+            ),
+            req,
+            res
+        );
         return null;
     }
 
     if (user.role !== "WORKER" && user.role !== "OWNER") {
-        errorHandler(new AuthorizationError(
-            "Only workers and owners can send points"
-        ), req, res);
+        errorHandler(
+            new AuthorizationError("Only workers and owners can send points"),
+            req,
+            res
+        );
         return null;
     }
 
@@ -103,10 +113,14 @@ async function validateSender(senderId: string, req: Request, res: Response) {
             (p) => p.status === "ACTIVE"
         );
         if (!hasActiveProfile) {
-            errorHandler(new BusinessLogicError(
-                "Worker has no active profile",
-                ErrorCode.WORKER_NOT_ACTIVE
-            ), req, res);
+            errorHandler(
+                new BusinessLogicError(
+                    "Worker has no active profile",
+                    ErrorCode.WORKER_NOT_ACTIVE
+                ),
+                req,
+                res
+            );
             return null;
         }
     }
@@ -123,7 +137,12 @@ async function validateSender(senderId: string, req: Request, res: Response) {
  * @param {Response} res - The Express response object.
  * @returns {Promise<object | null>} The validated kiosk object, or null on error.
  */
-async function validateKiosk(kioskId: string, senderId: string, req: Request, res: Response) {
+async function validateKiosk(
+    kioskId: string,
+    senderId: string,
+    req: Request,
+    res: Response
+) {
     const kiosk = await prisma.kiosk.findUnique({
         where: { id: kioskId }
     });
@@ -140,7 +159,11 @@ async function validateKiosk(kioskId: string, senderId: string, req: Request, re
     });
 
     if (sender?.role === "OWNER" && kiosk.owner_id !== senderId) {
-        errorHandler(new AuthorizationError("You are not the owner of this kiosk"), req, res);
+        errorHandler(
+            new AuthorizationError("You are not the owner of this kiosk"),
+            req,
+            res
+        );
         return null;
     }
 
@@ -149,7 +172,11 @@ async function validateKiosk(kioskId: string, senderId: string, req: Request, re
             (p) => p.kiosk_id === kioskId && p.status === "ACTIVE"
         );
         if (!hasProfileForKiosk) {
-            errorHandler(new AuthorizationError("You are not assigned to this kiosk"), req, res);
+            errorHandler(
+                new AuthorizationError("You are not assigned to this kiosk"),
+                req,
+                res
+            );
             return null;
         }
     }
@@ -186,11 +213,15 @@ async function checkConstraints(
 
     // Constraint 1: Amount <= maxTransactionAmount
     if (amount > maxTransactionAmount) {
-        errorHandler(new BusinessLogicError(
-            `Amount exceeds the limit. You can send up to ${maxTransactionAmount} points per transaction.`,
-            ErrorCode.INVALID_TRANSACTION_AMOUNT,
-            { max: maxTransactionAmount, requested: amount }
-        ), req, res);
+        errorHandler(
+            new BusinessLogicError(
+                `Amount exceeds the limit. You can send up to ${maxTransactionAmount} points per transaction.`,
+                ErrorCode.INVALID_TRANSACTION_AMOUNT,
+                { max: maxTransactionAmount, requested: amount }
+            ),
+            req,
+            res
+        );
         return false;
     }
 
@@ -207,11 +238,15 @@ async function checkConstraints(
     });
 
     if (dailyTxsToCustomer >= maxDailyTxToCustomer) {
-        errorHandler(new BusinessLogicError(
-            `Daily limit reached for this customer. You can only send ${maxDailyTxToCustomer} transactions to the same person per day.`,
-            ErrorCode.DAILY_TX_TO_USER_LIMIT,
-            { max: maxDailyTxToCustomer, current: dailyTxsToCustomer }
-        ), req, res);
+        errorHandler(
+            new BusinessLogicError(
+                `Daily limit reached for this customer. You can only send ${maxDailyTxToCustomer} transactions to the same person per day.`,
+                ErrorCode.DAILY_TX_TO_USER_LIMIT,
+                { max: maxDailyTxToCustomer, current: dailyTxsToCustomer }
+            ),
+            req,
+            res
+        );
         return false;
     }
 
@@ -226,11 +261,15 @@ async function checkConstraints(
     });
 
     if (totalDailyTxs >= maxDailyTxPerWorker) {
-        errorHandler(new BusinessLogicError(
-            `Daily sending limit reached. You can perform up to ${maxDailyTxPerWorker} transactions per day.`,
-            ErrorCode.DAILY_LIMIT_EXCEEDED,
-            { max: maxDailyTxPerWorker, current: totalDailyTxs }
-        ), req, res);
+        errorHandler(
+            new BusinessLogicError(
+                `Daily sending limit reached. You can perform up to ${maxDailyTxPerWorker} transactions per day.`,
+                ErrorCode.DAILY_LIMIT_EXCEEDED,
+                { max: maxDailyTxPerWorker, current: totalDailyTxs }
+            ),
+            req,
+            res
+        );
         return false;
     }
 
@@ -286,7 +325,8 @@ export async function sendPoints(
         kioskId,
         amount,
         settings,
-        req, res
+        req,
+        res
     );
     if (!constraintsPassed) return null;
 
@@ -342,7 +382,7 @@ export async function sendPoints(
 
         // Handle Commission
         if (commissionStatus === "PAID") {
-            // No Goal: Pay Worker immediately and send 
+            // No Goal: Pay Worker immediately and send
             await tx.wallet.update({
                 where: { user_id: senderId },
                 data: { balance: { increment: commission } }
@@ -491,10 +531,7 @@ export async function getTransactionHistory(
  * @param {string} userId - The ID of the user.
  * @returns {Promise<object>} The daily transaction statistics.
  */
-export async function getDailyStats(
-    userId: string,
-    workerProfileId?: string
-) {
+export async function getDailyStats(userId: string, workerProfileId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -543,9 +580,7 @@ export async function getDailyStats(
  * @param {string} userId - The ID of the owner.
  * @returns {Promise<number>} Total net amount.
  */
-export async function getTotalNetByAllWorkers(
-    userId: string
-) {
+export async function getTotalNetByAllWorkers(userId: string) {
     // 1. Find all kiosks owned by this owner
     const kiosks = await prisma.kiosk.findMany({
         where: {

@@ -29,9 +29,7 @@ export async function setKioskGoal(
 
     if (kiosk.owner_id !== ownerId) {
         errorHandler(
-            new AuthorizationError(
-                "أنت غير مصرح لك بالوصول إلى هذا الكشك"
-            ),
+            new AuthorizationError("أنت غير مصرح لك بالوصول إلى هذا الكشك"),
             req,
             res
         );
@@ -100,15 +98,17 @@ export async function getKioskGoal(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على الكشك"),
+                req,
+                res
+            );
             return null;
         }
 
         if (kiosk.owner_id !== ownerId) {
             errorHandler(
-                new AuthorizationError(
-                    "أنت غير مصرح لك بالوصول إلى هذا الكشك"
-                ),
+                new AuthorizationError("أنت غير مصرح لك بالوصول إلى هذا الكشك"),
                 req,
                 res
             );
@@ -184,7 +184,7 @@ export async function getKioskGoal(
         return goals;
     } catch (error) {
         errorHandler(new Error("حدث خطأ أثناء الحصول على هدف الكشك"), req, res);
-        logger.error(error)
+        logger.error(error);
         return null;
     }
 }
@@ -498,7 +498,7 @@ export async function getGoalWorker(
         };
     } catch (error) {
         errorHandler(new Error("حدث خطأ أثناء الحصول على هدف"), req, res);
-        logger.error(error)
+        logger.error(error);
         return ResponseHandler.error(
             res,
             "حدث خطأ أثناء الحصول على هدف",
@@ -618,7 +618,7 @@ export async function getKioskGoals(
         };
     } catch (error) {
         errorHandler(new Error("حدث خطأ أثناء الحصول على هدف الكشك"), req, res);
-        logger.error(error)
+        logger.error(error);
         return ResponseHandler.error(
             res,
             "حدث خطأ أثناء الحصول على هدف الكشك",

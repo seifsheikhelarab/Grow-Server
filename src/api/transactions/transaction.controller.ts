@@ -19,7 +19,8 @@ export const sendPoints = asyncHandler(async (req: Request, res: Response) => {
         phone,
         kioskId,
         amount,
-        req,res
+        req,
+        res
     );
 
     if (res.headersSent) return;

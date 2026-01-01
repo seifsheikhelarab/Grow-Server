@@ -80,7 +80,11 @@ export const getWorkerStatus = asyncHandler(
         } catch (error) {
             errorHandler(error, req, res);
             if (res.headersSent) return null;
-            return ResponseHandler.error(res, "حدث خطأ أثناء استرجاع الهدف", error);
+            return ResponseHandler.error(
+                res,
+                "حدث خطأ أثناء استرجاع الهدف",
+                error
+            );
         }
     }
 );

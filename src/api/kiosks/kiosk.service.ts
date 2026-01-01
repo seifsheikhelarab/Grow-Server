@@ -84,7 +84,11 @@ export async function createKiosk(
     } catch (err) {
         logger.error(`Error creating kiosk: ${err}`);
         errorHandler(
-            new AppError("حدث خطأ أثناء إنشاء الكشك", 500, ErrorCode.INTERNAL_ERROR),
+            new AppError(
+                "حدث خطأ أثناء إنشاء الكشك",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
             req,
             res
         );
@@ -124,7 +128,9 @@ export async function inviteWorker(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
+                new NotFoundError(
+                    "لم يتم العثور على الكشك أو لم تتم الموافقة عليه"
+                ),
                 req,
                 res
             );
@@ -221,11 +227,7 @@ export async function inviteWorker(
     } catch (err) {
         logger.error(`Error inviting worker: ${err}`);
         errorHandler(
-            new AppError(
-                "خطأ في دعوة العامل",
-                500,
-                ErrorCode.INTERNAL_ERROR
-            ),
+            new AppError("خطأ في دعوة العامل", 500, ErrorCode.INTERNAL_ERROR),
             req,
             res
         );
@@ -389,7 +391,9 @@ export async function getKioskWorkers(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
+                new NotFoundError(
+                    "لم يتم العثور على الكشك أو لم تتم الموافقة عليه"
+                ),
                 req,
                 res
             );
@@ -460,7 +464,9 @@ export async function getKioskDues(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
+                new NotFoundError(
+                    "لم يتم العثور على الكشك أو لم تتم الموافقة عليه"
+                ),
                 req,
                 res
             );
@@ -602,7 +608,9 @@ export async function removeWorker(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
+                new NotFoundError(
+                    "لم يتم العثور على الكشك أو لم تتم الموافقة عليه"
+                ),
                 req,
                 res
             );
@@ -619,11 +627,16 @@ export async function removeWorker(
         }
 
         const worker = await prisma.workerProfile.findUnique({
-            where: { id: workerId }
+            where: { id: workerId },
+            include: { user: true }
         });
 
         if (!worker) {
-            errorHandler(new NotFoundError("لم يتم العثور على العامل"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على العامل"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -635,6 +648,44 @@ export async function removeWorker(
                 }
             }
         });
+
+        await prisma.workerProfile.delete({
+            where: {
+                id: workerId,
+                kiosk_id: kioskId
+            }
+        });
+
+        const kioskCount = await prisma.user.findUnique({
+            where: { id: worker.user.id },
+            include: { worker_profiles: true }
+        });
+
+        if (kioskCount.worker_profiles.length === 0) {
+            await prisma.$transaction(async (tx) => {
+                const balance = await tx.wallet.findUnique({
+                    where: { user_id: kioskCount.id }
+                });
+
+                await tx.wallet.update({
+                    where: { user_id: kioskCount.id },
+                    data: {
+                        balance: 0
+                    }
+                });
+
+                await tx.redemptionRequest.create({
+                    data: {
+                        amount: Number(balance!.balance),
+                        user_id: kioskCount!.id,
+                        status: "PENDING",
+                        type: "DELETION_REDEMPTION",
+                        method: "DELETION",
+                        details: "Worker removed from kiosk - Balance payout"
+                    }
+                });
+            });
+        }
 
         logger.info(`Worker ${workerId} removed from kiosk ${kioskId}`);
 
@@ -681,7 +732,9 @@ export async function getKioskDetails(
 
         if (!kiosk) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على الكشك أو لم تتم الموافقة عليه"),
+                new NotFoundError(
+                    "لم يتم العثور على الكشك أو لم تتم الموافقة عليه"
+                ),
                 req,
                 res
             );
@@ -786,7 +839,11 @@ export async function getKioskReports(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على الكشك"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -894,7 +951,7 @@ export async function getKioskReports(
             where: {
                 user_id: ownerId
             }
-        })
+        });
 
         return {
             name: kiosk.name,
@@ -911,7 +968,15 @@ export async function getKioskReports(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء إنشاء تقارير الكشك",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
         return null;
     }
 }
@@ -1012,7 +1077,11 @@ export async function getWorkerDetails(
         }
 
         if (!worker) {
-            errorHandler(new NotFoundError("لم يتم العثور على العامل"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على العامل"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -1025,7 +1094,15 @@ export async function getWorkerDetails(
         };
     } catch (error) {
         logger.error(`Error getting worker details: ${error}`);
-        errorHandler(new AppError("حدث خطأ أثناء الحصول على تفاصيل العامل", 500, ErrorCode.INTERNAL_ERROR), req, res);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء الحصول على تفاصيل العامل",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
         return null;
     }
 }
@@ -1053,7 +1130,11 @@ export async function deleteKiosk(
         });
 
         if (!kiosk) {
-            errorHandler(new NotFoundError("لم يتم العثور على الكشك"), req, res);
+            errorHandler(
+                new NotFoundError("لم يتم العثور على الكشك"),
+                req,
+                res
+            );
             return null;
         }
 
@@ -1119,7 +1200,15 @@ export async function deleteKiosk(
         return true;
     } catch (error) {
         logger.error(`Error deleting kiosk: ${error}`);
-        errorHandler(new AppError("حدث خطأ أثناء حذف الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء حذف الكشك",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
         return null;
     }
 }
@@ -1275,7 +1364,15 @@ export async function getWorkerReport(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء إنشاء تقارير الكشك",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
         return null;
     }
 }
@@ -1309,7 +1406,15 @@ export async function getWorkerKiosks(
         };
     } catch (error) {
         logger.error(`Error generating kiosk reports: ${error}`);
-        errorHandler(new AppError("حدث خطأ أثناء إنشاء تقارير الكشك", 500, ErrorCode.INTERNAL_ERROR), req, res);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء إنشاء تقارير الكشك",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
+        );
         return null;
     }
 }
