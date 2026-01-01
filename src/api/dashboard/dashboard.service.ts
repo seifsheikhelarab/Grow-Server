@@ -65,7 +65,7 @@ export async function getOwnerDashboard(
         const kioskData = kiosks.map((kiosk) => {
             // Points: Sum of amount_gross of completed transactions
             const points = kiosk.transactions.reduce(
-                (acc, tx) => acc + Number(tx.amount_gross),
+                (acc, tx) => acc + Number(tx.commission),
                 0
             );
 

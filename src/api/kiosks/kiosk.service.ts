@@ -717,7 +717,7 @@ export async function getKioskDetails(
                 }
             },
             orderBy: { created_at: "desc" },
-            select: { amount_net: true, amount_gross: true }
+            select: { amount_net: true, amount_gross: true, commission: true }
         });
 
         const workers = await prisma.workerProfile.findMany({
@@ -729,12 +729,12 @@ export async function getKioskDetails(
             }
         });
 
-        const totalGross = netEarnings
-            .reduce((sum, d) => sum + Number(d.amount_gross), 0)
-            .toFixed(0);
+        // const totalGross = netEarnings
+        //     .reduce((sum, d) => sum + Number(d.amount_gross), 0)
+        //     .toFixed(0);
         const totalDue = dues.reduce((sum, d) => sum + Number(d.amount), 0);
         const totalNetEarnings = netEarnings
-            .reduce((sum, d) => sum + Number(d.amount_net), 0)
+            .reduce((sum, d) => sum + Number(d.commission), 0)
             .toFixed(0);
 
         const balance = await prisma.wallet.findFirst({
@@ -745,7 +745,7 @@ export async function getKioskDetails(
             kiosk,
             summary: {
                 balance: balance.balance.toFixed(0),
-                total_gross: totalGross.toString(),
+                total_gross: totalNetEarnings.toString(),
                 total_dues: totalDue.toString(),
                 net_earnings: totalNetEarnings.toString(),
                 workers: workers.map((w) => ({
