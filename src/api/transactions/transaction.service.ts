@@ -1,3 +1,4 @@
+import { errorHandler } from './../../middlewares/error.middleware.js';
 
 import prisma from "../../prisma.js";
 import {
@@ -7,6 +8,7 @@ import {
     ErrorCode
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
+import { Request, Response } from 'express';
 import * as notificationService from "../notifications/notifications.service.js";
 
 /**
@@ -57,36 +59,42 @@ async function getTransactionSettings() {
  * Validate sender is active worker/owner.
  *
  * @param {string} senderId - The ID of the sender.
- * @returns {Promise<object>} The validated user object.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object | null>} The validated user object, or null on error.
  */
-async function validateSender(senderId: string) {
+async function validateSender(senderId: string, req: Request, res: Response) {
     const user = await prisma.user.findUnique({
         where: { id: senderId },
         include: { worker_profiles: true }
     });
 
     if (!user) {
-        throw new NotFoundError("User not found");
+        errorHandler(new NotFoundError("User not found"), req, res);
+        return null;
     }
 
     if (!user.is_active) {
-        throw new BusinessLogicError(
+        errorHandler(new BusinessLogicError(
             "User account is not active",
             ErrorCode.WORKER_NOT_ACTIVE
-        );
+        ), req, res);
+        return null;
     }
 
     if (!user.is_verified) {
-        throw new BusinessLogicError(
+        errorHandler(new BusinessLogicError(
             "User account is not verified",
             ErrorCode.WORKER_NOT_ACTIVE
-        );
+        ), req, res);
+        return null;
     }
 
     if (user.role !== "WORKER" && user.role !== "OWNER") {
-        throw new AuthorizationError(
+        errorHandler(new AuthorizationError(
             "Only workers and owners can send points"
-        );
+        ), req, res);
+        return null;
     }
 
     // Check if worker has at least one active profile
@@ -95,10 +103,11 @@ async function validateSender(senderId: string) {
             (p) => p.status === "ACTIVE"
         );
         if (!hasActiveProfile) {
-            throw new BusinessLogicError(
+            errorHandler(new BusinessLogicError(
                 "Worker has no active profile",
                 ErrorCode.WORKER_NOT_ACTIVE
-            );
+            ), req, res);
+            return null;
         }
     }
 
@@ -110,15 +119,18 @@ async function validateSender(senderId: string) {
  *
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} senderId - The ID of the sender.
- * @returns {Promise<object>} The validated kiosk object.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object | null>} The validated kiosk object, or null on error.
  */
-async function validateKiosk(kioskId: string, senderId: string) {
+async function validateKiosk(kioskId: string, senderId: string, req: Request, res: Response) {
     const kiosk = await prisma.kiosk.findUnique({
         where: { id: kioskId }
     });
 
     if (!kiosk) {
-        throw new NotFoundError("Kiosk not found");
+        errorHandler(new NotFoundError("Kiosk not found"), req, res);
+        return null;
     }
 
     // Verify sender is owner or worker of this kiosk
@@ -128,7 +140,8 @@ async function validateKiosk(kioskId: string, senderId: string) {
     });
 
     if (sender?.role === "OWNER" && kiosk.owner_id !== senderId) {
-        throw new AuthorizationError("You are not the owner of this kiosk");
+        errorHandler(new AuthorizationError("You are not the owner of this kiosk"), req, res);
+        return null;
     }
 
     if (sender?.role === "WORKER") {
@@ -136,7 +149,8 @@ async function validateKiosk(kioskId: string, senderId: string) {
             (p) => p.kiosk_id === kioskId && p.status === "ACTIVE"
         );
         if (!hasProfileForKiosk) {
-            throw new AuthorizationError("You are not assigned to this kiosk");
+            errorHandler(new AuthorizationError("You are not assigned to this kiosk"), req, res);
+            return null;
         }
     }
 
@@ -150,7 +164,9 @@ async function validateKiosk(kioskId: string, senderId: string) {
  * @param {string} receiverPhone - The phone number of the receiver.
  * @param {string} kioskId - The ID of the kiosk.
  * @param {number} amount - The transaction amount.
- * @returns {Promise<void>}
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<boolean>} Returns true if constraints pass, false otherwise.
  */
 async function checkConstraints(
     senderId: string,
@@ -161,18 +177,21 @@ async function checkConstraints(
         maxTransactionAmount: number;
         maxDailyTxToCustomer: number;
         maxDailyTxPerWorker: number;
-    }
-) {
+    },
+    req: Request,
+    res: Response
+): Promise<boolean> {
     const { maxTransactionAmount, maxDailyTxToCustomer, maxDailyTxPerWorker } =
         settings;
 
     // Constraint 1: Amount <= maxTransactionAmount
     if (amount > maxTransactionAmount) {
-        throw new BusinessLogicError(
+        errorHandler(new BusinessLogicError(
             `Transaction amount cannot exceed ${maxTransactionAmount}`,
             ErrorCode.INVALID_TRANSACTION_AMOUNT,
             { max: maxTransactionAmount, requested: amount }
-        );
+        ), req, res);
+        return false;
     }
 
     // Constraint 2: Daily Tx count to this specific customer < maxDailyTxToCustomer
@@ -188,11 +207,12 @@ async function checkConstraints(
     });
 
     if (dailyTxsToCustomer >= maxDailyTxToCustomer) {
-        throw new BusinessLogicError(
+        errorHandler(new BusinessLogicError(
             `Daily transaction limit to this customer (${maxDailyTxToCustomer}) exceeded`,
             ErrorCode.DAILY_TX_TO_USER_LIMIT,
             { max: maxDailyTxToCustomer, current: dailyTxsToCustomer }
-        );
+        ), req, res);
+        return false;
     }
 
     // Constraint 3: Total Daily Tx count for this worker < maxDailyTxPerWorker
@@ -206,12 +226,15 @@ async function checkConstraints(
     });
 
     if (totalDailyTxs >= maxDailyTxPerWorker) {
-        throw new BusinessLogicError(
+        errorHandler(new BusinessLogicError(
             `Daily transaction limit (${maxDailyTxPerWorker}) exceeded`,
             ErrorCode.DAILY_LIMIT_EXCEEDED,
             { max: maxDailyTxPerWorker, current: totalDailyTxs }
-        );
+        ), req, res);
+        return false;
     }
+
+    return true;
 }
 
 /**
@@ -221,19 +244,25 @@ async function checkConstraints(
  * @param {string} receiverPhone - The phone number of the receiver.
  * @param {string} kioskId - The ID of the kiosk.
  * @param {number} amount - The transaction amount.
- * @returns {Promise<object>} The transaction result containing transaction record and due.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @returns {Promise<object | null>} The transaction result containing transaction record and due, or null on error.
  */
 export async function sendPoints(
     senderId: string,
     receiverPhone: string,
     kioskId: string,
-    amount: number
+    amount: number,
+    req: Request,
+    res: Response
 ) {
     // Validate sender
-    const sender = await validateSender(senderId);
+    const sender = await validateSender(senderId, req, res);
+    if (!sender) return null;
 
     // Validate kiosk
-    const kiosk = await validateKiosk(kioskId, senderId);
+    const kiosk = await validateKiosk(kioskId, senderId, req, res);
+    if (!kiosk) return null;
 
     // Deduce worker profile if sender is a worker
     let workerProfileId: string | null = null;
@@ -251,13 +280,15 @@ export async function sendPoints(
     const settings = await getTransactionSettings();
 
     // Check constraints
-    await checkConstraints(
+    const constraintsPassed = await checkConstraints(
         senderId,
         receiverPhone,
         kioskId,
         amount,
-        settings
+        settings,
+        req, res
     );
+    if (!constraintsPassed) return null;
 
     // Calculate amounts
     const fee = settings.commissionRate;
