@@ -70,6 +70,7 @@ export const getWorkerStatus = asyncHandler(
                 workerId,
                 req,
                 res,
+                undefined, // kioskIdIfFiltered (not used)
                 workerProfileId as string
             );
 

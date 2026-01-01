@@ -409,6 +409,11 @@ export async function getGoalWorker(
                 where: { user_id: workerId } // Just grabbing one for now if not specified
             });
             if (profile) profileId = profile.id;
+        } else {
+            const profile = await prisma.workerProfile.findUnique({
+                where: { id: workerProfileId }
+            });
+            if (profile) profileId = profile.id;
         }
 
         if (!profileId) return []; // No profile found
