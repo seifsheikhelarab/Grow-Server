@@ -1025,12 +1025,14 @@ export async function getWorkerDetails(
 
 /**
  * Delete a kiosk and all associated data.
+ * Checks for unpaid dues first - if any exist, returns an error.
+ * Deletes: Goals for kiosk, WorkerProfiles, then Kiosk.
  *
  * @param {string} kioskId - The ID of the kiosk.
  * @param {string} ownerId - The ID of the owner.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @returns {Promise<boolean>} True if deleted successfully.
+ * @returns {Promise<boolean | null>} True if deleted successfully, null on error.
  */
 export async function deleteKiosk(
     kioskId: string,
@@ -1057,11 +1059,36 @@ export async function deleteKiosk(
             return null;
         }
 
+        // Check for unpaid dues
+        const unpaidDues = await prisma.kioskDue.findFirst({
+            where: {
+                kiosk_id: kioskId,
+                is_paid: false
+            }
+        });
+
+        if (unpaidDues) {
+            errorHandler(
+                new BusinessLogicError(
+                    "Cannot delete kiosk with unpaid dues. Please settle all dues first.",
+                    ErrorCode.KIOSK_HAS_UNPAID_DUES
+                ),
+                req,
+                res
+            );
+            return null;
+        }
+
         // Use a transaction to ensure all related records are deleted or none are
         await prisma.$transaction(async (tx) => {
-            // 1. Delete Transactions associated with this kiosk
-            await tx.transaction.deleteMany({
+            // 1. Delete Goals associated with this kiosk
+            await tx.goal.deleteMany({
                 where: { kiosk_id: kioskId }
+            });
+
+            await tx.goal.updateMany({
+                where: { kiosk_id: kioskId },
+                data: { status: "ARCHIVED" }
             });
 
             // 2. Delete WorkerProfiles associated with this kiosk
@@ -1069,12 +1096,7 @@ export async function deleteKiosk(
                 where: { kiosk_id: kioskId }
             });
 
-            // 3. Delete KioskDue records associated with this kiosk
-            await tx.kioskDue.deleteMany({
-                where: { kiosk_id: kioskId }
-            });
-
-            // 4. Finally, delete the Kiosk
+            // 3. Finally, delete the Kiosk
             await tx.kiosk.delete({
                 where: { id: kioskId }
             });

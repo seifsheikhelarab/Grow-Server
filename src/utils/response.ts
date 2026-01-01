@@ -51,6 +51,7 @@ export enum ErrorCode {
     DAILY_TX_TO_USER_LIMIT = "BUS_007",
     KIOSK_NOT_FOUND = "BUS_008",
     REDEMPTION_LIMIT_EXCEEDED = "BUS_009",
+    KIOSK_HAS_UNPAID_DUES = "BUS_010",
 
     // Permission Errors (4xxx)
     INSUFFICIENT_PERMISSIONS = "PERM_001",
