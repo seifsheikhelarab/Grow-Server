@@ -310,15 +310,30 @@ export async function register(
             );
         }
 
-        // Generate auth token
-        const opts: SignOptions = {
-            expiresIn: (await config).JWT_EXPIRY as ms.StringValue
-        };
-        const token = jwt.sign(
-            { id: user.id, phone: user.phone, role: user.role },
+        // Generate 4-digit OTP
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        // Expiry: 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        // Save to database
+        await prisma.otp.upsert({
+            where: { phone },
+            update: { code, expiresAt },
+            create: { phone, code, expiresAt }
+        });
+
+        await sendSMS(phone, code);
+        logger.info(`OTP sent to ${phone}: ${code}`);
+
+        // Generate temporary token for registration
+        const opts: SignOptions = { expiresIn: "30m" };
+        const tempToken = jwt.sign(
+            { phone, tempAuth: true },
             (await config).JWT_SECRET as string,
             opts
         );
+
 
         let workerProfile = null;
         if (role === "WORKER") {
@@ -331,7 +346,7 @@ export async function register(
             full_name: user.full_name,
             phone: user.phone,
             role: user.role,
-            token,
+            token: tempToken,
             worker_profile: workerProfile
         };
     } catch (err) {
