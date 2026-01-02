@@ -196,10 +196,10 @@ export async function createRedemption(
             return null;
         }
 
-        if (wallet.balance.toNumber() < amount) {
+        if (wallet.balance.toNumber() < amount + REDEMPTION_FEE) {
             errorHandler(
                 new BusinessLogicError(
-                    `Insufficient balance for redemption. Required: ${amount}, Available: ${wallet.balance}`,
+                    `Insufficient balance for redemption. Required: ${amount + REDEMPTION_FEE}, Available: ${wallet.balance}`,
                     ErrorCode.INSUFFICIENT_BALANCE
                 ),
                 req,
