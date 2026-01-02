@@ -136,13 +136,23 @@ export async function getWorkerDashboard(
     try {
         const workerprofile = await prisma.workerProfile.findFirst({
             where: {
-                id: workerProfileId
+                id: workerProfileId,
+                status: "ACTIVE"
             }
         });
 
+        if (!workerprofile) {
+            errorHandler(
+                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
+                req,
+                res
+            );
+            return null;
+        }
+
         if (workerprofile.user_id !== userId) {
             errorHandler(
-                new Error("You're Not assigned to this kiosk"),
+                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
                 req,
                 res
             );
@@ -192,7 +202,7 @@ export async function getWorkerDashboard(
 
         if (!activeProfile) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على ملف العملاء النشط"),
+                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
                 req,
                 res
             );

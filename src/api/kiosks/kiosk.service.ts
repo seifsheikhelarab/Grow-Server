@@ -157,7 +157,8 @@ export async function inviteWorker(
                 data: {
                     phone: workerPhone,
                     full_name: name,
-                    role: "WORKER"
+                    role: "WORKER",
+                    is_active: false
                 }
             });
 
@@ -649,12 +650,7 @@ export async function removeWorker(
             }
         });
 
-        await prisma.workerProfile.delete({
-            where: {
-                id: workerId,
-                kiosk_id: kioskId
-            }
-        });
+
 
         const kioskCount = await prisma.user.findUnique({
             where: { id: worker.user.id },
