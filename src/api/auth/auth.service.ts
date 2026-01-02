@@ -549,10 +549,71 @@ export async function deleteAccount(
     res: Response
 ): Promise<void> {
     try {
-        await prisma.user.update({
+        const user = await prisma.user.findUnique({
             where: { id: userId },
-            data: { is_active: false }
+            include: { wallet: true }
         });
+
+        if (!user) {
+            errorHandler(
+                new NotFoundError("المستخدم غير موجود"),
+                req,
+                res
+            );
+            return;
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // Role-specific cleanup
+            if (user.role === "WORKER") {
+                // Remove worker from all kiosks
+                await tx.workerProfile.deleteMany({
+                    where: { user_id: userId }
+                });
+                logger.info(`Deleted worker profiles for user ${userId}`);
+            } else if (user.role === "OWNER") {
+                // Remove all workers from owner's kiosks
+                const ownerKiosks = await tx.kiosk.findMany({
+                    where: { owner_id: userId },
+                    select: { id: true }
+                });
+                const kioskIds = ownerKiosks.map(k => k.id);
+
+                if (kioskIds.length > 0) {
+                    await tx.workerProfile.deleteMany({
+                        where: { kiosk_id: { in: kioskIds } }
+                    });
+                    logger.info(`Removed workers from kiosks owned by ${userId}`);
+                }
+            }
+
+            // Wallet Redemption
+            if (user.wallet && user.wallet.balance.toNumber() > 0) {
+                await tx.redemptionRequest.create({
+                    data: {
+                        user_id: userId,
+                        amount: user.wallet.balance,
+                        method: "DELETION",
+                        type: "DELETION",
+                        details: "Account deletion - Auto redemption",
+                        status: "PENDING"
+                    }
+                });
+
+                await tx.wallet.update({
+                    where: { id: user.wallet.id },
+                    data: { balance: 0 }
+                });
+                logger.info(`Auto-redeemed balance for user ${userId}`);
+            }
+
+            // Soft Delete User
+            await tx.user.update({
+                where: { id: userId },
+                data: { is_active: false }
+            });
+        });
+
         logger.info(`User account deleted (soft): ${userId}`);
     } catch (err) {
         logger.error(`Error deleting account: ${err}`);
