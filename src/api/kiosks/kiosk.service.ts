@@ -189,7 +189,7 @@ export async function inviteWorker(
             where: { user_id: worker.id, kiosk_id: kioskId }
         });
 
-        if (existingProfile && existingProfile.kiosk_id === kioskId) {
+        if (existingProfile && existingProfile.kiosk_id === kioskId && existingProfile.status === "ACTIVE") {
             errorHandler(
                 new ConflictError("تم بالفعل تعيين عامل لهذا الكشك"),
                 req,
@@ -318,17 +318,30 @@ export async function acceptInvitation(
             return null;
         }
 
-        const updated = await prisma.workerProfile.update({
-            where: {
-                id: invitationId
-            },
-            data: { status: action },
-            include: {
-                kiosk: {
-                    select: { id: true, name: true }
+        let updated;
+
+        if (action === "REJECT") {
+            updated = await prisma.workerProfile.delete({
+                where: { id: invitationId },
+                include: {
+                    kiosk: {
+                        select: { id: true, name: true }
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            updated = await prisma.workerProfile.update({
+                where: {
+                    id: invitationId
+                },
+                data: { status: action },
+                include: {
+                    kiosk: {
+                        select: { id: true, name: true }
+                    }
+                }
+            });
+        }
 
         logger.info(
             `Worker ${workerId} changed invitation status to ${action} to kiosk ${profile.kiosk_id}`

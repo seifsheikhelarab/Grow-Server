@@ -233,34 +233,41 @@ export async function createRedemption(
             `Redemption request created: ${redemption.id} for ${amount} points`
         );
 
-        // Get user info for notifications
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { full_name: true, role: true }
-        });
-
-        // Notify the worker/customer that their request was submitted
-        await notificationService.notifyWorkerRedemptionCreated(
-            userId,
-            amount.toString()
-        );
-
-        // If worker, notify their kiosk owner(s)
-        if (user?.role === "WORKER") {
-            const workerProfiles = await prisma.workerProfile.findMany({
-                where: { user_id: userId },
-                include: { kiosk: true }
+        try {
+            // Get user info for notifications
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { full_name: true, role: true }
             });
 
-            for (const profile of workerProfiles) {
-                if (profile.kiosk) {
-                    await notificationService.notifyOwnerWorkerRedemption(
-                        profile.kiosk.owner_id,
-                        user.full_name,
-                        amount.toString()
-                    );
+            // Notify the worker/customer that their request was submitted
+            await notificationService.notifyWorkerRedemptionCreated(
+                userId,
+                amount.toString()
+            );
+
+            // If worker, notify their kiosk owner(s)
+            if (user?.role === "WORKER") {
+                const workerProfiles = await prisma.workerProfile.findMany({
+                    where: { user_id: userId },
+                    include: { kiosk: true }
+                });
+
+                for (const profile of workerProfiles) {
+                    if (profile.kiosk) {
+                        await notificationService.notifyOwnerWorkerRedemption(
+                            profile.kiosk.owner_id,
+                            user.full_name,
+                            amount.toString()
+                        );
+                    }
                 }
             }
+        } catch (notificationError) {
+            logger.error(
+                `Error sending redemption notifications: ${notificationError}`
+            );
+            // Don't fail the request if notifications fail, as the redemption is already created
         }
 
         return redemption;
