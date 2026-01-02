@@ -250,32 +250,42 @@ export async function register(
     try {
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { phone } });
-        if (existingUser && existingUser.password_hash) {
+
+        if (existingUser && existingUser.is_active) {
             errorHandler(
                 new ConflictError("مستخدم موجود بالفعل بهذا الرقم الهاتفي"),
                 req,
                 res
             );
+            return {
+                id: "",
+                full_name: "",
+                phone: "",
+                role: "",
+                token: ""
+            };
         }
 
         // Hash password
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // Create user within transaction
+        // Create user or update if exists (for reactivation)
         const user = await prisma.user.upsert({
             where: { phone },
             update: {
                 full_name,
                 password_hash: passwordHash,
                 role,
-                is_verified: false
+                is_verified: false,
+                is_active: true // Reactivate if it was false
             },
             create: {
                 phone,
                 full_name,
                 password_hash: passwordHash,
                 role,
-                is_verified: false
+                is_verified: false,
+                is_active: true
             }
         });
 
