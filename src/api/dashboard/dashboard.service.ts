@@ -1,7 +1,7 @@
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js";
 import logger from "../../utils/logger.js";
-import { BusinessLogicError, ErrorCode, NotFoundError } from "../../utils/response.js";
+import { AppError, BusinessLogicError, ErrorCode, HttpStatus, NotFoundError } from "../../utils/response.js";
 import { TxStatus } from "@prisma/client";
 import type { Response, Request } from "express";
 
@@ -142,8 +142,9 @@ export async function getWorkerDashboard(
         });
 
         if (!workerprofile) {
+            console.log("Here")
             errorHandler(
-                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
+                new AppError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", HttpStatus.NOT_FOUND),
                 req,
                 res
             );
@@ -152,7 +153,7 @@ export async function getWorkerDashboard(
 
         if (workerprofile.user_id !== userId) {
             errorHandler(
-                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
+                new AppError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", HttpStatus.NOT_FOUND),
                 req,
                 res
             );
@@ -172,7 +173,7 @@ export async function getWorkerDashboard(
 
         if (!user) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على المستخدم"),
+                new AppError("لم يتم العثور على المستخدم", HttpStatus.NOT_FOUND),
                 req,
                 res
             );
@@ -181,7 +182,7 @@ export async function getWorkerDashboard(
 
         if (!user.wallet) {
             errorHandler(
-                new NotFoundError("لم يتم العثور على المحفظة للمستخدم"),
+                new AppError("لم يتم العثور على المحفظة للمستخدم", HttpStatus.NOT_FOUND),
                 req,
                 res
             );
@@ -202,7 +203,7 @@ export async function getWorkerDashboard(
 
         if (!activeProfile) {
             errorHandler(
-                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
+                new AppError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", HttpStatus.NOT_FOUND),
                 req,
                 res
             );
@@ -285,7 +286,7 @@ export async function getWorkerDashboard(
     } catch (error) {
         logger.error("Error fetching worker dashboard data:", error);
         errorHandler(
-            new Error("حدث خطأ أثناء استرجاع بيانات لوحة التحكم"),
+            new BusinessLogicError("حدث خطأ أثناء استرجاع بيانات لوحة التحكم", ErrorCode.INTERNAL_ERROR),
             req,
             res
         );

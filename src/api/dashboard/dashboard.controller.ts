@@ -46,7 +46,7 @@ export const getWorkerDashboard = asyncHandler(
 
         if (!userId) {
             errorHandler(
-                new BusinessLogicError("لم يتم العثور على ID المستخدم في طلب", ErrorCode.UNAUTHORIZED_ACCESS),
+                new BusinessLogicError("لم يتم العثور على ID المستخدم في طلب", ErrorCode.RESOURCE_NOT_FOUND),
                 req,
                 res
             );
