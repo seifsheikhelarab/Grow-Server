@@ -1,7 +1,7 @@
 import { errorHandler } from "./../../middlewares/error.middleware.js";
 import { Request, Response } from "express";
 import * as dashboardService from "./dashboard.service.js";
-import { ResponseHandler } from "../../utils/response.js";
+import { BusinessLogicError, ErrorCode, ResponseHandler } from "../../utils/response.js";
 import { asyncHandler } from "../../middlewares/error.middleware.js";
 
 /**
@@ -46,7 +46,7 @@ export const getWorkerDashboard = asyncHandler(
 
         if (!userId) {
             errorHandler(
-                new Error("لم يتم العثور على ID المستخدم في طلب"),
+                new BusinessLogicError("لم يتم العثور على ID المستخدم في طلب", ErrorCode.UNAUTHORIZED_ACCESS),
                 req,
                 res
             );

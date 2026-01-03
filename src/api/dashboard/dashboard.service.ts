@@ -1,7 +1,7 @@
 import { errorHandler } from "../../middlewares/error.middleware.js";
 import prisma from "../../prisma.js";
 import logger from "../../utils/logger.js";
-import { NotFoundError } from "../../utils/response.js";
+import { BusinessLogicError, ErrorCode, NotFoundError } from "../../utils/response.js";
 import { TxStatus } from "@prisma/client";
 import type { Response, Request } from "express";
 
@@ -143,7 +143,7 @@ export async function getWorkerDashboard(
 
         if (!workerprofile) {
             errorHandler(
-                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
+                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
                 req,
                 res
             );
@@ -152,7 +152,7 @@ export async function getWorkerDashboard(
 
         if (workerprofile.user_id !== userId) {
             errorHandler(
-                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
+                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
                 req,
                 res
             );
@@ -202,7 +202,7 @@ export async function getWorkerDashboard(
 
         if (!activeProfile) {
             errorHandler(
-                new NotFoundError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك"),
+                new BusinessLogicError("لا يوجد ملف تعريف عامل نشط، انتظر دعوة لبدء رحلتك", ErrorCode.UNAUTHORIZED_ACCESS),
                 req,
                 res
             );
@@ -265,10 +265,10 @@ export async function getWorkerDashboard(
             totalPoints: Number(totalPoints.toFixed(0)),
             goal: goal
                 ? {
-                      title: goal.title,
-                      current: currentAmount,
-                      target: Number(goal.target_amount)
-                  }
+                    title: goal.title,
+                    current: currentAmount,
+                    target: Number(goal.target_amount)
+                }
                 : null,
             transactions: transactions.map((tx) => ({
                 id: tx.id,

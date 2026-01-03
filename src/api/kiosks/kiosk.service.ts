@@ -1243,6 +1243,36 @@ export async function getWorkerReport(
     try {
         let targetProfileId = workerProfileId;
 
+        if (
+            workerProfileId &&
+            workerProfileId !== "undefined" &&
+            workerProfileId !== "null"
+        ) {
+            const explicitProfile = await prisma.workerProfile.findUnique({
+                where: { id: workerProfileId }
+            });
+
+            if (!explicitProfile) {
+                // If the user EXPLICITLY requested a profile ID that doesn't exist, we must error.
+                errorHandler(
+                    new NotFoundError("ملف العامل غير موجود"),
+                    req,
+                    res
+                );
+                return {
+                    month: "",
+                    summary: { total_commission: 0 },
+                    worker_report: {
+                        worker_id: workerId,
+                        worker_name: "Unknown",
+                        weekly_gross: { week1: 0, week2: 0, week3: 0, week4: 0 },
+                        total_gross: 0
+                    }
+                };
+            }
+            targetProfileId = explicitProfile.id;
+        }
+
         if (!targetProfileId || targetProfileId === "undefined") {
             const activeProfile = await prisma.workerProfile.findFirst({
                 where: {
@@ -1382,7 +1412,16 @@ export async function getWorkerReport(
             req,
             res
         );
-        return null;
+        return {
+            month: "",
+            summary: { total_commission: 0 },
+            worker_report: {
+                worker_id: workerId,
+                worker_name: "Unknown",
+                weekly_gross: { week1: 0, week2: 0, week3: 0, week4: 0 },
+                total_gross: 0
+            }
+        };
     }
 }
 

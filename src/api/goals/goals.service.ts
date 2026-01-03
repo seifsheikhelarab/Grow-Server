@@ -4,7 +4,8 @@ import {
     NotFoundError,
     AuthorizationError,
     ResponseHandler,
-    ErrorCode
+    ErrorCode,
+    AppError
 } from "../../utils/response.js";
 import logger from "../../utils/logger.js";
 import { Goal } from "@prisma/client";
@@ -414,7 +415,11 @@ export async function getGoalWorker(
             const profile = await prisma.workerProfile.findUnique({
                 where: { id: workerProfileId }
             });
-            if (profile) profileId = profile.id;
+            if (!profile) {
+                errorHandler(new NotFoundError("ملف العامل غير موجود"), req, res);
+                return { current: null, history: [] };
+            }
+            profileId = profile.id;
         }
 
         if (!profileId) return []; // No profile found
@@ -497,13 +502,17 @@ export async function getGoalWorker(
             history: history.splice(1)
         };
     } catch (error) {
-        errorHandler(new Error("حدث خطأ أثناء الحصول على هدف"), req, res);
-        logger.error(error);
-        return ResponseHandler.error(
-            res,
-            "حدث خطأ أثناء الحصول على هدف",
-            ErrorCode.INTERNAL_ERROR
+        logger.error(`Error getting goal worker: ${error}`);
+        errorHandler(
+            new AppError(
+                "حدث خطأ أثناء الحصول على هدف",
+                500,
+                ErrorCode.INTERNAL_ERROR
+            ),
+            req,
+            res
         );
+        return { current: null, history: [] };
     }
 }
 
